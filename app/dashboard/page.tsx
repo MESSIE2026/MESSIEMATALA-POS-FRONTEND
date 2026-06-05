@@ -122,8 +122,13 @@ const poles: Pole[] = [
     desc: 'Licences, serveurs, audit SaaS',
     icon: '🛡️',
     modules: [
+      {
+  titre: 'Dashboard Central',
+  desc: 'Vue générale du système central',
+  url: '/dashboard/admin-central',
+},
       { titre: 'Configuration Système', desc: 'Paramètres globaux du système', url: '/dashboard/configuration-systeme' },
-      { titre: 'Admin Licence', desc: 'Administration centrale des licences clients', url: '/dashboard/admin-licences' },
+      { titre: 'Admin Licence', desc: 'Administration centrale des licences clients', url: '/dashboard/admin-central/licences' },
       { titre: 'Validation Comptes', desc: 'Validation et approbation des comptes utilisateurs', url: '/dashboard/admin-central/validation-comptes' },
       { titre: 'Connexions', desc: 'Utilisateurs connectés et appareils', url: '/dashboard/admin-central/sessions' },
       { titre: 'Notifications', desc: 'Notifications globales du système', url: '/dashboard/admin-central/notifications' },
