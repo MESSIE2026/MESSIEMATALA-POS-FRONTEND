@@ -186,6 +186,10 @@ const password = String(passwordParam ?? login.password ?? '').trim();
     localStorage.setItem('employe', JSON.stringify(data.user || {}));
     localStorage.setItem('idEmploye', String(data.user?.id || ''));
     localStorage.setItem('permissions', JSON.stringify(data.permissions || []));
+    localStorage.setItem(
+  'modulesAutorises',
+  JSON.stringify(data.modulesAutorises || []),
+);
     localStorage.setItem('posContext', JSON.stringify(data.context || {}));
 
     router.push('/dashboard');
