@@ -13,7 +13,6 @@ type Permission = {
 };
 
 export default function UtilisateurPermissionsPage() {
-  const API = getClientApi();
 
   const [identreprise, setIdentreprise] = useState(1);
   const [idutilisateur, setIdutilisateur] = useState(1);
@@ -24,7 +23,10 @@ export default function UtilisateurPermissionsPage() {
   const [loading, setLoading] = useState(false);
 
   async function charger() {
-    if (!API) return;
+   const API =
+  getClientApi() ||
+  localStorage.getItem('ZAIRE_API_URL') ||
+  'https://messiematala-pos-backend-production.up.railway.app';
     setLoading(true);
     setMessage('');
 
@@ -63,8 +65,10 @@ export default function UtilisateurPermissionsPage() {
   });
 
   async function changerPermission(item: Permission, value: boolean) {
-    if (!API) return;
-
+    const API =
+  getClientApi() ||
+  localStorage.getItem('ZAIRE_API_URL') ||
+  'https://messiematala-pos-backend-production.up.railway.app';
     const endpoint = value ? 'autoriser' : 'retirer';
 
     try {

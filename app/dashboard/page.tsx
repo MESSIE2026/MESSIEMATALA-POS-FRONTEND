@@ -139,9 +139,21 @@ const poles: Pole[] = [
       { titre: 'Dépôts', desc: 'Gestion globale des dépôts', url: '/dashboard/admin-central/depots' },
       { titre: 'Postes POS', desc: 'Gestion des postes de caisse', url: '/dashboard/admin-central/postes-pos' },
       { titre: 'Utilisateurs', desc: 'Gestion des utilisateurs du système', url: '/dashboard/admin-central/utilisateurs' },
-      { titre: 'Rôles & Permissions', desc: 'Gestion des rôles et droits', url: '/dashboard/admin-central/roles' },
-      { titre: 'Appareils', desc: 'Appareils liés aux licences', url: '/dashboard/admin-central/appareils' },
-      { titre: 'Sauvegardes', desc: 'Gestion des sauvegardes', url: '/dashboard/admin-central/backups' },
+{ titre: 'Rôles & Permissions', desc: 'Gestion des rôles et droits', url: '/dashboard/admin-central/roles' },
+
+{
+  titre: 'Modules Entreprises',
+  desc: 'Autoriser les modules achetés par chaque entreprise',
+  url: '/dashboard/admin-central/entreprise-modules',
+},
+{
+  titre: 'Permissions Utilisateurs',
+  desc: 'Attribuer les permissions aux utilisateurs par entreprise',
+  url: '/dashboard/admin-central/utilisateur-permissions',
+},
+
+{ titre: 'Appareils', desc: 'Appareils liés aux licences', url: '/dashboard/admin-central/appareils' },
+{ titre: 'Sauvegardes', desc: 'Gestion des sauvegardes', url: '/dashboard/admin-central/backups' },
     ],
   },
   {
