@@ -12,21 +12,31 @@ type Permission = {
   autorise?: boolean;
 };
 
-export default function EntrepriseModulesPage() {
-  
+type GroupeCategorie = {
+  categorie: string;
+  total: number;
+  autorisees: number;
+  autorise: boolean;
+  partiel: boolean;
+  idpermissions: number[];
+};
 
+export default function EntrepriseModulesPage() {
   const [identreprise, setIdentreprise] = useState(1);
   const [items, setItems] = useState<Permission[]>([]);
   const [search, setSearch] = useState('');
-  const [categorie, setCategorie] = useState('TOUTES');
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState('');
   const [message, setMessage] = useState('');
 
-  async function charger() {
-   const API =
+  const API =
     getClientApi() ||
-    localStorage.getItem('ZAIRE_API_URL') ||
+    (typeof window !== 'undefined'
+      ? localStorage.getItem('ZAIRE_API_URL')
+      : '') ||
     'https://messiematala-pos-backend-production.up.railway.app';
+
+  async function charger() {
     setLoading(true);
     setMessage('');
 
@@ -45,29 +55,41 @@ export default function EntrepriseModulesPage() {
     charger();
   }, [identreprise]);
 
-  const categories = useMemo(() => {
-    return ['TOUTES', ...Array.from(new Set(items.map((x) => x.categorie || 'MODULES')))];
+  const groupes = useMemo<GroupeCategorie[]>(() => {
+    const categories = Array.from(
+      new Set(items.map((x) => x.categorie || 'MODULES')),
+    ).sort();
+
+    return categories.map((categorie) => {
+      const permissionsCategorie = items.filter(
+        (x) => (x.categorie || 'MODULES') === categorie,
+      );
+
+      const autorisees = permissionsCategorie.filter((x) => x.autorise).length;
+      const total = permissionsCategorie.length;
+
+      return {
+        categorie,
+        total,
+        autorisees,
+        autorise: total > 0 && autorisees === total,
+        partiel: autorisees > 0 && autorisees < total,
+        idpermissions: permissionsCategorie.map((x) => x.idpermission),
+      };
+    });
   }, [items]);
 
-  const filtered = items.filter((x) => {
-    const okCat = categorie === 'TOUTES' || x.categorie === categorie;
-    const q = search.toLowerCase();
-    const okSearch =
-      !q ||
-      x.nom?.toLowerCase().includes(q) ||
-      x.code?.toLowerCase().includes(q) ||
-      x.categorie?.toLowerCase().includes(q);
-
-    return okCat && okSearch;
+  const filteredGroupes = groupes.filter((g) => {
+    const q = search.toLowerCase().trim();
+    if (!q) return true;
+    return g.categorie.toLowerCase().includes(q);
   });
 
-  async function changerAutorisation(item: Permission, value: boolean) {
-    const API =
-  getClientApi() ||
-  localStorage.getItem('ZAIRE_API_URL') ||
-  'https://messiematala-pos-backend-production.up.railway.app';
-
+  async function changerCategorie(groupe: GroupeCategorie, value: boolean) {
     const endpoint = value ? 'autoriser' : 'retirer';
+
+    setActionLoading(groupe.categorie);
+    setMessage('');
 
     try {
       const res = await fetch(`${API}/entreprise-modules/${endpoint}`, {
@@ -76,7 +98,7 @@ export default function EntrepriseModulesPage() {
         body: JSON.stringify({
           identreprise,
           autorisepar: 12,
-          idpermissions: [item.idpermission],
+          idpermissions: groupe.idpermissions,
         }),
       });
 
@@ -89,30 +111,44 @@ export default function EntrepriseModulesPage() {
 
       setItems((prev) =>
         prev.map((p) =>
-          p.idpermission === item.idpermission ? { ...p, autorise: value } : p,
+          groupe.idpermissions.includes(p.idpermission)
+            ? { ...p, autorise: value }
+            : p,
         ),
       );
 
-      setMessage(value ? 'Module autorisé.' : 'Module retiré.');
+      setMessage(
+        value
+          ? `Catégorie "${groupe.categorie}" activée.`
+          : `Catégorie "${groupe.categorie}" désactivée.`,
+      );
     } catch {
       setMessage('Erreur réseau.');
+    } finally {
+      setActionLoading('');
     }
   }
 
-  const totalAutorises = items.filter((x) => x.autorise).length;
+  const totalPermissions = items.length;
+  const totalAutorisees = items.filter((x) => x.autorise).length;
+  const totalCategories = groupes.length;
+  const categoriesActives = groupes.filter((x) => x.autorise).length;
 
   return (
     <main className="min-h-screen bg-[#f4f1e8] p-6 text-slate-900">
-      <section className="mx-auto max-w-7xl rounded-2xl border border-emerald-900/15 bg-white shadow-xl">
+      <section className="mx-auto max-w-7xl overflow-hidden rounded-2xl border border-emerald-900/15 bg-white shadow-xl">
         <div className="border-b border-emerald-900/10 bg-emerald-950 px-6 py-5 text-white">
           <p className="text-xs font-bold uppercase tracking-[0.28em] text-emerald-100">
             Admin Central · Programmeur
           </p>
+
           <h1 className="mt-2 text-2xl font-black">
-            Autorisation des modules par entreprise
+            Modules autorisés par entreprise
           </h1>
+
           <p className="mt-1 text-sm text-emerald-50">
-            Le Programmeur active seulement les modules payés par le client.
+            Le Programmeur active les catégories de modules payées par le client.
+            Le SuperAdmin donnera ensuite les permissions détaillées.
           </p>
         </div>
 
@@ -121,6 +157,7 @@ export default function EntrepriseModulesPage() {
             <label className="text-xs font-black uppercase tracking-widest text-slate-500">
               Entreprise ID
             </label>
+
             <input
               type="number"
               value={identreprise}
@@ -129,46 +166,47 @@ export default function EntrepriseModulesPage() {
             />
           </div>
 
-          <div>
+          <div className="md:col-span-3">
             <label className="text-xs font-black uppercase tracking-widest text-slate-500">
-              Catégorie
+              Recherche catégorie
             </label>
-            <select
-              value={categorie}
-              onChange={(e) => setCategorie(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm font-bold outline-none focus:border-emerald-900"
-            >
-              {categories.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </div>
 
-          <div className="md:col-span-2">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500">
-              Recherche
-            </label>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher module, code, catégorie..."
+              placeholder="Exemple : Vente, Stock, Caisse, RH, Sécurité..."
               className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-emerald-900"
             />
           </div>
         </div>
 
-        <div className="grid gap-4 border-b border-slate-200 p-5 md:grid-cols-3">
+        <div className="grid gap-4 border-b border-slate-200 p-5 md:grid-cols-4">
           <div className="rounded-xl bg-emerald-950 p-4 text-white">
-            <p className="text-xs uppercase tracking-widest text-emerald-100">Total permissions</p>
-            <p className="mt-1 text-3xl font-black">{items.length}</p>
+            <p className="text-xs uppercase tracking-widest text-emerald-100">
+              Catégories
+            </p>
+            <p className="mt-1 text-3xl font-black">{totalCategories}</p>
           </div>
+
           <div className="rounded-xl bg-slate-900 p-4 text-white">
-            <p className="text-xs uppercase tracking-widest text-slate-300">Autorisées</p>
-            <p className="mt-1 text-3xl font-black">{totalAutorises}</p>
+            <p className="text-xs uppercase tracking-widest text-slate-300">
+              Catégories actives
+            </p>
+            <p className="mt-1 text-3xl font-black">{categoriesActives}</p>
           </div>
+
           <div className="rounded-xl bg-[#d8c7a1] p-4 text-emerald-950">
-            <p className="text-xs uppercase tracking-widest">Affichées</p>
-            <p className="mt-1 text-3xl font-black">{filtered.length}</p>
+            <p className="text-xs uppercase tracking-widest">
+              Total permissions
+            </p>
+            <p className="mt-1 text-3xl font-black">{totalPermissions}</p>
+          </div>
+
+          <div className="rounded-xl bg-white p-4 text-slate-900 ring-1 ring-slate-200">
+            <p className="text-xs uppercase tracking-widest text-slate-500">
+              Permissions autorisées
+            </p>
+            <p className="mt-1 text-3xl font-black">{totalAutorisees}</p>
           </div>
         </div>
 
@@ -188,45 +226,83 @@ export default function EntrepriseModulesPage() {
               <table className="w-full border-collapse text-sm">
                 <thead className="bg-slate-100 text-left text-xs uppercase tracking-widest text-slate-500">
                   <tr>
-                    <th className="px-4 py-3">Module</th>
-                    <th className="px-4 py-3">Catégorie</th>
-                    <th className="px-4 py-3">Code</th>
+                    <th className="px-4 py-3">Catégorie / Module</th>
+                    <th className="px-4 py-3 text-center">Permissions</th>
                     <th className="px-4 py-3 text-center">Statut</th>
                     <th className="px-4 py-3 text-right">Action</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {filtered.map((item) => (
-                    <tr key={item.idpermission} className="border-t border-slate-100 hover:bg-slate-50">
-                      <td className="px-4 py-3 font-bold">{item.nom}</td>
-                      <td className="px-4 py-3">{item.categorie}</td>
-                      <td className="px-4 py-3 text-xs text-slate-500">{item.code}</td>
-                      <td className="px-4 py-3 text-center">
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-black ${
-                            item.autorise
-                              ? 'bg-emerald-100 text-emerald-900'
-                              : 'bg-slate-100 text-slate-500'
-                          }`}
-                        >
-                          {item.autorise ? 'AUTORISÉ' : 'NON AUTORISÉ'}
+                  {filteredGroupes.map((groupe) => (
+                    <tr
+                      key={groupe.categorie}
+                      className="border-t border-slate-100 hover:bg-slate-50"
+                    >
+                      <td className="px-4 py-4">
+                        <p className="text-base font-black text-slate-900">
+                          {groupe.categorie}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {groupe.autorisees} sur {groupe.total} permissions
+                          autorisées
+                        </p>
+                      </td>
+
+                      <td className="px-4 py-4 text-center">
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
+                          {groupe.total} permissions
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
+
+                      <td className="px-4 py-4 text-center">
+                        {groupe.autorise ? (
+                          <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-900">
+                            ACTIVÉ
+                          </span>
+                        ) : groupe.partiel ? (
+                          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-800">
+                            PARTIEL
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">
+                            DÉSACTIVÉ
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="px-4 py-4 text-right">
                         <button
-                          onClick={() => changerAutorisation(item, !item.autorise)}
-                          className={`rounded-lg px-4 py-2 text-xs font-black uppercase ${
-                            item.autorise
+                          disabled={actionLoading === groupe.categorie}
+                          onClick={() =>
+                            changerCategorie(groupe, !groupe.autorise)
+                          }
+                          className={`rounded-lg px-5 py-2 text-xs font-black uppercase disabled:cursor-not-allowed disabled:opacity-60 ${
+                            groupe.autorise
                               ? 'bg-red-50 text-red-700 hover:bg-red-100'
                               : 'bg-emerald-950 text-white hover:bg-emerald-900'
                           }`}
                         >
-                          {item.autorise ? 'Retirer' : 'Autoriser'}
+                          {actionLoading === groupe.categorie
+                            ? 'Traitement...'
+                            : groupe.autorise
+                              ? 'Désactiver'
+                              : 'Activer'}
                         </button>
                       </td>
                     </tr>
                   ))}
+
+                  {filteredGroupes.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-4 py-10 text-center font-bold text-slate-500"
+                      >
+                        Aucune catégorie trouvée.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
