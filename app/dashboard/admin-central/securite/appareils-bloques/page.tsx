@@ -52,7 +52,10 @@ export default function AppareilsBloquesPage() {
     await fetch(`${API}/appareils/debloquer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ deviceid: x.deviceid }),
+      body: JSON.stringify({
+  idutilisateur: x.idutilisateur,
+  deviceid: x.deviceid,
+}),
     });
 
     await charger();
