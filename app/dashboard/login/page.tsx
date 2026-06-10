@@ -54,6 +54,7 @@ export default function LoginPage() {
   const [deviceId, setDeviceId] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [secondesRestantes, setSecondesRestantes] = useState(0);
   const [rememberMe, setRememberMe] = useState(true);
 
   const [licence, setLicence] = useState({
@@ -107,6 +108,35 @@ export default function LoginPage() {
     setRememberMe(localStorage.getItem('ZAIRE_REMEMBER_ME') !== 'false');
     setMode(getClientApi() ? 'LOGIN' : 'LICENCE');
   }, []);
+
+
+  useEffect(() => {
+  const timer = setInterval(() => {
+    const bloqueJusqua =
+      localStorage.getItem('LOGIN_BLOQUE_JUSQUA');
+
+    if (!bloqueJusqua) {
+      setSecondesRestantes(0);
+      return;
+    }
+
+    const reste = Math.max(
+      0,
+      Math.ceil(
+        (new Date(bloqueJusqua).getTime() - Date.now()) / 1000,
+      ),
+    );
+
+    setSecondesRestantes(reste);
+
+    if (reste <= 0) {
+      localStorage.removeItem('LOGIN_BLOQUE_JUSQUA');
+      setMessage('');
+    }
+  }, 1000);
+
+  return () => clearInterval(timer);
+}, []);
 
   async function lireReponse(res: Response) {
     const texte = await res.text();
@@ -165,9 +195,23 @@ const password = String(passwordParam ?? login.password ?? '').trim();
     const data = await lireReponse(res);
 
     if (!res.ok) {
-      setMessage(data?.message || 'Connexion refusée.');
-      return;
-    }
+  const bloqueJusqua =
+    data?.message?.bloqueJusqua ||
+    data?.bloqueJusqua ||
+    null;
+
+  if (bloqueJusqua) {
+    localStorage.setItem('LOGIN_BLOQUE_JUSQUA', bloqueJusqua);
+  }
+
+  setMessage(
+    typeof data?.message === 'string'
+      ? data.message
+      : data?.message?.message || 'Connexion refusée.',
+  );
+
+  return;
+}
 
     if (!data?.accessToken) {
       setMessage('Connexion refusée : token manquant.');
@@ -450,6 +494,13 @@ const password = String(passwordParam ?? login.password ?? '').trim();
               {message}
             </div>
           )}
+
+          {secondesRestantes > 0 && (
+  <div className="mt-3 rounded-2xl bg-red-600 px-4 py-3 text-center text-sm font-bold text-white">
+    Compte bloqué. Réessayez dans{' '}
+    {Math.floor(secondesRestantes / 60)} min {secondesRestantes % 60} sec.
+  </div>
+)}
 
         {mode === 'LOGIN' && (
   <form

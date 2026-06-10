@@ -156,6 +156,27 @@ export default function AdminCentralDashboardPage() {
           />
 
           <ModuleCard
+  titre="Tentatives de connexion"
+  desc="Historique des connexions réussies, échecs de mot de passe, comptes bloqués et IP suspectes."
+  href="/dashboard/admin-central/securite/tentatives-connexion"
+  bouton="Surveiller"
+/>
+
+<ModuleCard
+  titre="Appareils approuvés"
+  desc="Voir les appareils autorisés à se connecter au système."
+  href="/dashboard/admin-central/securite/appareils-approuves"
+  bouton="Consulter"
+/>
+
+<ModuleCard
+  titre="Appareils bloqués"
+  desc="Voir et débloquer les appareils interdits de connexion."
+  href="/dashboard/admin-central/securite/appareils-bloques"
+  bouton="Sécuriser"
+/>
+
+          <ModuleCard
             titre="Notifications"
             desc="Suivre les alertes système, licences, comptes et serveurs."
             href="/dashboard/admin-central/notifications"

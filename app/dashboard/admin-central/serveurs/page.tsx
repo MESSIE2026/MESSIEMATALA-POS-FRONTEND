@@ -14,6 +14,11 @@ type ServeurClient = {
   actif: boolean;
   statut: string;
   derniereverification: string | null;
+
+  tempsreponsems?: number | null;
+  derniereerreur?: string | null;
+  versionclient?: string | null;
+
   createdat?: string | null;
 };
 
@@ -155,6 +160,38 @@ export default function ServeursClientsPage() {
             <Card title="Inactifs" value={stats.inactifs} />
             <Card title="Désactivés" value={stats.statut_desactive} />
             <Card title="Non vérifiés" value={stats.non_verifies} />
+            <Card
+  title="Temps moyen"
+  value={
+    serveurs.length
+      ? `${Math.round(
+          serveurs
+            .filter((x) => typeof x.tempsreponsems === 'number')
+            .reduce(
+              (a, b) => a + (b.tempsreponsems || 0),
+              0,
+            ) /
+            Math.max(
+              1,
+              serveurs.filter(
+                (x) => typeof x.tempsreponsems === 'number',
+              ).length,
+            ),
+        )} ms`
+      : '0 ms'
+  }
+/>
+
+<Card
+  title="Hors ligne"
+  value={
+    serveurs.filter(
+      (x) =>
+        x.statut === 'HORS_LIGNE' ||
+        x.statut === 'ERREUR',
+    ).length
+  }
+/>
           </section>
         )}
 
@@ -232,6 +269,9 @@ export default function ServeursClientsPage() {
                   <Th>Statut</Th>
                   <Th>Actif</Th>
                   <Th>Dernière vérification</Th>
+                  <Th>Réponse</Th>
+<Th>Version</Th>
+<Th>Erreur</Th>
                   <Th>Créé le</Th>
                   <Th>Actions</Th>
                 </tr>
@@ -280,6 +320,20 @@ export default function ServeursClientsPage() {
 
                       <Td>{formatDate(s.derniereverification)}</Td>
 
+                      <Td>
+  {typeof s.tempsreponsems === 'number'
+    ? `${s.tempsreponsems} ms`
+    : '-'}
+</Td>
+
+<Td>{s.versionclient || '-'}</Td>
+
+<Td>
+  <span className="text-xs text-red-600">
+    {s.derniereerreur || '-'}
+  </span>
+</Td>
+
                       <Td>{formatDate(s.createdat)}</Td>
 
                       <Td>
@@ -320,7 +374,7 @@ export default function ServeursClientsPage() {
 
                 {!loading && serveurs.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="p-8 text-center text-slate-500">
+                    <td colSpan={12} className="p-8 text-center text-slate-500">
                       Aucun serveur client trouvé.
                     </td>
                   </tr>

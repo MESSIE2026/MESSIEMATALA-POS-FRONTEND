@@ -152,6 +152,23 @@ const poles: Pole[] = [
   url: '/dashboard/admin-central/utilisateur-permissions',
 },
 
+{
+  titre: 'Tentatives Connexion',
+  desc: 'Historique des connexions réussies, échouées et blocages',
+  url: '/dashboard/admin-central/securite/tentatives-connexion',
+},
+
+{
+  titre: 'Appareils approuvés',
+  desc: 'Appareils autorisés à se connecter',
+  url: '/dashboard/admin-central/securite/appareils-approuves',
+},
+{
+  titre: 'Appareils bloqués',
+  desc: 'Appareils interdits de connexion',
+  url: '/dashboard/admin-central/securite/appareils-bloques',
+},
+
 { titre: 'Appareils', desc: 'Appareils liés aux licences', url: '/dashboard/admin-central/appareils' },
 { titre: 'Sauvegardes', desc: 'Gestion des sauvegardes', url: '/dashboard/admin-central/backups' },
     ],
