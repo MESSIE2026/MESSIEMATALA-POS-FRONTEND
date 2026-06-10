@@ -11,20 +11,35 @@ export default function AppareilsBloquesPage() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
 
+  function lireListe(json: any) {
+    if (Array.isArray(json)) return json;
+    if (Array.isArray(json?.data)) return json.data;
+    if (Array.isArray(json?.items)) return json.items;
+    if (Array.isArray(json?.result)) return json.result;
+    return [];
+  }
+
   async function charger() {
     setLoading(true);
 
     try {
       const [resItems, resStats] = await Promise.all([
-        fetch(`${API}/appareils/bloques?search=${encodeURIComponent(search)}`),
-        fetch(`${API}/appareils/stats`),
+        fetch(`${API}/appareils/bloques?search=${encodeURIComponent(search)}`, {
+          cache: 'no-store',
+        }),
+        fetch(`${API}/appareils/stats`, {
+          cache: 'no-store',
+        }),
       ]);
 
       const jsonItems = await resItems.json();
       const jsonStats = await resStats.json();
 
-      setItems(Array.isArray(jsonItems) ? jsonItems : []);
+      setItems(lireListe(jsonItems));
       setStats(jsonStats && !Array.isArray(jsonStats) ? jsonStats : {});
+    } catch (error) {
+      console.error('Erreur chargement appareils bloqués:', error);
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -70,6 +85,9 @@ export default function AppareilsBloquesPage() {
           placeholder="Rechercher email, device, motif..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') charger();
+          }}
           style={input}
         />
 
@@ -77,10 +95,7 @@ export default function AppareilsBloquesPage() {
           {loading ? 'Chargement...' : 'Rechercher'}
         </button>
 
-        <Link
-          href="/dashboard/admin-central/securite/appareils-approuves"
-          style={btnGreen}
-        >
+        <Link href="/dashboard/admin-central/securite/appareils-approuves" style={btnGreen}>
           Voir appareils approuvés
         </Link>
       </div>
@@ -188,6 +203,7 @@ const btnDark = {
   color: 'white',
   border: 'none',
   fontWeight: 'bold',
+  cursor: 'pointer',
 };
 
 const btnGray = {
