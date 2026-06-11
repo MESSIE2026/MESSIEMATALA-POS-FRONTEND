@@ -398,18 +398,16 @@ function formatDate(date?: string | null) {
   }
 
   function formatBackupSize(value: any) {
-  const mo = parseFloat(String(value ?? 0).replace(',', '.'));
+  const mo = Number(value);
 
   if (!Number.isFinite(mo) || mo <= 0) return '0 Ko';
 
   if (mo < 1) {
-    const ko = mo * 1024;
-    return `${ko.toFixed(2)} Ko`;
+    return `${(mo * 1024).toFixed(2)} Ko`;
   }
 
   if (mo >= 1024) {
-    const go = mo / 1024;
-    return `${go.toFixed(2)} Go`;
+    return `${(mo / 1024).toFixed(2)} Go`;
   }
 
   return `${mo.toFixed(2)} Mo`;
