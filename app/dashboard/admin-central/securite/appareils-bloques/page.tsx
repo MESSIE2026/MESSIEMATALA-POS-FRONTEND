@@ -46,20 +46,29 @@ export default function AppareilsBloquesPage() {
   }
 
   async function debloquer(x: any) {
-    const ok = window.confirm(`Débloquer l’appareil ${x.deviceid} ?`);
-    if (!ok) return;
+  const ok = window.confirm(`Débloquer l’appareil ${x.deviceid} ?`);
+  if (!ok) return;
 
-    await fetch(`${API}/appareils/debloquer`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-  idutilisateur: x.idutilisateur,
-  deviceid: x.deviceid,
-}),
-    });
+  const res = await fetch(`${API}/appareils/debloquer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: x.id,
+      idutilisateur: x.idutilisateur,
+      deviceid: x.deviceid,
+    }),
+  });
 
-    await charger();
+  const json = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    alert(json.message || 'Erreur pendant le déblocage.');
+    return;
   }
+
+  alert(json.message || 'Appareil débloqué.');
+  await charger();
+}
 
   useEffect(() => {
     charger();
@@ -120,7 +129,7 @@ export default function AppareilsBloquesPage() {
 
         <tbody>
           {items.map((x) => (
-            <tr key={x.deviceid}>
+           <tr key={`${x.id}-${x.idutilisateur || 'user'}-${x.deviceid || 'device'}`}>
               <td style={td}>{x.email || '-'}</td>
               <td style={td}>{x.deviceid || '-'}</td>
               <td style={td}>{x.nomappareil || '-'}</td>
