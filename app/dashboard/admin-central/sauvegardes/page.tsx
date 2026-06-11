@@ -261,7 +261,7 @@ export default function SauvegardesPage() {
 
                 {!loadingPage && items.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-10 text-center font-bold text-slate-500">
+                    <td colSpan={10} className="px-4 py-10 text-center font-bold text-slate-500">
                       Aucune sauvegarde trouvée.
                     </td>
                   </tr>
@@ -287,7 +287,7 @@ export default function SauvegardesPage() {
                         <Badge tone="blue">{x.typebackup || 'MANUEL'}</Badge>
                       </td>
                       <td className="px-4 py-3 font-bold">
-                        {Number(x.taillemo || 0).toFixed(2)} Mo
+                        {formatBackupSize(x.taillemo)}
                       </td>
                       <td className="px-4 py-3">
                         {formatDate(x.createdat)}
@@ -395,4 +395,22 @@ function formatDate(date?: string | null) {
   } catch {
     return '-';
   }
+  }
+
+  function formatBackupSize(value: any) {
+  const mo = parseFloat(String(value ?? 0).replace(',', '.'));
+
+  if (!Number.isFinite(mo) || mo <= 0) return '0 Ko';
+
+  if (mo < 1) {
+    const ko = mo * 1024;
+    return `${ko.toFixed(2)} Ko`;
+  }
+
+  if (mo >= 1024) {
+    const go = mo / 1024;
+    return `${go.toFixed(2)} Go`;
+  }
+
+  return `${mo.toFixed(2)} Mo`;
 }
