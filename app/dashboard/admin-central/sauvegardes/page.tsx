@@ -17,6 +17,7 @@ type BackupItem = {
   statut?: string;
   message?: string;
   createdat?: string;
+  ciblebackup?: string;
 };
 
 type BackupStats = {
@@ -238,7 +239,8 @@ export default function SauvegardesPage() {
                 <tr className="border-b text-xs uppercase tracking-wide text-slate-500">
                   <th className="px-4 py-3 font-black">ID</th>
                   <th className="px-4 py-3 font-black">Entreprise</th>
-                  <th className="px-4 py-3 font-black">Serveur</th>
+                  <th className="px-4 py-3 font-black">Cible</th>
+<th className="px-4 py-3 font-black">Serveur</th>
                   <th className="px-4 py-3 font-black">Type</th>
                   <th className="px-4 py-3 font-black">Taille</th>
                   <th className="px-4 py-3 font-black">Date</th>
@@ -251,7 +253,7 @@ export default function SauvegardesPage() {
               <tbody>
                 {loadingPage && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-10 text-center font-bold text-slate-500">
+                    <td colSpan={10} className="px-4 py-10 text-center font-bold text-slate-500">
                       Chargement des sauvegardes...
                     </td>
                   </tr>
@@ -272,9 +274,15 @@ export default function SauvegardesPage() {
                       <td className="max-w-[220px] truncate px-4 py-3">
                         {x.entreprise || x.nomclient || '-'}
                       </td>
-                      <td className="max-w-[280px] truncate px-4 py-3">
-                        {x.serverurl || '-'}
-                      </td>
+                      <td className="px-4 py-3">
+  <Badge tone={x.ciblebackup === 'CLIENT' ? 'emerald' : 'slate'}>
+    {x.ciblebackup || 'CENTRAL'}
+  </Badge>
+</td>
+
+<td className="max-w-[280px] truncate px-4 py-3">
+  {x.serverurl || 'Serveur central'}
+</td>
                       <td className="px-4 py-3">
                         <Badge tone="blue">{x.typebackup || 'MANUEL'}</Badge>
                       </td>
