@@ -146,6 +146,14 @@ const poles: Pole[] = [
   desc: 'Autoriser les modules achetés par chaque entreprise',
   url: '/dashboard/admin-central/entreprise-modules',
 },
+
+{
+  titre: 'Sauvegardes',
+  desc: 'Créer, télécharger, restaurer et superviser les sauvegardes des serveurs clients',
+  url: '/dashboard/admin-central/sauvegardes',
+},
+
+
 {
   titre: 'Permissions Utilisateurs',
   desc: 'Attribuer les permissions aux utilisateurs par entreprise',

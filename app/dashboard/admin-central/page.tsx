@@ -176,6 +176,13 @@ export default function AdminCentralDashboardPage() {
   bouton="Sécuriser"
 />
 
+<ModuleCard
+  titre="Sauvegardes"
+  desc="Créer, télécharger, restaurer et superviser les sauvegardes des bases de données."
+  href="/dashboard/admin-central/sauvegardes"
+  bouton="Ouvrir"
+/>
+
           <ModuleCard
             titre="Notifications"
             desc="Suivre les alertes système, licences, comptes et serveurs."
