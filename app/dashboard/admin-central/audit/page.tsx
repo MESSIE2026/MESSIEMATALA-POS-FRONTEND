@@ -11,6 +11,12 @@ export default function AuditPage() {
   const [stats, setStats] = useState<any>(null);
   const [messageInfo, setMessageInfo] = useState('');
   const [search, setSearch] = useState('');
+  const [moduleFiltre, setModuleFiltre] = useState('');
+  const [actionFiltre, setActionFiltre] = useState('');
+  const [resultatFiltre, setResultatFiltre] = useState('');
+  const [niveauFiltre, setNiveauFiltre] = useState('');
+  const [dateDebut, setDateDebut] = useState('');
+  const [dateFin, setDateFin] = useState('');
   const [selected, setSelected] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
@@ -19,9 +25,17 @@ export default function AuditPage() {
       setLoading(true);
       setMessageInfo('');
 
-      const url = search.trim()
-        ? `${API}/audit?search=${encodeURIComponent(search.trim())}`
-        : `${API}/audit`;
+      const params = new URLSearchParams();
+
+      if (search.trim()) params.append('search', search.trim());
+      if (moduleFiltre) params.append('module', moduleFiltre);
+      if (actionFiltre) params.append('action', actionFiltre);
+      if (resultatFiltre) params.append('resultat', resultatFiltre);
+      if (niveauFiltre) params.append('niveau', niveauFiltre);
+      if (dateDebut) params.append('dateDebut', dateDebut);
+      if (dateFin) params.append('dateFin', dateFin);
+
+      const url = `${API}/audit${params.toString() ? `?${params.toString()}` : ''}`;
 
       const [resList, resStats] = await Promise.all([
         fetch(url, { cache: 'no-store' }),
@@ -31,6 +45,10 @@ export default function AuditPage() {
       const dataList = await resList.json();
       const dataStats = await resStats.json();
 
+      if (!resList.ok) {
+        throw new Error(dataList?.message || 'Erreur chargement journaux.');
+      }
+
       setAudits(Array.isArray(dataList) ? dataList : []);
       setStats(dataStats || null);
     } catch (error: any) {
@@ -38,6 +56,55 @@ export default function AuditPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function resetFiltres() {
+    setSearch('');
+    setModuleFiltre('');
+    setActionFiltre('');
+    setResultatFiltre('');
+    setNiveauFiltre('');
+    setDateDebut('');
+    setDateFin('');
+    setTimeout(charger, 100);
+  }
+
+  function exporterCSV() {
+    const colonnes = [
+      'idaudit',
+      'createdat',
+      'resultat',
+      'niveau',
+      'action',
+      'module',
+      'sousmodule',
+      'utilisateur',
+      'roleutilisateur',
+      'nomentreprise',
+      'nommagasin',
+      'ipadresse',
+      'deviceid',
+      'message',
+    ];
+
+    const lignes = audits.map((a) =>
+      colonnes
+        .map((c) => {
+          const v = a?.[c] ?? '';
+          return `"${String(v).replaceAll('"', '""')}"`;
+        })
+        .join(';'),
+    );
+
+    const csv = [colonnes.join(';'), ...lignes].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+
+    link.href = URL.createObjectURL(blob);
+    link.download = `journaux_audit_${Date.now()}.csv`;
+    link.click();
+
+    URL.revokeObjectURL(link.href);
   }
 
   useEffect(() => {
@@ -57,7 +124,7 @@ export default function AuditPage() {
                   Admin Central / Sécurité
                 </p>
                 <h1 className="mt-3 text-3xl font-black tracking-tight">
-                  Audit système central
+                  Journaux système
                 </h1>
                 <p className="mt-2 max-w-3xl text-sm text-emerald-50/80">
                   Surveillance des connexions, validations, modifications,
@@ -65,12 +132,21 @@ export default function AuditPage() {
                 </p>
               </div>
 
-              <button
-                onClick={charger}
-                className="rounded-xl bg-white px-5 py-3 text-sm font-black text-emerald-950 shadow-sm hover:bg-emerald-50"
-              >
-                {loading ? 'Chargement...' : 'Actualiser'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={exporterCSV}
+                  className="rounded-xl bg-emerald-100 px-5 py-3 text-sm font-black text-emerald-950 shadow-sm hover:bg-white"
+                >
+                  Export CSV
+                </button>
+
+                <button
+                  onClick={charger}
+                  className="rounded-xl bg-white px-5 py-3 text-sm font-black text-emerald-950 shadow-sm hover:bg-emerald-50"
+                >
+                  {loading ? 'Chargement...' : 'Actualiser'}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -91,35 +167,95 @@ export default function AuditPage() {
           </div>
         )}
 
+        <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-black text-slate-950">Filtres</h2>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && charger()}
+              placeholder="Recherche..."
+              className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-700"
+            />
+
+            <input
+              value={moduleFiltre}
+              onChange={(e) => setModuleFiltre(e.target.value)}
+              placeholder="Module"
+              className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-700"
+            />
+
+            <input
+              value={actionFiltre}
+              onChange={(e) => setActionFiltre(e.target.value)}
+              placeholder="Action"
+              className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-700"
+            />
+
+            <select
+              value={resultatFiltre}
+              onChange={(e) => setResultatFiltre(e.target.value)}
+              className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:border-emerald-700"
+            >
+              <option value="">Résultat</option>
+              <option value="SUCCES">SUCCÈS</option>
+              <option value="ECHEC">ÉCHEC</option>
+            </select>
+
+            <select
+              value={niveauFiltre}
+              onChange={(e) => setNiveauFiltre(e.target.value)}
+              className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:border-emerald-700"
+            >
+              <option value="">Niveau</option>
+              <option value="INFO">INFO</option>
+              <option value="WARNING">WARNING</option>
+              <option value="ERREUR">ERREUR</option>
+              <option value="CRITIQUE">CRITIQUE</option>
+            </select>
+
+            <input
+              type="date"
+              value={dateDebut}
+              onChange={(e) => setDateDebut(e.target.value)}
+              className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-700"
+            />
+
+            <input
+              type="date"
+              value={dateFin}
+              onChange={(e) => setDateFin(e.target.value)}
+              className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-700"
+            />
+          </div>
+
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={charger}
+              className="rounded-xl bg-emerald-950 px-5 py-3 text-sm font-black text-white hover:bg-emerald-900"
+            >
+              Filtrer
+            </button>
+
+            <button
+              onClick={resetFiltres}
+              className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-black text-slate-700 hover:bg-slate-50"
+            >
+              Réinitialiser
+            </button>
+          </div>
+        </section>
+
         <section className="grid gap-6 xl:grid-cols-[1fr_420px]">
           <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
-            <div className="flex flex-col gap-4 border-b border-slate-200 bg-white p-5 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h2 className="text-lg font-black text-slate-950">
-                  Journal d’activité
-                </h2>
-                <p className="text-sm text-slate-500">
-                  Cliquez sur une ligne pour voir les détails complets.
-                </p>
-              </div>
-
-              <div className="flex gap-2">
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') charger();
-                  }}
-                  placeholder="Rechercher action, module, utilisateur..."
-                  className="w-full min-w-[320px] rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-700"
-                />
-                <button
-                  onClick={charger}
-                  className="rounded-xl bg-emerald-950 px-5 py-3 text-sm font-black text-white hover:bg-emerald-900"
-                >
-                  Filtrer
-                </button>
-              </div>
+            <div className="border-b border-slate-200 bg-white p-5">
+              <h2 className="text-lg font-black text-slate-950">
+                Journal d’activité
+              </h2>
+              <p className="text-sm text-slate-500">
+                Cliquez sur une ligne pour voir les détails complets.
+              </p>
             </div>
 
             <div className="overflow-x-auto">
@@ -127,12 +263,13 @@ export default function AuditPage() {
                 <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
                     <th className="p-3">Statut</th>
+                    <th className="p-3">Niveau</th>
                     <th className="p-3">Action</th>
                     <th className="p-3">Module</th>
                     <th className="p-3">Utilisateur</th>
                     <th className="p-3">Entreprise</th>
                     <th className="p-3">Magasin</th>
-                    <th className="p-3">Synchronisation</th>
+                    <th className="p-3">Sync</th>
                     <th className="p-3">IP</th>
                     <th className="p-3">Date</th>
                   </tr>
@@ -141,7 +278,7 @@ export default function AuditPage() {
                 <tbody>
                   {audits.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="p-10 text-center text-slate-500">
+                      <td colSpan={10} className="p-10 text-center text-slate-500">
                         Aucun audit enregistré.
                       </td>
                     </tr>
@@ -159,35 +296,46 @@ export default function AuditPage() {
                           type={a.resultat === 'ECHEC' ? 'danger' : 'success'}
                         />
                       </td>
+
+                      <td className="p-3">
+                        <Badge label={a.niveau || 'INFO'} type={niveauType(a.niveau)} />
+                      </td>
+
                       <td className="p-3 font-black text-slate-950">
                         {a.action || '-'}
                         <div className="text-xs font-semibold text-slate-400">
                           #{a.idaudit}
                         </div>
                       </td>
+
                       <td className="p-3">
                         <div className="font-bold">{a.module || '-'}</div>
                         <div className="text-xs text-slate-400">
                           {a.sousmodule || '-'}
                         </div>
                       </td>
+
                       <td className="p-3">
                         <div className="font-bold">{a.utilisateur || '-'}</div>
                         <div className="text-xs text-slate-400">
                           {a.roleutilisateur || '-'}
                         </div>
                       </td>
+
                       <td className="p-3">{a.nomentreprise || '-'}</td>
                       <td className="p-3">{a.nommagasin || '-'}</td>
+
                       <td className="p-3">
                         <Badge
                           label={a.synced ? 'SYNCED' : a.syncstatus || 'PENDING'}
                           type={a.synced ? 'success' : 'warning'}
                         />
                       </td>
+
                       <td className="p-3 font-mono text-xs">
                         {a.ipadresse || '-'}
                       </td>
+
                       <td className="p-3">
                         {a.createdat
                           ? new Date(a.createdat).toLocaleString('fr-FR')
@@ -211,10 +359,10 @@ export default function AuditPage() {
               ) : (
                 <div className="mt-5 space-y-3 text-sm">
                   <Detail label="ID" value={selected.idaudit} />
-                  <Detail label="UUID Sync" value={selected.uuidsync} />
                   <Detail label="Action" value={selected.action} />
                   <Detail label="Niveau" value={selected.niveau} />
                   <Detail label="Module" value={selected.module} />
+                  <Detail label="Sous-module" value={selected.sousmodule} />
                   <Detail label="Table" value={selected.tableconcernee} />
                   <Detail label="Enregistrement" value={selected.idenregistrement} />
                   <Detail label="Utilisateur" value={selected.utilisateur} />
@@ -226,7 +374,12 @@ export default function AuditPage() {
                   <Detail label="Système" value={selected.systeme} />
                   <Detail label="Navigateur" value={selected.navigateur} />
                   <Detail label="Device ID" value={selected.deviceid} />
+                  <Detail label="Machine" value={selected.nommachine} />
                   <Detail label="Message" value={selected.message} />
+
+                  <JsonBlock title="Ancienne valeur" data={selected.anciennevaleur} />
+                  <JsonBlock title="Nouvelle valeur" data={selected.nouvellevaleur} />
+                  <JsonBlock title="Détails JSON" data={selected.details} />
                 </div>
               )}
             </section>
@@ -238,7 +391,8 @@ export default function AuditPage() {
                 {derniers.map((a) => (
                   <div
                     key={a.idaudit}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                    onClick={() => setSelected(a)}
+                    className="cursor-pointer rounded-2xl border border-slate-200 bg-slate-50 p-4 hover:bg-emerald-50"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <p className="font-black text-slate-900">{a.action}</p>
@@ -277,10 +431,14 @@ function Card({ title, value }: any) {
 function Badge({ label, type }: any) {
   const cls =
     type === 'danger'
-      ? 'bg-red-100 text-red-700 border-red-200'
+      ? 'border-red-200 bg-red-100 text-red-700'
       : type === 'warning'
-        ? 'bg-amber-100 text-amber-800 border-amber-200'
-        : 'bg-emerald-100 text-emerald-800 border-emerald-200';
+        ? 'border-amber-200 bg-amber-100 text-amber-800'
+        : type === 'info'
+          ? 'border-blue-200 bg-blue-100 text-blue-800'
+          : type === 'critical'
+            ? 'border-purple-200 bg-purple-100 text-purple-800'
+            : 'border-emerald-200 bg-emerald-100 text-emerald-800';
 
   return (
     <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-black ${cls}`}>
@@ -298,4 +456,27 @@ function Detail({ label, value }: any) {
       </p>
     </div>
   );
+}
+
+function JsonBlock({ title, data }: any) {
+  if (!data) return null;
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-950 p-3">
+      <p className="text-xs font-black uppercase text-emerald-300">{title}</p>
+      <pre className="mt-2 max-h-[260px] overflow-auto text-xs text-emerald-50">
+        {typeof data === 'string' ? data : JSON.stringify(data, null, 2)}
+      </pre>
+    </div>
+  );
+}
+
+function niveauType(niveau?: string) {
+  const n = String(niveau || '').toUpperCase();
+
+  if (n === 'WARNING') return 'warning';
+  if (n === 'ERREUR' || n === 'ERROR') return 'danger';
+  if (n === 'CRITIQUE' || n === 'CRITICAL') return 'critical';
+
+  return 'info';
 }
