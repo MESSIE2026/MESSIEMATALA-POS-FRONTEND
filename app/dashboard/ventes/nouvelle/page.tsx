@@ -412,106 +412,124 @@ export default function NouvelleVentePage() {
         : totaux.EUR;
 
   async function finaliserVente() {
-    if (loading) return;
+  if (loading) return;
 
-    if (lignes.length === 0) {
-      alert('Ajoute au moins un article.');
-      refocusScan();
-      return;
-    }
-
-    if (totalPrincipal <= 0) {
-      alert('Total invalide.');
-      refocusScan();
-      return;
-    }
-
-    const idEmploye = Number(localStorage.getItem('idEmploye') || 0);
-    const idSession = Number(localStorage.getItem('idSessionCaisse') || 0);
-
-    if (!idEmploye) {
-      alert('Employé non connecté.');
-      router.push('/login');
-      return;
-    }
-
-    if (!idSession) {
-      alert('Aucune session caisse ouverte. Va d’abord ouvrir une session caisse.');
-      router.push('/dashboard/session-caisse');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const montantRecu = recu.trim() === '' ? totalPrincipal : nombreDepuisPrix(recu);
-
-      const payload = {
-        idClient,
-        id_client: idClient,
-
-        nomclient: nomclient.trim() || 'CLIENT CASH',
-        telephone: telephone.trim() || null,
-        caissier,
-        devise: devisePrincipale,
-        total: totalPrincipal,
-
-        idEmploye,
-        id_employe: idEmploye,
-
-        idSession,
-        id_session: idSession,
-        id_session_caisse: idSession,
-        idsessioncaisse: idSession,
-
-        details: lignes.map((l) => ({
-          idProduit: l.idProduit,
-          id_produit: l.idProduit,
-          nomproduit: l.nomproduit,
-          refproduit: l.refproduit,
-          quantite: l.quantite,
-          prixunitaire: l.prixunitaire,
-          devise: normaliserDevise(l.devise),
-          remise: l.remise,
-          tva: l.tva,
-        })),
-
-        paiements: [
-          {
-            modepaiement: modePaiement,
-            montant: montantRecu,
-            devise: devisePrincipale,
-            reference: `WEB-POS-${Date.now()}`,
-          },
-        ],
-      };
-
-      console.log('PAYLOAD VENTE =>', payload);
-
-      const res = await fetch(`${API}/ventes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await lireApi(res);
-
-      if (!res.ok) {
-        alert(`Erreur API ${res.status} : ${typeof data === 'string' ? data : JSON.stringify(data)}`);
-        refocusScan();
-        return;
-      }
-
-      alert('Vente enregistrée avec succès.');
-      router.push('/dashboard/ventes');
-    } catch (error) {
-      console.error(error);
-      alert('Erreur réseau : impossible de contacter l’API.');
-      refocusScan();
-    } finally {
-      setLoading(false);
-    }
+  if (lignes.length === 0) {
+    alert('Ajoute au moins un article.');
+    refocusScan();
+    return;
   }
+
+  if (totalPrincipal <= 0) {
+    alert('Total invalide.');
+    refocusScan();
+    return;
+  }
+
+  const idEmploye = Number(localStorage.getItem('idEmploye') || 0);
+  const idSession = Number(localStorage.getItem('idSessionCaisse') || 0);
+
+  if (!idEmploye) {
+    alert('Employé non connecté.');
+    router.push('/login');
+    return;
+  }
+
+  if (!idSession) {
+    alert('Aucune session caisse ouverte. Va d’abord ouvrir une session caisse.');
+    router.push('/dashboard/session-caisse');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const montantRecu =
+      recu.trim() === '' ? totalPrincipal : nombreDepuisPrix(recu);
+
+    const articles = lignes.map((l) => ({
+      idProduit: l.idProduit,
+      id_produit: l.idProduit,
+      idproduit: l.idProduit,
+
+      nomproduit: l.nomproduit,
+      refproduit: l.refproduit,
+
+      quantite: l.quantite,
+      prixunitaire: l.prixunitaire,
+      prix: l.prixunitaire,
+
+      devise: normaliserDevise(l.devise),
+      remise: l.remise,
+      tva: l.tva,
+    }));
+
+    const payload = {
+      idClient,
+      id_client: idClient,
+
+      nomclient: nomclient.trim() || 'CLIENT CASH',
+      telephone: telephone.trim() || null,
+      caissier,
+      devise: devisePrincipale,
+      total: totalPrincipal,
+      montanttotal: totalPrincipal,
+
+      idEmploye,
+      id_employe: idEmploye,
+      idemploye: idEmploye,
+
+      idSession,
+      idsession: idSession,
+      id_session: idSession,
+      id_session_caisse: idSession,
+      idsessioncaisse: idSession,
+
+      details: articles,
+      produits: articles,
+      lignes: articles,
+
+      paiements: [
+        {
+          modepaiement: modePaiement,
+          modePaiement,
+          montant: montantRecu,
+          devise: devisePrincipale,
+          reference: `WEB-POS-${Date.now()}`,
+        },
+      ],
+    };
+
+    console.log('PAYLOAD VENTE =>', payload);
+
+    const res = await fetch(`${API}/ventes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await lireApi(res);
+
+    if (!res.ok) {
+      alert(
+        `Erreur API ${res.status} : ${
+          typeof data === 'string' ? data : JSON.stringify(data)
+        }`
+      );
+      refocusScan();
+      return;
+    }
+
+    alert('Vente enregistrée avec succès.');
+    router.push('/dashboard/ventes');
+  } catch (error) {
+    console.error(error);
+    alert('Erreur réseau : impossible de contacter l’API.');
+    refocusScan();
+  } finally {
+    setLoading(false);
+  }
+}
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
