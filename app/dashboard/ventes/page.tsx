@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+
 type Vente = {
   id_vente: number;
   datevente: string;
@@ -42,8 +43,8 @@ export default function VentesPage() {
     router.push('/dashboard/ventes/nouvelle');
   }
 
-  function voirVente(vente: Vente) {
-  alert("Détail vente désactivé temporairement pour générer l'APK Android.");
+ function voirVente(vente: Vente) {
+  router.push(`/dashboard/ventes/detail?id=${vente.id_vente}`);
 }
 
   useEffect(() => {

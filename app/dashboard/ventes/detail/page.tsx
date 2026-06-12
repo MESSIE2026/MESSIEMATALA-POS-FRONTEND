@@ -1,16 +1,16 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import JsBarcode from 'jsbarcode';
 
 export default function VoirVentePage() {
-  const params = useParams();
-  const router = useRouter();
+  const searchParams = useSearchParams();
+const router = useRouter();
 
-  const id = params?.id;
+const id = searchParams.get('id');
   const [vente, setVente] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
