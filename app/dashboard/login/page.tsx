@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { saveEmployeSession } from '@/app/services/compte.service';
 import {
   getClientApi,
   getDeviceId,
@@ -226,9 +227,22 @@ const password = String(passwordParam ?? login.password ?? '').trim();
       localStorage.setItem('ZAIRE_REMEMBER_ME', 'false');
     }
 
-    localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('employe', JSON.stringify(data.user || {}));
-    localStorage.setItem('idEmploye', String(data.user?.id || ''));
+    saveEmployeSession(
+  {
+    id_employe: Number(data.user?.idutilisateur || data.user?.id || 0),
+    nom: data.user?.nom || '',
+    prenom: data.user?.prenom || '',
+    poste: data.user?.role || '',
+    role: data.user?.role || '',
+    email: data.user?.email || '',
+    nomutilisateur: data.user?.nomutilisateur || data.user?.username || '',
+    identreprise: data.context?.idEntreprise ?? 1,
+    idmagasin: data.context?.idMagasin ?? 1,
+    iddepot: data.context?.idDepot ?? undefined,
+    idposte: data.context?.idPoste ?? 1,
+  },
+  data.accessToken
+);
     localStorage.setItem('permissions', JSON.stringify(data.permissions || []));
     localStorage.setItem(
   'modulesAutorises',

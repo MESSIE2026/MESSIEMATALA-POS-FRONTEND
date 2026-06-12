@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getAuthHeaders } from '@/app/services/compte.service';
 
 type SessionCaisse = {
   idsession: number;
@@ -146,7 +147,7 @@ export default function Page() {
     try {
       const res = await fetch(`${API}/session-caisse/ouvrir`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           idCaissier: idEmploye,
           idPoste: 1,
@@ -194,8 +195,9 @@ export default function Page() {
 
     try {
       const res = await fetch(`${API}/session-caisse/clore/${sessionActive.idsession}`, {
-        method: 'POST',
-      });
+  method: 'POST',
+  headers: getAuthHeaders(),
+});
 
       const texte = await res.text();
 
