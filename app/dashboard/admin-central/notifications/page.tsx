@@ -15,6 +15,7 @@ export default function NotificationsPage() {
     titre: '',
     message: '',
     type: 'INFO',
+    niveau: 'INFO',
   });
 
   async function charger() {
@@ -55,7 +56,7 @@ export default function NotificationsPage() {
       return;
     }
 
-    setForm({ titre: '', message: '', type: 'INFO' });
+    setForm({ titre: '', message: '', type: 'INFO', niveau: 'INFO' });
     setMessageInfo('Notification créée.');
     await charger();
   }
@@ -107,7 +108,7 @@ export default function NotificationsPage() {
         <section className="rounded-3xl bg-white p-6 shadow-sm">
           <h2 className="text-xl font-black">Nouvelle notification</h2>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-4">
+          <div className="mt-5 grid gap-4 md:grid-cols-5">
             <input
               value={form.titre}
               onChange={(e) => setForm({ ...form, titre: e.target.value })}
@@ -134,6 +135,18 @@ export default function NotificationsPage() {
               <option value="LICENCE">LICENCE</option>
               <option value="SERVEUR">SERVEUR</option>
               <option value="COMPTE">COMPTE</option>
+              <option value="BACKUP">BACKUP</option>
+            </select>
+
+            <select
+              value={form.niveau}
+              onChange={(e) => setForm({ ...form, niveau: e.target.value })}
+              className="rounded-xl border px-4 py-3"
+            >
+              <option value="INFO">INFO</option>
+              <option value="WARNING">WARNING</option>
+              <option value="ERROR">ERROR</option>
+              <option value="CRITICAL">CRITICAL</option>
             </select>
           </div>
 
@@ -160,12 +173,13 @@ export default function NotificationsPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left text-sm">
+            <table className="w-full min-w-[1000px] text-left text-sm">
               <thead className="bg-slate-100">
                 <tr>
                   <th className="p-3">Titre</th>
                   <th className="p-3">Message</th>
                   <th className="p-3">Type</th>
+                  <th className="p-3">Niveau</th>
                   <th className="p-3">Lu</th>
                   <th className="p-3">Date</th>
                   <th className="p-3">Action</th>
@@ -175,7 +189,7 @@ export default function NotificationsPage() {
               <tbody>
                 {notifications.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-slate-500">
+                    <td colSpan={7} className="p-8 text-center text-slate-500">
                       Aucune notification.
                     </td>
                   </tr>
@@ -186,6 +200,19 @@ export default function NotificationsPage() {
                     <td className="p-3 font-bold">{n.titre || '-'}</td>
                     <td className="p-3">{n.message || '-'}</td>
                     <td className="p-3">{n.type || '-'}</td>
+                    <td className="p-3">
+                      <span
+                        className={
+                          n.niveau === 'ERROR' || n.niveau === 'CRITICAL'
+                            ? 'rounded bg-red-100 px-2 py-1 font-bold text-red-700'
+                            : n.niveau === 'WARNING'
+                            ? 'rounded bg-yellow-100 px-2 py-1 font-bold text-yellow-700'
+                            : 'rounded bg-blue-100 px-2 py-1 font-bold text-blue-700'
+                        }
+                      >
+                        {n.niveau || 'INFO'}
+                      </span>
+                    </td>
                     <td className="p-3">{n.lu ? 'Oui' : 'Non'}</td>
                     <td className="p-3">
                       {n.createdat
