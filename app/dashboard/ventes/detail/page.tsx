@@ -191,6 +191,41 @@ export default function VoirVentePage() {
       .filter((x: any) => normaliserDevise(x.devise) === 'EUR')
       .reduce((s: number, d: any) => s + montantLigne(d), 0);
 
+    const remiseUSD = lignes
+      .filter((x: any) => normaliserDevise(x.devise) === 'USD')
+      .reduce((s: number, d: any) => s + nombreDepuisTexte(d.remise), 0);
+
+    const remiseCDF = lignes
+      .filter((x: any) => normaliserDevise(x.devise) === 'CDF')
+      .reduce((s: number, d: any) => s + nombreDepuisTexte(d.remise), 0);
+
+    const remiseEUR = lignes
+      .filter((x: any) => normaliserDevise(x.devise) === 'EUR')
+      .reduce((s: number, d: any) => s + nombreDepuisTexte(d.remise), 0);
+
+    const tvaUSD = lignes
+      .filter((x: any) => normaliserDevise(x.devise) === 'USD')
+      .reduce((s: number, d: any) => s + nombreDepuisTexte(d.tva), 0);
+
+    const tvaCDF = lignes
+      .filter((x: any) => normaliserDevise(x.devise) === 'CDF')
+      .reduce((s: number, d: any) => s + nombreDepuisTexte(d.tva), 0);
+
+    const tvaEUR = lignes
+      .filter((x: any) => normaliserDevise(x.devise) === 'EUR')
+      .reduce((s: number, d: any) => s + nombreDepuisTexte(d.tva), 0);
+
+    const tauxFidelite = nombreDepuisTexte(vente.tauxfidelite || 0.5);
+
+    const gainFidelite =
+      nombreDepuisTexte(vente.gainfidelite) ||
+      Math.round(totalUSD * (tauxFidelite / 100) * 100) / 100;
+
+    const soldeCashback =
+      nombreDepuisTexte(vente.soldecashback) ||
+      nombreDepuisTexte(vente.soldefidelite) ||
+      0;
+
     return {
       lignes,
       paiements,
@@ -199,9 +234,35 @@ export default function VoirVentePage() {
       telephoneClient,
       nomCaissier,
       modePaiement,
+
+      codeCarteFidelite:
+        vente.codecarte ||
+        vente.codecartefidelite ||
+        vente.cartefidelite ||
+        vente.code_carte_fidelite ||
+        'FID-000000',
+
+      categorieClient:
+        vente.categorieclient ||
+        vente.categorie_client ||
+        'STANDARD',
+
+      tauxFidelite,
+      gainFidelite,
+      soldeCashback,
+
       totalUSD,
       totalCDF,
       totalEUR,
+
+      remiseUSD,
+      remiseCDF,
+      remiseEUR,
+
+      tvaUSD,
+      tvaCDF,
+      tvaEUR,
+
       statut: vente.statut || 'VALIDEE',
       dateVente: vente.datevente || vente.createdat || null,
     };
@@ -325,7 +386,7 @@ export default function VoirVentePage() {
     win.document.close();
   }
 
-  function exporterPdfA4(duplicata = false) {
+  function imprimerA4(duplicata = false) {
     if (!vente || !infos) return;
 
     const doc = new jsPDF('p', 'mm', 'a4');
@@ -335,13 +396,22 @@ export default function VoirVentePage() {
     const marginLeft = 14;
     const marginRight = 14;
 
-    const dateOnly = infos.dateVente
-      ? new Date(infos.dateVente).toLocaleDateString('fr-FR')
-      : new Date().toLocaleDateString('fr-FR');
+    function verifierEspace(y: number, h: number) {
+      if (y + h > pageHeight - 20) {
+        doc.addPage();
+        return 20;
+      }
 
-    const heureOnly = new Date().toLocaleTimeString('fr-FR');
+      return y;
+    }
+
+    const dateVente = infos.dateVente ? new Date(infos.dateVente) : new Date();
+    const dateOnly = dateVente.toLocaleDateString('fr-FR');
+    const heureOnly = dateVente.toLocaleTimeString('fr-FR');
+
     const ticketNo = String(vente.id_vente || id || Date.now()).padStart(6, '0');
     const barcodeFacture = genererCodeBarreBase64(infos.codeFacture);
+    const logoUrl = `${window.location.origin}/logo.png`;
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(17);
@@ -355,9 +425,17 @@ export default function VoirVentePage() {
     doc.text('RCCM: 25-B-01497', marginLeft, 40);
     doc.text('IDNAT: 01-F4300-N73258E', marginLeft, 45);
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(15);
-    doc.text(duplicata ? 'FACTURE A4 - DUPLICATA' : 'FACTURE A4', 145, 25);
+    try {
+      doc.addImage(logoUrl, 'PNG', 158, 10, 38, 38);
+    } catch (e) {
+      console.log('Logo non chargé', e);
+    }
+
+    if (duplicata) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text('DUPLICATA', pageWidth / 2, 54, { align: 'center' });
+    }
 
     doc.setTextColor(245, 245, 245);
     doc.setFont('helvetica', 'bold');
@@ -381,18 +459,17 @@ export default function VoirVentePage() {
     doc.text(`FACTURE N° : ${infos.codeFacture}`, 108, 68);
     doc.text(`Caissier : ${infos.nomCaissier}`, 108, 74);
     doc.text(`Client : ${infos.nomClient}`, 108, 80);
-    doc.text(`Téléphone : ${infos.telephoneClient}`, 108, 86);
 
     autoTable(doc, {
       startY: 100,
       margin: { left: marginLeft, right: marginRight, bottom: 18 },
-      head: [['Référence', 'Article', 'Qté', 'PU', 'Devise', 'Total']],
+      head: [['Article', 'Qté', 'PU', 'Devise', 'Total']],
       body:
         infos.lignes.length > 0
           ? infos.lignes.map((d: any) => {
               const devise = normaliserDevise(d.devise);
+
               return [
-                d.refproduit || '-',
                 d.nomproduit || '-',
                 String(d.quantite || 0),
                 `${formatMontant(d.prixunitaire)} ${devise}`,
@@ -400,7 +477,7 @@ export default function VoirVentePage() {
                 `${formatMontant(montantLigne(d))} ${devise}`,
               ];
             })
-          : [['-', '-', '-', '-', '-', '-']],
+          : [['-', '-', '-', '-', '-']],
       theme: 'grid',
       styles: {
         fontSize: 8.5,
@@ -410,22 +487,21 @@ export default function VoirVentePage() {
         lineWidth: 0.2,
       },
       headStyles: {
-        fillColor: [15, 23, 42],
+        fillColor: [25, 35, 55],
         textColor: [255, 255, 255],
         fontStyle: 'bold',
         halign: 'center',
       },
       columnStyles: {
-        0: { cellWidth: 28 },
-        1: { cellWidth: 62 },
-        2: { cellWidth: 16, halign: 'center' },
-        3: { cellWidth: 32, halign: 'right' },
-        4: { cellWidth: 18, halign: 'center' },
-        5: { cellWidth: 32, halign: 'right' },
+        0: { cellWidth: 84 },
+        1: { cellWidth: 16, halign: 'center' },
+        2: { cellWidth: 34, halign: 'right' },
+        3: { cellWidth: 20, halign: 'center', fontStyle: 'bold' },
+        4: { cellWidth: 34, halign: 'right' },
       },
     });
 
-    let y = ((doc as any).lastAutoTable?.finalY || 120) + 8;
+    let y = ((doc as any).lastAutoTable?.finalY || 120) + 6;
 
     const devisesActives = [
       infos.totalUSD > 0 ? 'USD' : null,
@@ -439,35 +515,80 @@ export default function VoirVentePage() {
       EUR: infos.totalEUR,
     };
 
+    const remiseParDevise: Record<string, number> = {
+      USD: infos.remiseUSD || 0,
+      CDF: infos.remiseCDF || 0,
+      EUR: infos.remiseEUR || 0,
+    };
+
+    const tvaParDevise: Record<string, number> = {
+      USD: infos.tvaUSD || 0,
+      CDF: infos.tvaCDF || 0,
+      EUR: infos.tvaEUR || 0,
+    };
+
+    y = verifierEspace(y, 35);
+
     autoTable(doc, {
       startY: y,
-      margin: { left: 96, right: marginRight, bottom: 18 },
-      head: [['Devise', 'Total TTC']],
-      body: devisesActives.map((d) => [d, `${formatMontant(totalParDevise[d])} ${d}`]),
+      margin: { left: 78, right: marginRight, bottom: 18 },
+      head: [['', ...devisesActives]],
+      body: [
+        ['Remise', ...devisesActives.map((d) => `${formatMontant(remiseParDevise[d])} ${d}`)],
+        ['TVA', ...devisesActives.map((d) => `${formatMontant(tvaParDevise[d])} ${d}`)],
+        ['TOTAL TTC', ...devisesActives.map((d) => `${formatMontant(totalParDevise[d])} ${d}`)],
+      ],
       theme: 'grid',
       styles: {
-        fontSize: 9,
-        cellPadding: 3,
+        fontSize: 8.5,
+        cellPadding: 2.5,
+        lineColor: [190, 190, 190],
+        lineWidth: 0.2,
       },
       headStyles: {
-        fillColor: [6, 78, 59],
-        textColor: [255, 255, 255],
+        fillColor: [245, 245, 245],
+        textColor: [0, 0, 0],
         fontStyle: 'bold',
+        halign: 'center',
       },
       columnStyles: {
-        0: { fontStyle: 'bold', halign: 'center' },
-        1: { fontStyle: 'bold', halign: 'right' },
+        0: { fontStyle: 'bold', cellWidth: 54 },
+      },
+      didParseCell: (data) => {
+        if (data.row.index === 2) {
+          data.cell.styles.fontStyle = 'bold';
+        }
       },
     });
 
-    y = ((doc as any).lastAutoTable?.finalY || y) + 10;
+    y = ((doc as any).lastAutoTable?.finalY || y) + 8;
+    y = verifierEspace(y, 12);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
-    doc.text(`Mode paiement : ${infos.modePaiement}`, marginLeft, y);
-    doc.text(`Statut : ${infos.statut}`, 108, y);
+    doc.text(`Mode : ${infos.modePaiement} | Totaux séparés par devise`, marginLeft, y);
 
-    y += 12;
+    y += 7;
+    y = verifierEspace(y, 45);
+
+    doc.setDrawColor(190, 190, 190);
+    doc.setFillColor(252, 252, 252);
+    doc.rect(marginLeft, y, pageWidth - marginLeft - marginRight, 36, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('FIDELITE CLIENT', marginLeft + 3, y + 7);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.text(`Catégorie : ${infos.categorieClient}`, marginLeft + 3, y + 13);
+    doc.text(`Taux : ${formatMontant(infos.tauxFidelite)}%`, marginLeft + 3, y + 18);
+    doc.text(`Gain sur cette vente : ${formatMontant(infos.gainFidelite)} USD`, marginLeft + 3, y + 23);
+    doc.text(`Solde Cashback : ${formatMontant(infos.soldeCashback)} USD`, marginLeft + 3, y + 28);
+    doc.text(`Carte Fidelite : ${infos.codeCarteFidelite}`, marginLeft + 3, y + 33);
+
+    y += 47;
+    y = verifierEspace(y, 25);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
@@ -477,16 +598,13 @@ export default function VoirVentePage() {
       align: 'center',
     });
 
-    y += 20;
-
-    if (y > 230) {
-      doc.addPage();
-      y = 25;
-    }
+    y += 16;
+    y = verifierEspace(y, 80);
 
     doc.addImage(barcodeFacture, 'PNG', 62, y, 86, 20);
     doc.setFontSize(8.5);
     doc.text(infos.codeFacture, pageWidth / 2, y + 25, { align: 'center' });
+    doc.text(`Code Facture : ${infos.codeFacture}`, pageWidth / 2, y + 31, { align: 'center' });
 
     const totalPages = doc.getNumberOfPages();
 
@@ -505,7 +623,16 @@ export default function VoirVentePage() {
     }
 
     doc.setTextColor(0, 0, 0);
-    doc.save(`${duplicata ? 'Duplicata' : 'Facture'}_${infos.codeFacture}.pdf`);
+
+    const pdfUrl = doc.output('bloburl');
+    const win = window.open(pdfUrl, '_blank');
+
+    if (win) {
+      setTimeout(() => {
+        win.focus();
+        win.print();
+      }, 800);
+    }
   }
 
   if (loading) {
@@ -543,18 +670,26 @@ export default function VoirVentePage() {
 
               <button
                 type="button"
-                onClick={() => exporterPdfA4(false)}
+                onClick={() => imprimerA4(false)}
                 className="rounded-xl bg-red-600 px-4 py-3 text-sm font-black text-white hover:bg-red-500"
               >
-                Imprimer A4
+                Impr. A4
               </button>
 
               <button
                 type="button"
-                onClick={() => exporterPdfA4(true)}
+                onClick={() => imprimerA4(true)}
                 className="rounded-xl bg-amber-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-amber-300"
               >
-                Duplicata
+                Duplicata A4
+              </button>
+
+              <button
+                type="button"
+                onClick={() => imprimerTicket(true)}
+                className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-500"
+              >
+                Duplicata ticket
               </button>
 
               <button
