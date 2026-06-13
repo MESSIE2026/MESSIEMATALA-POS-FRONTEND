@@ -1,16 +1,33 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import JsBarcode from 'jsbarcode';
 
-export default function VoirVentePage() {
-  const searchParams = useSearchParams();
-const router = useRouter();
+export const dynamic = 'force-dynamic';
 
-const id = searchParams.get('id');
+export default function VoirVentePage() {
+  return (
+    <Suspense fallback={<main className="p-6">Chargement...</main>}>
+      <VoirVenteContent />
+    </Suspense>
+  );
+}
+
+
+  function VoirVenteContent() {
+  const router = useRouter();
+
+  const [id, setId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setId(params.get('id'));
+  }, []);
+
   const [vente, setVente] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
