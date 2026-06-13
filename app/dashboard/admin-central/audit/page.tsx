@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { autoTable } from 'jspdf-autotable';
 
 const API =
   process.env.NEXT_PUBLIC_CENTRAL_API ||
