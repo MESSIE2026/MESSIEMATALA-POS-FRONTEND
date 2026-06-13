@@ -105,35 +105,48 @@ export default function NouvelleVentePage() {
   }
 
   function verifierEmployeConnecte() {
-    const raw = localStorage.getItem('employe');
+  const raw =
+    localStorage.getItem('employe') ||
+    localStorage.getItem('user') ||
+    localStorage.getItem('utilisateur');
 
-    if (!raw) {
-      alert('Veuillez vous connecter.');
-      router.push('/login');
+  if (!raw) {
+    alert('Veuillez vous connecter.');
+    router.push('/dashboard/login');
+    return;
+  }
+
+  try {
+    const emp = JSON.parse(raw);
+
+    const idEmploye = Number(
+      emp.id_employe ??
+      emp.idEmploye ??
+      emp.ID_Employe ??
+      emp.idutilisateur ??
+      emp.idUtilisateur ??
+      emp.id ??
+      0
+    );
+
+    if (!idEmploye) {
+      alert('Session employé invalide.');
+      router.push('/dashboard/login');
       return;
     }
 
-    try {
-      const emp = JSON.parse(raw);
-      const idEmploye = Number(emp.id_employe ?? emp.idEmploye ?? emp.ID_Employe ?? 0);
+    const nomComplet = `${emp.prenom ?? ''} ${emp.nom ?? ''}`.trim();
 
-      if (!idEmploye) {
-        alert('Session employé invalide.');
-        router.push('/login');
-        return;
-      }
+    localStorage.setItem('employe', JSON.stringify(emp));
+    localStorage.setItem('idEmploye', String(idEmploye));
+    localStorage.setItem('nomcaissier', nomComplet || 'CAISSIER WEB');
 
-      const nomComplet = `${emp.prenom ?? ''} ${emp.nom ?? ''}`.trim();
-
-      localStorage.setItem('idEmploye', String(idEmploye));
-      localStorage.setItem('nomcaissier', nomComplet || 'CAISSIER WEB');
-
-      setCaissier(nomComplet || 'CAISSIER WEB');
-    } catch {
-      alert('Session employé corrompue.');
-      router.push('/login');
-    }
+    setCaissier(nomComplet || 'CAISSIER WEB');
+  } catch {
+    alert('Session employé corrompue.');
+    router.push('/dashboard/login');
   }
+}
 
   async function chargerProduits() {
     try {
