@@ -32,45 +32,60 @@ export default function VoirVentePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    chargerVente();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  if (!id) return;
 
-  async function chargerVente() {
-    try {
-      const res = await fetch(`https://messiematala-pos-backend-production.up.railway.app/ventes/${id}`, {
-        cache: 'no-store',
-      });
+  chargerVente();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [id]);
 
-      const texte = await res.text();
-      console.log('REPONSE VENTE DETAIL:', res.status, texte);
-
-      if (!res.ok) {
-        throw new Error(`Erreur API ${res.status} : ${texte}`);
-      }
-
-      const data = JSON.parse(texte);
-
-      const details = Array.isArray(data.details)
-        ? data.details
-        : Array.isArray(data.detailsvente)
-        ? data.detailsvente
-        : [];
-
-      console.log('DETAILS RECUS FRONTEND:', details);
-
-setVente({
-  ...data,
-  details: [...details],
-  detailsvente: [...details],
-});
-    } catch (error) {
-      console.error(error);
-      alert(String(error));
-    } finally {
-      setLoading(false);
-    }
+ async function chargerVente() {
+  if (!id || isNaN(Number(id))) {
+    console.log('ID VENTE INVALIDE =', id);
+    setLoading(false);
+    return;
   }
+
+  try {
+    setLoading(true);
+
+    console.log('ID VENTE =', id);
+
+    const res = await fetch(
+      `https://messiematala-pos-backend-production.up.railway.app/ventes/${id}`,
+      {
+        cache: 'no-store',
+      }
+    );
+
+    const texte = await res.text();
+    console.log('REPONSE VENTE DETAIL:', res.status, texte);
+
+    if (!res.ok) {
+      throw new Error(`Erreur API ${res.status} : ${texte}`);
+    }
+
+    const data = JSON.parse(texte);
+
+    const details = Array.isArray(data.details)
+      ? data.details
+      : Array.isArray(data.detailsvente)
+      ? data.detailsvente
+      : [];
+
+    console.log('DETAILS RECUS FRONTEND:', details);
+
+    setVente({
+      ...data,
+      details: [...details],
+      detailsvente: [...details],
+    });
+  } catch (error) {
+    console.error(error);
+    alert(String(error));
+  } finally {
+    setLoading(false);
+  }
+}
 
   function normaliserDevise(devise: any): string {
     const d = String(devise ?? 'USD').trim().toUpperCase();
