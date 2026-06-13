@@ -72,9 +72,9 @@ export default function VoirVentePage() {
   function normaliserDevise(devise: any): string {
     const d = String(devise ?? 'USD').trim().toUpperCase();
 
-    if (d === 'FC') return 'CDF';
-    if (d === '$' || d === 'DOLLAR') return 'USD';
-    if (d === 'EURO') return 'EUR';
+    if (d === 'FC' || d === 'CDF' || d === 'FRANC' || d === 'FRANCS') return 'CDF';
+    if (d === '$' || d === 'DOLLAR' || d === 'DOLLARS') return 'USD';
+    if (d === 'EURO' || d === 'EUROS') return 'EUR';
 
     return d || 'USD';
   }
@@ -85,11 +85,14 @@ export default function VoirVentePage() {
       .replace(/USD/gi, '')
       .replace(/CDF/gi, '')
       .replace(/FC/gi, '')
+      .replace(/\u202f/g, '')
+      .replace(/\u00a0/g, '')
       .replace(/\s/g, '')
+      .replace(/\//g, '')
       .trim();
 
     if (texte.includes(',') && texte.includes('.')) {
-      texte = texte.replace(/,/g, '');
+      texte = texte.replace(/\./g, '').replace(',', '.');
     } else if (texte.includes(',') && !texte.includes('.')) {
       texte = texte.replace(',', '.');
     }
@@ -98,13 +101,31 @@ export default function VoirVentePage() {
     return Number.isFinite(n) ? n : 0;
   }
 
-  function formatMontant(montant: any): string {
+  function formatMontant(montant: any, devise?: string): string {
     const n = nombreDepuisTexte(montant);
+    const d = normaliserDevise(devise);
 
-    return n.toLocaleString('fr-FR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+    const decimals = d === 'CDF' ? 0 : 2;
+
+    return n
+      .toLocaleString('fr-FR', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      })
+      .replace(/\u202f/g, ' ')
+      .replace(/\u00a0/g, ' ');
+  }
+
+  function formatMontantPdf(montant: any, devise?: string): string {
+    const n = nombreDepuisTexte(montant);
+    const d = normaliserDevise(devise);
+    const decimals = d === 'CDF' ? 0 : 2;
+
+    const fixed = n.toFixed(decimals);
+    const [entier, decimal] = fixed.split('.');
+    const entierFormatte = entier.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+    return decimal ? `${entierFormatte},${decimal}` : entierFormatte;
   }
 
   function montantLigne(d: any): number {
@@ -268,117 +289,152 @@ export default function VoirVentePage() {
     };
   }, [vente, id]);
 
-  function imprimerTicket(duplicata = false) {
+  function imprimerA4Dialogue() {
     if (!vente || !infos) return;
 
-    const barcode = genererCodeBarreBase64(infos.codeFacture);
+    const dateVente = infos.dateVente ? new Date(infos.dateVente) : new Date();
+    const dateOnly = dateVente.toLocaleDateString('fr-FR');
+    const heureOnly = dateVente.toLocaleTimeString('fr-FR');
+    const ticketNo = String(vente.id_vente || id || Date.now()).padStart(6, '0');
+    const logoUrl = `${window.location.origin}/logo.png`;
+
+    const lignesHtml =
+      infos.lignes.length > 0
+        ? infos.lignes
+            .map((d: any) => {
+              const devise = normaliserDevise(d.devise);
+              return `
+                <tr>
+                  <td>${d.nomproduit || '-'}</td>
+                  <td class="center">${d.quantite || 0}</td>
+                  <td class="right">${formatMontant(montantLigne(d) / Math.max(nombreDepuisTexte(d.quantite), 1), devise)} ${devise}</td>
+                  <td class="center bold">${devise}</td>
+                  <td class="right bold">${formatMontant(montantLigne(d), devise)} ${devise}</td>
+                </tr>
+              `;
+            })
+            .join('')
+        : `<tr><td colspan="5" class="center">Détails non chargés</td></tr>`;
 
     const html = `
       <html>
         <head>
-          <title>${duplicata ? 'Duplicata' : 'Ticket'} ${infos.codeFacture}</title>
+          <title>Impression A4 ${infos.codeFacture}</title>
           <style>
-            body {
-              font-family: Arial, sans-serif;
-              width: 280px;
-              margin: 0 auto;
-              font-size: 12px;
-              color: #000;
-            }
+            @page { size: A4; margin: 12mm; }
+            body { font-family: Arial, sans-serif; color: #000; font-size: 12px; }
+            .top { display: flex; justify-content: space-between; align-items: flex-start; }
+            .logo { width: 105px; height: 105px; object-fit: contain; }
+            h1 { margin: 0 0 8px 0; font-size: 24px; }
+            .line { border-top: 1px solid #333; margin: 22px 0; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 60px; font-weight: bold; }
+            table { width: 100%; border-collapse: collapse; margin-top: 25px; }
+            th { background: #111827; color: white; padding: 9px; border: 1px solid #999; }
+            td { padding: 8px; border: 1px solid #bbb; }
             .center { text-align: center; }
-            .bold { font-weight: bold; }
-            .line { border-top: 1px dashed #000; margin: 8px 0; }
-            table { width: 100%; border-collapse: collapse; font-size: 11px; }
-            th, td { padding: 3px 0; }
             .right { text-align: right; }
-            .total { font-size: 15px; font-weight: bold; }
-            img { width: 240px; height: 55px; }
-            .dup { font-size: 14px; font-weight: bold; border: 1px solid #000; padding: 4px; margin: 6px 0; }
+            .bold { font-weight: bold; }
+            .totaux { width: 62%; margin-left: auto; margin-top: 18px; }
+            .box { border: 1px solid #bbb; padding: 12px; margin-top: 18px; }
+            .footer { text-align: center; margin-top: 28px; font-size: 12px; }
           </style>
         </head>
         <body>
-          <div class="center bold" style="font-size:16px;">MESSIE MATALA POS</div>
-          <div class="center">Entreprise : ZAIRE</div>
-          <div class="center">Magasin : ZAIRE MASINA PLAZA</div>
-          <div class="center">Caisse : POS MASINA PLAZA</div>
-          ${duplicata ? '<div class="center dup">DUPLICATA</div>' : ''}
+          <div class="top">
+            <div>
+              <h1>ZAIRE MODE SARL</h1>
+              <div>23, Bld Lumumba / Immeuble Masina Plaza</div>
+              <div>+243861507560 / E-MAIL: Zaireshop@hotmail.com</div>
+              <div>PAGE: ZAIRE.CD</div>
+              <div>RCCM: 25-B-01497</div>
+              <div>IDNAT: 01-F4300-N73258E</div>
+            </div>
+            <img class="logo" src="${logoUrl}" />
+          </div>
 
           <div class="line"></div>
 
-          <div>Facture : <b>${infos.codeFacture}</b></div>
-          <div>Date : ${
-            infos.dateVente
-              ? new Date(infos.dateVente).toLocaleDateString('fr-FR')
-              : new Date().toLocaleDateString('fr-FR')
-          }</div>
-          <div>Heure : ${new Date().toLocaleTimeString('fr-FR')}</div>
-          <div>Client : ${infos.nomClient}</div>
-          <div>Caissier : ${infos.nomCaissier}</div>
-          <div>Mode paiement : ${infos.modePaiement}</div>
-
-          <div class="line"></div>
+          <div class="grid">
+            <div>Ticket N° : ${ticketNo}</div>
+            <div>FACTURE N° : ${infos.codeFacture}</div>
+            <div>Date : ${dateOnly}</div>
+            <div>Caissier : ${infos.nomCaissier}</div>
+            <div>Heure : ${heureOnly}</div>
+            <div>Client : ${infos.nomClient}</div>
+          </div>
 
           <table>
             <thead>
               <tr>
-                <th align="left">Article</th>
+                <th>Article</th>
                 <th>Qté</th>
-                <th class="right">PU</th>
-                <th class="right">Total</th>
+                <th>PU</th>
+                <th>Devise</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>${lignesHtml}</tbody>
+          </table>
+
+          <table class="totaux">
+            <thead>
+              <tr>
+                <th></th>
+                ${infos.totalUSD > 0 ? '<th>USD</th>' : ''}
+                ${infos.totalCDF > 0 ? '<th>CDF</th>' : ''}
+                ${infos.totalEUR > 0 ? '<th>EUR</th>' : ''}
               </tr>
             </thead>
             <tbody>
-              ${
-                infos.lignes.length > 0
-                  ? infos.lignes
-                      .map(
-                        (d: any) => `
-                    <tr>
-                      <td>${d.nomproduit || '-'}</td>
-                      <td class="center">${d.quantite || 0}</td>
-                      <td class="right">${formatMontant(d.prixunitaire)}</td>
-                      <td class="right">${formatMontant(montantLigne(d))}</td>
-                    </tr>
-                  `,
-                      )
-                      .join('')
-                  : `<tr><td colspan="4">Détails non chargés</td></tr>`
-              }
+              <tr>
+                <td class="bold">Remise</td>
+                ${infos.totalUSD > 0 ? `<td class="right">${formatMontant(infos.remiseUSD, 'USD')} USD</td>` : ''}
+                ${infos.totalCDF > 0 ? `<td class="right">${formatMontant(infos.remiseCDF, 'CDF')} CDF</td>` : ''}
+                ${infos.totalEUR > 0 ? `<td class="right">${formatMontant(infos.remiseEUR, 'EUR')} EUR</td>` : ''}
+              </tr>
+              <tr>
+                <td class="bold">TVA</td>
+                ${infos.totalUSD > 0 ? `<td class="right">${formatMontant(infos.tvaUSD, 'USD')} USD</td>` : ''}
+                ${infos.totalCDF > 0 ? `<td class="right">${formatMontant(infos.tvaCDF, 'CDF')} CDF</td>` : ''}
+                ${infos.totalEUR > 0 ? `<td class="right">${formatMontant(infos.tvaEUR, 'EUR')} EUR</td>` : ''}
+              </tr>
+              <tr>
+                <td class="bold">TOTAL TTC</td>
+                ${infos.totalUSD > 0 ? `<td class="right bold">${formatMontant(infos.totalUSD, 'USD')} USD</td>` : ''}
+                ${infos.totalCDF > 0 ? `<td class="right bold">${formatMontant(infos.totalCDF, 'CDF')} CDF</td>` : ''}
+                ${infos.totalEUR > 0 ? `<td class="right bold">${formatMontant(infos.totalEUR, 'EUR')} EUR</td>` : ''}
+              </tr>
             </tbody>
           </table>
 
-          <div class="line"></div>
+          <p class="bold">Mode : ${infos.modePaiement} | Totaux séparés par devise</p>
 
-          <div class="total right">
-            ${infos.totalUSD > 0 ? `TOTAL USD : ${formatMontant(infos.totalUSD)}<br/>` : ''}
-            ${infos.totalCDF > 0 ? `TOTAL CDF : ${formatMontant(infos.totalCDF)}<br/>` : ''}
-            ${infos.totalEUR > 0 ? `TOTAL EUR : ${formatMontant(infos.totalEUR)}<br/>` : ''}
+          <div class="box">
+            <div class="bold">FIDELITE CLIENT</div>
+            <div>Catégorie : ${infos.categorieClient}</div>
+            <div>Taux : ${formatMontant(infos.tauxFidelite, 'USD')}%</div>
+            <div>Gain sur cette vente : ${formatMontant(infos.gainFidelite, 'USD')} USD</div>
+            <div>Solde Cashback : ${formatMontant(infos.soldeCashback, 'USD')} USD</div>
+            <div>Carte Fidelite : ${infos.codeCarteFidelite}</div>
           </div>
 
-          <div class="line"></div>
-
-          <div class="center">
-            <img src="${barcode}" />
-            <div>Code Facture : ${infos.codeFacture}</div>
-          </div>
-
-          <div class="line"></div>
-
-          <div class="center">
-            Merci pour votre achat<br/>
-            ZAIRE.CD
+          <div class="footer">
+            <div>Merci pour votre fidélité, à la prochaine !</div>
+            <div>La Qualité fait la différence.</div>
+            <div>Les marchandises vendues ne peuvent être ni reprises, ni échangées.</div>
           </div>
 
           <script>
             window.onload = function() {
+              window.focus();
               window.print();
-            }
+            };
           </script>
         </body>
       </html>
     `;
 
-    const win = window.open('', '_blank', 'width=350,height=650');
+    const win = window.open('', '_blank', 'width=900,height=700');
     if (!win) return;
 
     win.document.open();
@@ -386,7 +442,7 @@ export default function VoirVentePage() {
     win.document.close();
   }
 
-  function imprimerA4(duplicata = false) {
+  function genererPdfA4(duplicata = false) {
     if (!vente || !infos) return;
 
     const doc = new jsPDF('p', 'mm', 'a4');
@@ -468,23 +524,27 @@ export default function VoirVentePage() {
         infos.lignes.length > 0
           ? infos.lignes.map((d: any) => {
               const devise = normaliserDevise(d.devise);
+              const quantite = Math.max(nombreDepuisTexte(d.quantite), 1);
+              const pu = nombreDepuisTexte(d.prixunitaire) || montantLigne(d) / quantite;
 
               return [
                 d.nomproduit || '-',
                 String(d.quantite || 0),
-                `${formatMontant(d.prixunitaire)} ${devise}`,
+                `${formatMontantPdf(pu, devise)} ${devise}`,
                 devise,
-                `${formatMontant(montantLigne(d))} ${devise}`,
+                `${formatMontantPdf(montantLigne(d), devise)} ${devise}`,
               ];
             })
           : [['-', '-', '-', '-', '-']],
       theme: 'grid',
       styles: {
-        fontSize: 8.5,
-        cellPadding: 2.4,
+        fontSize: 8,
+        cellPadding: 2.3,
         textColor: [20, 20, 20],
         lineColor: [190, 190, 190],
         lineWidth: 0.2,
+        overflow: 'linebreak',
+        valign: 'middle',
       },
       headStyles: {
         fillColor: [25, 35, 55],
@@ -493,10 +553,10 @@ export default function VoirVentePage() {
         halign: 'center',
       },
       columnStyles: {
-        0: { cellWidth: 84 },
-        1: { cellWidth: 16, halign: 'center' },
-        2: { cellWidth: 34, halign: 'right' },
-        3: { cellWidth: 20, halign: 'center', fontStyle: 'bold' },
+        0: { cellWidth: 78, halign: 'left' },
+        1: { cellWidth: 14, halign: 'center' },
+        2: { cellWidth: 38, halign: 'right' },
+        3: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
         4: { cellWidth: 34, halign: 'right' },
       },
     });
@@ -531,19 +591,22 @@ export default function VoirVentePage() {
 
     autoTable(doc, {
       startY: y,
-      margin: { left: 78, right: marginRight, bottom: 18 },
+      margin: { left: 68, right: marginRight, bottom: 18 },
       head: [['', ...devisesActives]],
       body: [
-        ['Remise', ...devisesActives.map((d) => `${formatMontant(remiseParDevise[d])} ${d}`)],
-        ['TVA', ...devisesActives.map((d) => `${formatMontant(tvaParDevise[d])} ${d}`)],
-        ['TOTAL TTC', ...devisesActives.map((d) => `${formatMontant(totalParDevise[d])} ${d}`)],
+        ['Remise', ...devisesActives.map((d) => `${formatMontantPdf(remiseParDevise[d], d)} ${d}`)],
+        ['TVA', ...devisesActives.map((d) => `${formatMontantPdf(tvaParDevise[d], d)} ${d}`)],
+        ['TOTAL TTC', ...devisesActives.map((d) => `${formatMontantPdf(totalParDevise[d], d)} ${d}`)],
       ],
       theme: 'grid',
       styles: {
-        fontSize: 8.5,
+        fontSize: 8,
         cellPadding: 2.5,
         lineColor: [190, 190, 190],
         lineWidth: 0.2,
+        overflow: 'linebreak',
+        valign: 'middle',
+        halign: 'right',
       },
       headStyles: {
         fillColor: [245, 245, 245],
@@ -552,7 +615,10 @@ export default function VoirVentePage() {
         halign: 'center',
       },
       columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 54 },
+        0: { fontStyle: 'bold', cellWidth: 48, halign: 'left' },
+        1: { cellWidth: 38, halign: 'right' },
+        2: { cellWidth: 38, halign: 'right' },
+        3: { cellWidth: 38, halign: 'right' },
       },
       didParseCell: (data) => {
         if (data.row.index === 2) {
@@ -582,9 +648,9 @@ export default function VoirVentePage() {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.text(`Catégorie : ${infos.categorieClient}`, marginLeft + 3, y + 13);
-    doc.text(`Taux : ${formatMontant(infos.tauxFidelite)}%`, marginLeft + 3, y + 18);
-    doc.text(`Gain sur cette vente : ${formatMontant(infos.gainFidelite)} USD`, marginLeft + 3, y + 23);
-    doc.text(`Solde Cashback : ${formatMontant(infos.soldeCashback)} USD`, marginLeft + 3, y + 28);
+    doc.text(`Taux : ${formatMontantPdf(infos.tauxFidelite, 'USD')}%`, marginLeft + 3, y + 18);
+    doc.text(`Gain sur cette vente : ${formatMontantPdf(infos.gainFidelite, 'USD')} USD`, marginLeft + 3, y + 23);
+    doc.text(`Solde Cashback : ${formatMontantPdf(infos.soldeCashback, 'USD')} USD`, marginLeft + 3, y + 28);
     doc.text(`Carte Fidelite : ${infos.codeCarteFidelite}`, marginLeft + 3, y + 33);
 
     y += 47;
@@ -624,15 +690,140 @@ export default function VoirVentePage() {
 
     doc.setTextColor(0, 0, 0);
 
-    const pdfUrl = doc.output('bloburl');
-    const win = window.open(pdfUrl, '_blank');
+    const nom = `${duplicata ? 'duplicata-a4' : 'facture-a4'}-${infos.codeFacture}.pdf`;
+    doc.save(nom);
+  }
 
-    if (win) {
-      setTimeout(() => {
-        win.focus();
-        win.print();
-      }, 800);
+  function genererPdfTicket(duplicata = false) {
+    if (!vente || !infos) return;
+
+    const doc = new jsPDF({
+      orientation: 'p',
+      unit: 'mm',
+      format: [80, 220],
+    });
+
+    const barcode = genererCodeBarreBase64(infos.codeFacture);
+    const dateVente = infos.dateVente ? new Date(infos.dateVente) : new Date();
+
+    let y = 8;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('MESSIE MATALA POS', 40, y, { align: 'center' });
+
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Entreprise : ZAIRE', 40, y, { align: 'center' });
+    y += 4;
+    doc.text('Magasin : ZAIRE MASINA PLAZA', 40, y, { align: 'center' });
+    y += 4;
+    doc.text('Caisse : POS MASINA PLAZA', 40, y, { align: 'center' });
+
+    if (duplicata) {
+      y += 6;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.rect(18, y - 4, 44, 7);
+      doc.text('DUPLICATA', 40, y + 1, { align: 'center' });
     }
+
+    y += 8;
+    doc.line(4, y, 76, y);
+    y += 5;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(`Facture : ${infos.codeFacture}`, 4, y);
+    y += 4;
+    doc.text(`Date : ${dateVente.toLocaleDateString('fr-FR')}`, 4, y);
+    y += 4;
+    doc.text(`Heure : ${dateVente.toLocaleTimeString('fr-FR')}`, 4, y);
+    y += 4;
+    doc.text(`Client : ${infos.nomClient}`, 4, y);
+    y += 4;
+    doc.text(`Caissier : ${infos.nomCaissier}`, 4, y);
+    y += 4;
+    doc.text(`Mode : ${infos.modePaiement}`, 4, y);
+
+    y += 5;
+    doc.line(4, y, 76, y);
+    y += 5;
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: 4, right: 4 },
+      head: [['Article', 'Qté', 'PU', 'Total']],
+      body:
+        infos.lignes.length > 0
+          ? infos.lignes.map((d: any) => {
+              const devise = normaliserDevise(d.devise);
+              return [
+                d.nomproduit || '-',
+                String(d.quantite || 0),
+                formatMontantPdf(d.prixunitaire, devise),
+                formatMontantPdf(montantLigne(d), devise),
+              ];
+            })
+          : [['-', '-', '-', '-']],
+      theme: 'plain',
+      styles: {
+        fontSize: 7,
+        cellPadding: 1,
+        overflow: 'linebreak',
+      },
+      headStyles: {
+        fontStyle: 'bold',
+      },
+      columnStyles: {
+        0: { cellWidth: 28 },
+        1: { cellWidth: 8, halign: 'center' },
+        2: { cellWidth: 16, halign: 'right' },
+        3: { cellWidth: 18, halign: 'right' },
+      },
+    });
+
+    y = ((doc as any).lastAutoTable?.finalY || y) + 5;
+    doc.line(4, y, 76, y);
+    y += 6;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+
+    if (infos.totalUSD > 0) {
+      doc.text(`TOTAL USD : ${formatMontantPdf(infos.totalUSD, 'USD')}`, 76, y, { align: 'right' });
+      y += 5;
+    }
+
+    if (infos.totalCDF > 0) {
+      doc.text(`TOTAL CDF : ${formatMontantPdf(infos.totalCDF, 'CDF')}`, 76, y, { align: 'right' });
+      y += 5;
+    }
+
+    if (infos.totalEUR > 0) {
+      doc.text(`TOTAL EUR : ${formatMontantPdf(infos.totalEUR, 'EUR')}`, 76, y, { align: 'right' });
+      y += 5;
+    }
+
+    y += 3;
+    doc.line(4, y, 76, y);
+    y += 6;
+
+    doc.addImage(barcode, 'PNG', 12, y, 56, 15);
+    y += 20;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text(`Code Facture : ${infos.codeFacture}`, 40, y, { align: 'center' });
+
+    y += 8;
+    doc.text('Merci pour votre achat', 40, y, { align: 'center' });
+    y += 4;
+    doc.text('ZAIRE.CD', 40, y, { align: 'center' });
+
+    const nom = `${duplicata ? 'duplicata-ticket' : 'ticket'}-${infos.codeFacture}.pdf`;
+    doc.save(nom);
   }
 
   if (loading) {
@@ -662,15 +853,15 @@ export default function VoirVentePage() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => imprimerTicket(false)}
+                onClick={() => genererPdfTicket(false)}
                 className="rounded-xl bg-slate-700 px-4 py-3 text-sm font-black text-white hover:bg-slate-600"
               >
-                Imprimer ticket
+                Ticket PDF
               </button>
 
               <button
                 type="button"
-                onClick={() => imprimerA4(false)}
+                onClick={() => imprimerA4Dialogue()}
                 className="rounded-xl bg-red-600 px-4 py-3 text-sm font-black text-white hover:bg-red-500"
               >
                 Impr. A4
@@ -678,18 +869,18 @@ export default function VoirVentePage() {
 
               <button
                 type="button"
-                onClick={() => imprimerA4(true)}
+                onClick={() => genererPdfA4(true)}
                 className="rounded-xl bg-amber-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-amber-300"
               >
-                Duplicata A4
+                Duplicata A4 PDF
               </button>
 
               <button
                 type="button"
-                onClick={() => imprimerTicket(true)}
+                onClick={() => genererPdfTicket(true)}
                 className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-500"
               >
-                Duplicata ticket
+                Duplicata ticket PDF
               </button>
 
               <button
@@ -722,9 +913,9 @@ export default function VoirVentePage() {
         </div>
 
         <div className="mt-5 grid gap-3 md:grid-cols-3">
-          {infos.totalUSD > 0 && <TotalCard label="Total USD" value={`${formatMontant(infos.totalUSD)} USD`} />}
-          {infos.totalCDF > 0 && <TotalCard label="Total CDF" value={`${formatMontant(infos.totalCDF)} CDF`} />}
-          {infos.totalEUR > 0 && <TotalCard label="Total EUR" value={`${formatMontant(infos.totalEUR)} EUR`} />}
+          {infos.totalUSD > 0 && <TotalCard label="Total USD" value={`${formatMontant(infos.totalUSD, 'USD')} USD`} />}
+          {infos.totalCDF > 0 && <TotalCard label="Total CDF" value={`${formatMontant(infos.totalCDF, 'CDF')} CDF`} />}
+          {infos.totalEUR > 0 && <TotalCard label="Total EUR" value={`${formatMontant(infos.totalEUR, 'EUR')} EUR`} />}
         </div>
       </section>
 
@@ -748,17 +939,21 @@ export default function VoirVentePage() {
             </thead>
 
             <tbody>
-              {infos.lignes.map((d: any, i: number) => (
-                <tr key={i} className="border-b hover:bg-emerald-50/40">
-                  <td className="p-3">{d.refproduit || '-'}</td>
-                  <td className="p-3 font-bold">{d.nomproduit || '-'}</td>
-                  <td className="p-3 text-center">{d.quantite || 0}</td>
-                  <td className="p-3 text-right">{formatMontant(d.prixunitaire)}</td>
-                  <td className="p-3 text-right">{formatMontant(d.remise)}</td>
-                  <td className="p-3 text-center font-bold">{normaliserDevise(d.devise)}</td>
-                  <td className="p-3 text-right font-black">{formatMontant(montantLigne(d))}</td>
-                </tr>
-              ))}
+              {infos.lignes.map((d: any, i: number) => {
+                const devise = normaliserDevise(d.devise);
+
+                return (
+                  <tr key={i} className="border-b hover:bg-emerald-50/40">
+                    <td className="p-3">{d.refproduit || '-'}</td>
+                    <td className="p-3 font-bold">{d.nomproduit || '-'}</td>
+                    <td className="p-3 text-center">{d.quantite || 0}</td>
+                    <td className="p-3 text-right">{formatMontant(d.prixunitaire, devise)}</td>
+                    <td className="p-3 text-right">{formatMontant(d.remise, devise)}</td>
+                    <td className="p-3 text-center font-bold">{devise}</td>
+                    <td className="p-3 text-right font-black">{formatMontant(montantLigne(d), devise)}</td>
+                  </tr>
+                );
+              })}
 
               {infos.lignes.length === 0 && (
                 <tr>
@@ -791,18 +986,22 @@ export default function VoirVentePage() {
             </thead>
 
             <tbody>
-              {infos.paiements.map((p: any, i: number) => (
-                <tr key={i} className="border-b hover:bg-slate-50">
-                  <td className="p-3 font-bold">{p.modepaiement || '-'}</td>
-                  <td className="p-3 text-right font-black">{formatMontant(p.montant)}</td>
-                  <td className="p-3 text-center font-bold">{normaliserDevise(p.devise)}</td>
-                  <td className="p-3">{p.referencetransaction || p.reference || '-'}</td>
-                  <td className="p-3">
-                    {p.datepaiement ? new Date(p.datepaiement).toLocaleString('fr-FR') : '-'}
-                  </td>
-                  <td className="p-3">{p.statut || '-'}</td>
-                </tr>
-              ))}
+              {infos.paiements.map((p: any, i: number) => {
+                const devise = normaliserDevise(p.devise);
+
+                return (
+                  <tr key={i} className="border-b hover:bg-slate-50">
+                    <td className="p-3 font-bold">{p.modepaiement || '-'}</td>
+                    <td className="p-3 text-right font-black">{formatMontant(p.montant, devise)}</td>
+                    <td className="p-3 text-center font-bold">{devise}</td>
+                    <td className="p-3">{p.referencetransaction || p.reference || '-'}</td>
+                    <td className="p-3">
+                      {p.datepaiement ? new Date(p.datepaiement).toLocaleString('fr-FR') : '-'}
+                    </td>
+                    <td className="p-3">{p.statut || '-'}</td>
+                  </tr>
+                );
+              })}
 
               {infos.paiements.length === 0 && (
                 <tr>
