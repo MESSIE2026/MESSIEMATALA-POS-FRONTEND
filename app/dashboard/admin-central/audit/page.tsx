@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const API =
   process.env.NEXT_PUBLIC_CENTRAL_API ||
@@ -69,42 +71,145 @@ export default function AuditPage() {
     setTimeout(charger, 100);
   }
 
-  function exporterCSV() {
-    const colonnes = [
-      'idaudit',
-      'createdat',
-      'resultat',
-      'niveau',
-      'action',
-      'module',
-      'sousmodule',
-      'utilisateur',
-      'roleutilisateur',
-      'nomentreprise',
-      'nommagasin',
-      'ipadresse',
-      'deviceid',
-      'message',
-    ];
+  function exporterPDF() {
+    const doc = new jsPDF('landscape', 'mm', 'a4');
 
-    const lignes = audits.map((a) =>
-      colonnes
-        .map((c) => {
-          const v = a?.[c] ?? '';
-          return `"${String(v).replaceAll('"', '""')}"`;
-        })
-        .join(';'),
-    );
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-    const csv = [colonnes.join(';'), ...lignes].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    const now = new Date();
+    const dateGeneration = now.toLocaleString('fr-FR');
+    const periode =
+      dateDebut || dateFin
+        ? `${dateDebut || 'Début'} au ${dateFin || 'Aujourd’hui'}`
+        : 'Toutes les périodes';
 
-    link.href = URL.createObjectURL(blob);
-    link.download = `journaux_audit_${Date.now()}.csv`;
-    link.click();
+    doc.setFillColor(6, 78, 59);
+    doc.rect(0, 0, pageWidth, 38, 'F');
 
-    URL.revokeObjectURL(link.href);
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('MESSIE MATALA POS', 14, 16);
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Admin Central / Sécurité', 14, 24);
+    doc.text('Rapport professionnel des journaux système', 14, 31);
+
+    doc.setTextColor(15, 23, 42);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Rapport Audit Sécurité', 14, 52);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Date de génération : ${dateGeneration}`, 14, 60);
+    doc.text(`Période : ${periode}`, 14, 66);
+    doc.text(`Nombre de lignes exportées : ${audits.length}`, 14, 72);
+
+    autoTable(doc, {
+      startY: 82,
+      head: [['Indicateur', 'Valeur']],
+      body: [
+        ['Total audits', stats?.total ?? 0],
+        ['Succès', stats?.succes ?? 0],
+        ['Échecs', stats?.echecs ?? 0],
+        ['Connexions', stats?.connexions ?? 0],
+        ['Modifications', stats?.modifications ?? 0],
+        ['Suppressions', stats?.suppressions ?? 0],
+        ['Non synchronisés', stats?.nonsynchronises ?? 0],
+      ],
+      theme: 'grid',
+      headStyles: {
+        fillColor: [6, 78, 59],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      styles: {
+        fontSize: 10,
+        cellPadding: 3,
+      },
+      margin: { left: 14, right: 14 },
+    });
+
+    doc.addPage('landscape');
+
+    doc.setFontSize(15);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 23, 42);
+    doc.text('Détail des journaux d’activité', 14, 16);
+
+    autoTable(doc, {
+      startY: 24,
+      head: [[
+        'ID',
+        'Date',
+        'Résultat',
+        'Niveau',
+        'Action',
+        'Module',
+        'Utilisateur',
+        'Entreprise',
+        'Magasin',
+        'IP',
+        'Message',
+      ]],
+      body: audits.map((a) => [
+        a.idaudit ?? '-',
+        a.createdat ? new Date(a.createdat).toLocaleString('fr-FR') : '-',
+        a.resultat ?? '-',
+        a.niveau ?? '-',
+        a.action ?? '-',
+        a.module ?? '-',
+        a.utilisateur ?? '-',
+        a.nomentreprise ?? '-',
+        a.nommagasin ?? '-',
+        a.ipadresse ?? '-',
+        a.message ?? '-',
+      ]),
+      theme: 'striped',
+      headStyles: {
+        fillColor: [6, 78, 59],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+        overflow: 'linebreak',
+      },
+      columnStyles: {
+        0: { cellWidth: 14 },
+        1: { cellWidth: 32 },
+        2: { cellWidth: 22 },
+        3: { cellWidth: 22 },
+        4: { cellWidth: 32 },
+        5: { cellWidth: 28 },
+        6: { cellWidth: 34 },
+        7: { cellWidth: 34 },
+        8: { cellWidth: 28 },
+        9: { cellWidth: 28 },
+        10: { cellWidth: 45 },
+      },
+      margin: { left: 8, right: 8 },
+    });
+
+    const totalPages = doc.getNumberOfPages();
+
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+
+      doc.setDrawColor(226, 232, 240);
+      doc.line(10, pageHeight - 14, pageWidth - 10, pageHeight - 14);
+
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text('MESSIE MATALA POS - Rapport généré automatiquement', 10, pageHeight - 8);
+      doc.text(`Page ${i} / ${totalPages}`, pageWidth - 32, pageHeight - 8);
+    }
+
+    doc.save(`rapport_audit_${now.toISOString().slice(0, 10)}.pdf`);
   }
 
   useEffect(() => {
@@ -134,10 +239,10 @@ export default function AuditPage() {
 
               <div className="flex gap-2">
                 <button
-                  onClick={exporterCSV}
+                  onClick={exporterPDF}
                   className="rounded-xl bg-emerald-100 px-5 py-3 text-sm font-black text-emerald-950 shadow-sm hover:bg-white"
                 >
-                  Export CSV
+                  Export PDF
                 </button>
 
                 <button
