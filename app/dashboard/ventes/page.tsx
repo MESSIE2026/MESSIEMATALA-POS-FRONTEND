@@ -41,6 +41,10 @@ type Vente = {
   montanteur?: string | number;
   montant_eur?: string | number;
   totaleur?: string | number;
+
+  details?: any[];
+detailsvente?: any[];
+paiements?: any[];
 };
 
 export default function VentesPage() {
@@ -61,30 +65,55 @@ export default function VentesPage() {
   }
 
   async function chargerVentes() {
-    setLoading(true);
+  setLoading(true);
 
-    try {
-      const res = await fetch(`${API}/ventes`, { cache: 'no-store' });
-      const data = await lireApi(res);
+  try {
+    const res = await fetch(`${API}/ventes`, { cache: 'no-store' });
+    const data = await lireApi(res);
 
-      if (!res.ok) {
-        alert(
-          `Erreur API ${res.status} : ${
-            typeof data === 'string' ? data : JSON.stringify(data)
-          }`,
-        );
-        return;
-      }
-
-      setVentes(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error(error);
-      alert('Erreur : impossible de charger les ventes.');
-    } finally {
-      setLoading(false);
+    if (!res.ok) {
+      alert(
+        `Erreur API ${res.status} : ${
+          typeof data === 'string' ? data : JSON.stringify(data)
+        }`,
+      );
+      return;
     }
-  }
 
+    const liste = Array.isArray(data) ? data : [];
+
+    const ventesCompletes = await Promise.all(
+      liste.map(async (v: any) => {
+        try {
+          const resDetail = await fetch(`${API}/ventes/${v.id_vente}`, {
+            cache: 'no-store',
+          });
+
+          if (!resDetail.ok) return v;
+
+          const detail = await lireApi(resDetail);
+
+          return {
+            ...v,
+            ...detail,
+            details: detail?.details ?? detail?.detailsvente ?? v.details ?? [],
+            detailsvente: detail?.detailsvente ?? detail?.details ?? v.detailsvente ?? [],
+            paiements: detail?.paiements ?? v.paiements ?? [],
+          };
+        } catch {
+          return v;
+        }
+      }),
+    );
+
+    setVentes(ventesCompletes);
+  } catch (error) {
+    console.error(error);
+    alert('Erreur : impossible de charger les ventes.');
+  } finally {
+    setLoading(false);
+  }
+}
   function nouvelleVente() {
     router.push('/dashboard/ventes/nouvelle');
   }
@@ -150,15 +179,6 @@ function normaliserDevise(devise?: string | null) {
 function montantParDevise(v: any, devise: 'USD' | 'CDF' | 'EUR') {
   const d = normaliserDevise(devise);
 
-  const montantGlobal = nombre(
-    v.montanttotal ??
-      v.montant_total ??
-      v.total ??
-      v.totalvente ??
-      v.total_vente ??
-      v.montant,
-  );
-
   const deviseVente = normaliserDevise(
     v.devise ??
       v.Devise ??
@@ -168,52 +188,68 @@ function montantParDevise(v: any, devise: 'USD' | 'CDF' | 'EUR') {
       v.deviseprincipale,
   );
 
-  if (deviseVente === d && montantGlobal > 0) {
-    return montantGlobal;
-  }
+  const montantGlobal = nombre(
+    v.montanttotal ??
+      v.montant_total ??
+      v.total ??
+      v.totalvente ??
+      v.total_vente ??
+      v.montant,
+  );
 
-  const champsUSD = [
-    v.totalUSD,
-    v.total_usd,
-    v.montantusd,
-    v.montant_usd,
-    v.totalusd,
-  ];
+  if (deviseVente === d && montantGlobal > 0) return montantGlobal;
 
-  const champsCDF = [
-    v.totalCDF,
-    v.total_cdf,
-    v.montantcdf,
-    v.montant_cdf,
-    v.totalcdf,
-    v.montantfc,
-    v.montant_fc,
-    v.totalfc,
-    v.total_fc,
-    v.ventefc,
-    v.vente_fc,
-    v.montantfranc,
-    v.montant_franc,
-    v.montantfrancs,
-    v.montant_francs,
-  ];
+  const champsDirects =
+    d === 'USD'
+      ? [v.totalUSD, v.total_usd, v.montantusd, v.montant_usd, v.totalusd]
+      : d === 'CDF'
+        ? [
+            v.totalCDF,
+            v.total_cdf,
+            v.montantcdf,
+            v.montant_cdf,
+            v.totalcdf,
+            v.montantfc,
+            v.montant_fc,
+            v.totalfc,
+            v.total_fc,
+            v.ventefc,
+            v.vente_fc,
+          ]
+        : [v.totalEUR, v.total_eur, v.montanteur, v.montant_eur, v.totaleur];
 
-  const champsEUR = [
-    v.totalEUR,
-    v.total_eur,
-    v.montanteur,
-    v.montant_eur,
-    v.totaleur,
-  ];
-
-  const champs = d === 'USD' ? champsUSD : d === 'CDF' ? champsCDF : champsEUR;
-
-  for (const champ of champs) {
+  for (const champ of champsDirects) {
     const n = nombre(champ);
     if (n > 0) return n;
   }
 
-  return 0;
+  const lignes = Array.isArray(v.details)
+    ? v.details
+    : Array.isArray(v.detailsvente)
+      ? v.detailsvente
+      : [];
+
+  const totalDetails = lignes
+    .filter((x: any) => normaliserDevise(x.devise) === d)
+    .reduce((s: number, x: any) => {
+      const qte = nombre(x.quantite) || 1;
+      const pu = nombre(x.prixunitaire ?? x.prix);
+      const remise = nombre(x.remise);
+      const tva = nombre(x.tva);
+      const montant = nombre(x.montant ?? x.total);
+
+      return s + (montant > 0 ? montant : Math.max(0, qte * pu - remise + tva));
+    }, 0);
+
+  if (totalDetails > 0) return totalDetails;
+
+  const paiements = Array.isArray(v.paiements) ? v.paiements : [];
+
+  const totalPaiements = paiements
+    .filter((p: any) => normaliserDevise(p.devise) === d)
+    .reduce((s: number, p: any) => s + nombre(p.montant), 0);
+
+  return totalPaiements;
 }
 
   function formatMontant(v: any, devise: string) {
