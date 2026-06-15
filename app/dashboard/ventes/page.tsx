@@ -102,27 +102,75 @@ export default function VentesPage() {
   }
 
   function nombre(v: any) {
-    const n = Number(
-      String(v ?? 0)
-        .replace(/\s/g, '')
-        .replace(',', '.'),
-    );
+  let texte = String(v ?? '0')
+    .replace(/\$/g, '')
+    .replace(/USD/gi, '')
+    .replace(/CDF/gi, '')
+    .replace(/FC/gi, '')
+    .replace(/FRANCS?/gi, '')
+    .replace(/CONGOLAIS/gi, '')
+    .replace(/\u202f/g, '')
+    .replace(/\u00a0/g, '')
+    .replace(/\s/g, '')
+    .trim();
 
-    return Number.isFinite(n) ? n : 0;
+  if (!texte) return 0;
+
+  if (texte.includes(',') && texte.includes('.')) {
+    texte = texte.replace(/\./g, '').replace(',', '.');
+  } else if (texte.includes(',') && !texte.includes('.')) {
+    texte = texte.replace(',', '.');
   }
 
-  function normaliserDevise(devise?: string | null) {
-    const d = String(devise ?? '').trim().toUpperCase();
+  const n = Number(texte);
+  return Number.isFinite(n) ? n : 0;
+}
 
-    if (d === 'FC' || d === 'CDF') return 'CDF';
-    if (d === '$' || d === 'USD' || d === 'DOLLAR') return 'USD';
-    if (d === 'EUR' || d === 'EURO') return 'EUR';
+function normaliserDevise(devise?: string | null) {
+  const d = String(devise ?? '').trim().toUpperCase();
 
-    return d || 'USD';
+  if (
+    d === 'FC' ||
+    d === 'CDF' ||
+    d === 'FRC' ||
+    d === 'FRANC' ||
+    d === 'FRANCS' ||
+    d === 'FRANC CONGOLAIS' ||
+    d === 'FRANCS CONGOLAIS'
+  ) {
+    return 'CDF';
   }
 
-  function montantParDevise(v: any, devise: 'USD' | 'CDF' | 'EUR') {
+  if (d === '$' || d === 'USD' || d === 'DOLLAR' || d === 'DOLLARS') return 'USD';
+  if (d === 'EUR' || d === 'EURO' || d === 'EUROS') return 'EUR';
+
+  return d || 'USD';
+}
+
+function montantParDevise(v: any, devise: 'USD' | 'CDF' | 'EUR') {
   const d = normaliserDevise(devise);
+
+  const montantGlobal = nombre(
+    v.montanttotal ??
+      v.montant_total ??
+      v.total ??
+      v.totalvente ??
+      v.total_vente ??
+      v.montant,
+  );
+
+  const deviseVente = normaliserDevise(
+    v.devise ??
+      v.Devise ??
+      v.DEVISE ??
+      v.devisevente ??
+      v.devise_vente ??
+      v.deviseprincipale,
+  );
+
+  if (deviseVente === d && montantGlobal > 0) {
+    return montantGlobal;
+  }
 
   const champsUSD = [
     v.totalUSD,
@@ -142,6 +190,12 @@ export default function VentesPage() {
     v.montant_fc,
     v.totalfc,
     v.total_fc,
+    v.ventefc,
+    v.vente_fc,
+    v.montantfranc,
+    v.montant_franc,
+    v.montantfrancs,
+    v.montant_francs,
   ];
 
   const champsEUR = [
@@ -152,24 +206,11 @@ export default function VentesPage() {
     v.totaleur,
   ];
 
-  const champs =
-    d === 'USD' ? champsUSD : d === 'CDF' ? champsCDF : champsEUR;
+  const champs = d === 'USD' ? champsUSD : d === 'CDF' ? champsCDF : champsEUR;
 
   for (const champ of champs) {
     const n = nombre(champ);
     if (n > 0) return n;
-  }
-
-  const deviseVente = normaliserDevise(v.devise);
-
-  if (deviseVente === d) {
-    return nombre(
-      v.montanttotal ??
-        v.montant_total ??
-        v.total ??
-        v.totalvente ??
-        v.total_vente,
-    );
   }
 
   return 0;
