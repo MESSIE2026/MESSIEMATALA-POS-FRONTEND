@@ -57,6 +57,10 @@ export default function NouvelleVentePage() {
 
   const [scan, setScan] = useState('');
   const [lignes, setLignes] = useState<LigneVente[]>([]);
+
+  const [qteDrafts, setQteDrafts] = useState<Record<string, string>>({});
+  const [remiseDrafts, setRemiseDrafts] = useState<Record<string, string>>({});
+
   const [nomclient, setNomclient] = useState('CLIENT CASH');
   const [telephone, setTelephone] = useState('');
   const [caissier, setCaissier] = useState('NON CONNECTÉ');
@@ -73,6 +77,10 @@ export default function NouvelleVentePage() {
       if (autoScanRef.current) scanRef.current?.focus();
     }, 300);
   }, []);
+
+  function cleLigne(l: LigneVente, index: number) {
+    return `${l.idProduit}-${index}`;
+  }
 
   function pauseScan() {
     autoScanRef.current = false;
@@ -370,33 +378,41 @@ export default function NouvelleVentePage() {
     }
   }
 
-  function modifierQte(index: number, qte: number) {
+  function modifierQte(index: number, valeur: string) {
+    setLignes((old) =>
+      old.map((l, i) => {
+        if (i !== index) return l;
+
+        const n = Number(valeur.replace(',', '.'));
+
+        return {
+          ...l,
+          quantite: valeur.trim() === '' || !Number.isFinite(n) ? l.quantite : Math.max(0, n),
+        };
+      }),
+    );
+  }
+
+  function validerQte(index: number) {
     setLignes((old) =>
       old.map((l, i) =>
-        i === index
-          ? { ...l, quantite: Number.isFinite(qte) && qte > 0 ? qte : 1 }
-          : l,
+        i === index ? { ...l, quantite: l.quantite > 0 ? l.quantite : 1 } : l,
       ),
     );
   }
 
-  function modifierPrix(index: number, prix: number) {
+  function modifierRemise(index: number, valeur: string) {
     setLignes((old) =>
-      old.map((l, i) =>
-        i === index
-          ? { ...l, prixunitaire: Number.isFinite(prix) && prix >= 0 ? prix : 0 }
-          : l,
-      ),
-    );
-  }
+      old.map((l, i) => {
+        if (i !== index) return l;
 
-  function modifierRemise(index: number, remise: number) {
-    setLignes((old) =>
-      old.map((l, i) =>
-        i === index
-          ? { ...l, remise: Number.isFinite(remise) && remise >= 0 ? remise : 0 }
-          : l,
-      ),
+        const n = Number(valeur.replace(',', '.'));
+
+        return {
+          ...l,
+          remise: valeur.trim() === '' || !Number.isFinite(n) ? l.remise : Math.max(0, n),
+        };
+      }),
     );
   }
 
@@ -420,6 +436,8 @@ export default function NouvelleVentePage() {
     setTelephone('');
     setIdClient(null);
     setModePaiement('CASH');
+    setQteDrafts({});
+    setRemiseDrafts({});
     refocusScan();
   }
 
@@ -594,7 +612,7 @@ export default function NouvelleVentePage() {
               MESSIE MATALA POS
             </div>
             <div className="text-[11px] font-semibold text-slate-500">
-              Caisse · Mobile · Web · Desktop · Terminal POS
+              Nouvelle vente · Scanner · Panier · Paiement
             </div>
           </div>
 
@@ -608,7 +626,7 @@ export default function NouvelleVentePage() {
         </div>
 
         <div className="mt-2 rounded-lg bg-red-50 px-3 py-1 text-xs font-black text-red-700">
-          {caissier}
+          Caissier : {caissier}
         </div>
       </header>
 
@@ -638,7 +656,7 @@ export default function NouvelleVentePage() {
               ajouterProduit(valeur);
             }}
             className="rounded-xl border-2 border-slate-400 bg-white px-4 py-3 text-base font-black outline-none focus:border-blue-600"
-            placeholder="Scanner / rechercher produit..."
+            placeholder="Scanner code-barres, référence ou nom du produit..."
             autoComplete="off"
             spellCheck={false}
           />
@@ -653,6 +671,10 @@ export default function NouvelleVentePage() {
         </div>
 
         <section className="mb-3 rounded-2xl border bg-white p-3 shadow-sm">
+          <div className="mb-2 text-xs font-black uppercase text-slate-500">
+            Informations client et paiement
+          </div>
+
           <div className="grid gap-2 sm:grid-cols-3">
             <input
               list="liste-clients"
@@ -661,7 +683,7 @@ export default function NouvelleVentePage() {
               onBlur={reprendreScan}
               onChange={(e) => choisirClient(e.target.value)}
               className="rounded-xl border px-3 py-2 text-sm font-bold"
-              placeholder="Client"
+              placeholder="Client cash ou nom du client"
             />
 
             <datalist id="liste-clients">
@@ -678,7 +700,7 @@ export default function NouvelleVentePage() {
               onBlur={reprendreScan}
               onChange={(e) => setTelephone(e.target.value)}
               className="rounded-xl border px-3 py-2 text-sm font-bold"
-              placeholder="Téléphone"
+              placeholder="Téléphone client"
             />
 
             <select
@@ -717,7 +739,7 @@ export default function NouvelleVentePage() {
 
             <div>
               <label className="mb-1 block text-xs font-black text-slate-500">
-                Reçu
+                Montant reçu
               </label>
               <input
                 value={recu}
@@ -725,13 +747,14 @@ export default function NouvelleVentePage() {
                 onBlur={reprendreScan}
                 onChange={(e) => setRecu(e.target.value)}
                 className="w-full rounded-xl border px-3 py-2 text-right font-black"
-                placeholder="0"
+                placeholder="Ex : 50000"
+                inputMode="decimal"
               />
             </div>
 
             <div>
               <label className="mb-1 block text-xs font-black text-slate-500">
-                Monnaie
+                Monnaie à remettre
               </label>
               <input
                 value={`${formatMontant(monnaie, devisePrincipale)} ${devisePrincipale}`}
@@ -750,7 +773,7 @@ export default function NouvelleVentePage() {
                   <th className="border p-3">Référence</th>
                   <th className="border p-3">Désignation</th>
                   <th className="border p-3">Qté</th>
-                  <th className="border p-3">PU</th>
+                  <th className="border p-3">P.U bloqué</th>
                   <th className="border p-3">Remise</th>
                   <th className="border p-3">Taille</th>
                   <th className="border p-3">Couleur</th>
@@ -761,68 +784,107 @@ export default function NouvelleVentePage() {
               </thead>
 
               <tbody>
-                {lignes.map((l, i) => (
-                  <tr key={`${l.idProduit}-${i}`} className="text-center font-semibold">
-                    <td className="border p-2">{l.refproduit}</td>
-                    <td className="border p-2 text-left">{l.nomproduit}</td>
+                {lignes.map((l, i) => {
+                  const key = cleLigne(l, i);
 
-                    <td className="border p-2">
-                      <input
-                        type="number"
-                        value={l.quantite}
-                        onFocus={pauseScan}
-                        onBlur={reprendreScan}
-                        onChange={(e) => modifierQte(i, Number(e.target.value))}
-                        className="w-20 rounded border px-2 py-1 text-center"
-                      />
-                    </td>
+                  return (
+                    <tr key={key} className="text-center font-semibold">
+                      <td className="border p-2">{l.refproduit}</td>
+                      <td className="border p-2 text-left">{l.nomproduit}</td>
 
-                    <td className="border p-2">
-                      <input
-                        type="number"
-                        value={l.prixunitaire}
-                        onFocus={pauseScan}
-                        onBlur={reprendreScan}
-                        onChange={(e) => modifierPrix(i, Number(e.target.value))}
-                        className="w-28 rounded border px-2 py-1 text-right"
-                      />
-                    </td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={qteDrafts[key] ?? String(l.quantite)}
+                          onFocus={(e) => {
+                            pauseScan();
+                            setQteDrafts((old) => ({ ...old, [key]: String(l.quantite) }));
+                            e.currentTarget.select();
+                          }}
+                          onChange={(e) => {
+                            const v = e.target.value.replace(/[^\d.,]/g, '');
+                            setQteDrafts((old) => ({ ...old, [key]: v }));
+                            modifierQte(i, v);
+                          }}
+                          onBlur={() => {
+                            validerQte(i);
+                            setQteDrafts((old) => {
+                              const copy = { ...old };
+                              delete copy[key];
+                              return copy;
+                            });
+                            reprendreScan();
+                          }}
+                          className="w-20 rounded border px-2 py-1 text-center font-black"
+                          placeholder="Qté"
+                        />
+                      </td>
 
-                    <td className="border p-2">
-                      <input
-                        type="number"
-                        value={l.remise}
-                        onFocus={pauseScan}
-                        onBlur={reprendreScan}
-                        onChange={(e) => modifierRemise(i, Number(e.target.value))}
-                        className="w-24 rounded border px-2 py-1 text-right"
-                      />
-                    </td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={`${formatMontant(l.prixunitaire, l.devise)}`}
+                          readOnly
+                          tabIndex={-1}
+                          className="w-28 rounded border bg-slate-100 px-2 py-1 text-right font-black text-slate-700"
+                          title="Prix unitaire bloqué"
+                        />
+                      </td>
 
-                    <td className="border p-2">{l.taille}</td>
-                    <td className="border p-2">{l.couleur}</td>
-                    <td className="border p-2">{normaliserDevise(l.devise)}</td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={remiseDrafts[key] ?? String(l.remise)}
+                          onFocus={(e) => {
+                            pauseScan();
+                            setRemiseDrafts((old) => ({ ...old, [key]: String(l.remise) }));
+                            e.currentTarget.select();
+                          }}
+                          onChange={(e) => {
+                            const v = e.target.value.replace(/[^\d.,]/g, '');
+                            setRemiseDrafts((old) => ({ ...old, [key]: v }));
+                            modifierRemise(i, v);
+                          }}
+                          onBlur={() => {
+                            setRemiseDrafts((old) => {
+                              const copy = { ...old };
+                              delete copy[key];
+                              return copy;
+                            });
+                            reprendreScan();
+                          }}
+                          className="w-24 rounded border px-2 py-1 text-right font-black"
+                          placeholder="Remise"
+                        />
+                      </td>
 
-                    <td className="border p-2 font-black">
-                      {formatMontant(totalLigne(l), l.devise)}
-                    </td>
+                      <td className="border p-2">{l.taille}</td>
+                      <td className="border p-2">{l.couleur}</td>
+                      <td className="border p-2">{normaliserDevise(l.devise)}</td>
 
-                    <td className="border p-2">
-                      <button
-                        type="button"
-                        onClick={() => supprimerArticle(i)}
-                        className="rounded bg-red-600 px-3 py-1 font-bold text-white"
-                      >
-                        X
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="border p-2 font-black">
+                        {formatMontant(totalLigne(l), l.devise)}
+                      </td>
+
+                      <td className="border p-2">
+                        <button
+                          type="button"
+                          onClick={() => supprimerArticle(i)}
+                          className="rounded bg-red-600 px-3 py-1 font-bold text-white"
+                        >
+                          X
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
 
                 {lignes.length === 0 && (
                   <tr>
                     <td colSpan={10} className="h-64 text-center font-bold text-slate-400">
-                      Aucun article ajouté.
+                      Aucun article ajouté. Scanne ou recherche un produit pour commencer.
                     </td>
                   </tr>
                 )}
@@ -834,63 +896,116 @@ export default function NouvelleVentePage() {
         <section className="space-y-2 md:hidden">
           {lignes.length === 0 && (
             <div className="rounded-2xl border bg-white p-8 text-center font-bold text-slate-400">
-              Aucun article ajouté.
+              Aucun article ajouté. Scanne ou recherche un produit.
             </div>
           )}
 
-          {lignes.map((l, i) => (
-            <div key={`${l.idProduit}-${i}`} className="rounded-2xl border bg-white p-3 shadow-sm">
-              <div className="flex justify-between gap-2">
-                <div>
-                  <div className="font-black">{l.nomproduit}</div>
-                  <div className="text-xs font-bold text-slate-500">
-                    {l.refproduit} · {l.taille} · {l.couleur}
+          {lignes.map((l, i) => {
+            const key = cleLigne(l, i);
+
+            return (
+              <div key={key} className="rounded-2xl border bg-white p-3 shadow-sm">
+                <div className="flex justify-between gap-2">
+                  <div>
+                    <div className="font-black">{l.nomproduit}</div>
+                    <div className="text-xs font-bold text-slate-500">
+                      {l.refproduit} · {l.taille} · {l.couleur}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => supprimerArticle(i)}
+                    className="h-8 rounded-lg bg-red-600 px-3 text-sm font-black text-white"
+                  >
+                    X
+                  </button>
+                </div>
+
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black text-slate-500">
+                      Quantité
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={qteDrafts[key] ?? String(l.quantite)}
+                      onFocus={(e) => {
+                        pauseScan();
+                        setQteDrafts((old) => ({ ...old, [key]: String(l.quantite) }));
+                        e.currentTarget.select();
+                      }}
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/[^\d.,]/g, '');
+                        setQteDrafts((old) => ({ ...old, [key]: v }));
+                        modifierQte(i, v);
+                      }}
+                      onBlur={() => {
+                        validerQte(i);
+                        setQteDrafts((old) => {
+                          const copy = { ...old };
+                          delete copy[key];
+                          return copy;
+                        });
+                        reprendreScan();
+                      }}
+                      className="w-full rounded-lg border px-2 py-2 text-center font-black"
+                      placeholder="Qté"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black text-slate-500">
+                      P.U bloqué
+                    </label>
+                    <input
+                      type="text"
+                      value={formatMontant(l.prixunitaire, l.devise)}
+                      readOnly
+                      tabIndex={-1}
+                      className="w-full rounded-lg border bg-slate-100 px-2 py-2 text-right font-black text-slate-700"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black text-slate-500">
+                      Remise
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={remiseDrafts[key] ?? String(l.remise)}
+                      onFocus={(e) => {
+                        pauseScan();
+                        setRemiseDrafts((old) => ({ ...old, [key]: String(l.remise) }));
+                        e.currentTarget.select();
+                      }}
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/[^\d.,]/g, '');
+                        setRemiseDrafts((old) => ({ ...old, [key]: v }));
+                        modifierRemise(i, v);
+                      }}
+                      onBlur={() => {
+                        setRemiseDrafts((old) => {
+                          const copy = { ...old };
+                          delete copy[key];
+                          return copy;
+                        });
+                        reprendreScan();
+                      }}
+                      className="w-full rounded-lg border px-2 py-2 text-right font-black"
+                      placeholder="0"
+                    />
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => supprimerArticle(i)}
-                  className="h-8 rounded-lg bg-red-600 px-3 text-sm font-black text-white"
-                >
-                  X
-                </button>
+                <div className="mt-2 text-right text-lg font-black text-emerald-800">
+                  {formatMontant(totalLigne(l), l.devise)} {normaliserDevise(l.devise)}
+                </div>
               </div>
-
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                <input
-                  type="number"
-                  value={l.quantite}
-                  onFocus={pauseScan}
-                  onBlur={reprendreScan}
-                  onChange={(e) => modifierQte(i, Number(e.target.value))}
-                  className="rounded-lg border px-2 py-2 text-center font-black"
-                />
-
-                <input
-                  type="number"
-                  value={l.prixunitaire}
-                  onFocus={pauseScan}
-                  onBlur={reprendreScan}
-                  onChange={(e) => modifierPrix(i, Number(e.target.value))}
-                  className="rounded-lg border px-2 py-2 text-right font-black"
-                />
-
-                <input
-                  type="number"
-                  value={l.remise}
-                  onFocus={pauseScan}
-                  onBlur={reprendreScan}
-                  onChange={(e) => modifierRemise(i, Number(e.target.value))}
-                  className="rounded-lg border px-2 py-2 text-right font-black"
-                />
-              </div>
-
-              <div className="mt-2 text-right text-lg font-black text-emerald-800">
-                {formatMontant(totalLigne(l), l.devise)} {normaliserDevise(l.devise)}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </section>
 
         <section className="sticky bottom-0 mt-3 grid grid-cols-2 gap-2 rounded-t-2xl bg-slate-100 pb-2 pt-2 sm:grid-cols-3 lg:grid-cols-6">
