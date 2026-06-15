@@ -11,10 +11,22 @@ type Vente = {
   codefacture?: string | null;
   nomclient?: string | null;
   nomcaissier?: string | null;
-  montanttotal: string | number;
-  devise: string;
+  montanttotal?: string | number;
+  devise?: string | null;
   modepaiement?: string | null;
   statut: string;
+
+  totalUSD?: string | number;
+  total_usd?: string | number;
+  montantusd?: string | number;
+
+  totalCDF?: string | number;
+  total_cdf?: string | number;
+  montantcdf?: string | number;
+
+  totalEUR?: string | number;
+  total_eur?: string | number;
+  montanteur?: string | number;
 };
 
 export default function VentesPage() {
@@ -75,10 +87,49 @@ export default function VentesPage() {
     router.push('/dashboard/ventes/rapports');
   }
 
-  function formatMontant(v: any, devise?: string | null) {
-    const n = Number(v ?? 0);
-    const d = String(devise || '').toUpperCase();
-    const decimals = d === 'CDF' || d === 'FC' ? 0 : 2;
+  function nombre(v: any) {
+    const n = Number(
+      String(v ?? 0)
+        .replace(/\s/g, '')
+        .replace(',', '.'),
+    );
+
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function normaliserDevise(devise?: string | null) {
+    const d = String(devise ?? '').trim().toUpperCase();
+
+    if (d === 'FC' || d === 'CDF') return 'CDF';
+    if (d === '$' || d === 'USD' || d === 'DOLLAR') return 'USD';
+    if (d === 'EUR' || d === 'EURO') return 'EUR';
+
+    return d || 'USD';
+  }
+
+  function montantParDevise(v: Vente, devise: 'USD' | 'CDF' | 'EUR') {
+    if (devise === 'USD') {
+      const direct = nombre(v.totalUSD ?? v.total_usd ?? v.montantusd);
+      if (direct > 0) return direct;
+    }
+
+    if (devise === 'CDF') {
+      const direct = nombre(v.totalCDF ?? v.total_cdf ?? v.montantcdf);
+      if (direct > 0) return direct;
+    }
+
+    if (devise === 'EUR') {
+      const direct = nombre(v.totalEUR ?? v.total_eur ?? v.montanteur);
+      if (direct > 0) return direct;
+    }
+
+    return normaliserDevise(v.devise) === devise ? nombre(v.montanttotal) : 0;
+  }
+
+  function formatMontant(v: any, devise: string) {
+    const n = nombre(v);
+    const d = normaliserDevise(devise);
+    const decimals = d === 'CDF' ? 0 : 2;
 
     return n.toLocaleString('fr-FR', {
       minimumFractionDigits: decimals,
@@ -115,6 +166,9 @@ export default function VentesPage() {
         v.devise,
         v.modepaiement,
         v.statut,
+        montantParDevise(v, 'USD'),
+        montantParDevise(v, 'CDF'),
+        montantParDevise(v, 'EUR'),
       ]
         .join(' ')
         .toLowerCase();
@@ -135,7 +189,7 @@ export default function VentesPage() {
             <div>
               <h1 className="text-3xl font-black">Gestion des ventes</h1>
               <p className="mt-2 text-sm text-emerald-50/80">
-                Ventes restaurées progressivement depuis Windows Forms.
+                Liste des ventes avec totaux séparés par devise.
               </p>
             </div>
 
@@ -179,8 +233,8 @@ export default function VentesPage() {
         <div className="grid gap-4 p-5 md:grid-cols-4">
           <Card title="Ventes affichées" value={ventesFiltrees.length} />
           <Card title="Total chargé" value={ventes.length} />
+          <Card title="Devises" value="USD / CDF / EUR" />
           <Card title="Impression" value="A4 / Ticket" />
-          <Card title="Phase" value="2–3" />
         </div>
       </section>
 
@@ -199,7 +253,7 @@ export default function VentesPage() {
 
       <section className="mt-5 overflow-hidden rounded-[24px] bg-white shadow-sm ring-1 ring-slate-200">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1100px] border-collapse text-sm">
+          <table className="w-full min-w-[1200px] border-collapse text-sm">
             <thead className="bg-slate-900 text-left text-white">
               <tr>
                 <th className="p-3">ID</th>
@@ -208,58 +262,71 @@ export default function VentesPage() {
                 <th className="p-3">Client</th>
                 <th className="p-3">Caissier</th>
                 <th className="p-3">Paiement</th>
-                <th className="p-3 text-right">Montant</th>
-                <th className="p-3">Devise</th>
+                <th className="p-3 text-right">USD</th>
+                <th className="p-3 text-right">CDF</th>
+                <th className="p-3 text-right">EUR</th>
                 <th className="p-3">Statut</th>
                 <th className="p-3">Actions</th>
               </tr>
             </thead>
 
             <tbody>
-              {ventesFiltrees.map((v) => (
-                <tr key={v.id_vente} className="border-b hover:bg-emerald-50/40">
-                  <td className="p-3 font-black">#{v.id_vente}</td>
-                  <td className="p-3 font-bold">{v.codefacture || '-'}</td>
+              {ventesFiltrees.map((v) => {
+                const usd = montantParDevise(v, 'USD');
+                const cdf = montantParDevise(v, 'CDF');
+                const eur = montantParDevise(v, 'EUR');
 
-                  <td className="p-3">
-                    {v.datevente ? new Date(v.datevente).toLocaleString('fr-FR') : '-'}
-                  </td>
+                return (
+                  <tr key={v.id_vente} className="border-b hover:bg-emerald-50/40">
+                    <td className="p-3 font-black">#{v.id_vente}</td>
+                    <td className="p-3 font-bold">{v.codefacture || '-'}</td>
 
-                  <td className="p-3">{v.nomclient || 'CLIENT CASH'}</td>
-                  <td className="p-3">{v.nomcaissier || '-'}</td>
-                  <td className="p-3">{v.modepaiement || '-'}</td>
+                    <td className="p-3">
+                      {v.datevente ? new Date(v.datevente).toLocaleString('fr-FR') : '-'}
+                    </td>
 
-                  <td className="p-3 text-right font-black">
-                    {formatMontant(v.montanttotal, v.devise)}
-                  </td>
+                    <td className="p-3">{v.nomclient || 'CLIENT CASH'}</td>
+                    <td className="p-3">{v.nomcaissier || '-'}</td>
+                    <td className="p-3">{v.modepaiement || '-'}</td>
 
-                  <td className="p-3 font-bold">{v.devise || '-'}</td>
+                    <td className="p-3 text-right font-black text-emerald-800">
+                      {usd > 0 ? `${formatMontant(usd, 'USD')} USD` : '-'}
+                    </td>
 
-                  <td className="p-3">
-                    <span
-                      className={`inline-flex rounded-full border px-3 py-1 text-xs font-black ${statutClass(
-                        v.statut,
-                      )}`}
-                    >
-                      {v.statut || '-'}
-                    </span>
-                  </td>
+                    <td className="p-3 text-right font-black text-blue-800">
+                      {cdf > 0 ? `${formatMontant(cdf, 'CDF')} CDF` : '-'}
+                    </td>
 
-                  <td className="p-3">
-                    <button
-                      type="button"
-                      onClick={() => voirVente(v)}
-                      className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-black text-white hover:bg-slate-700"
-                    >
-                      Voir détail
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    <td className="p-3 text-right font-black text-amber-700">
+                      {eur > 0 ? `${formatMontant(eur, 'EUR')} EUR` : '-'}
+                    </td>
+
+                    <td className="p-3">
+                      <span
+                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-black ${statutClass(
+                          v.statut,
+                        )}`}
+                      >
+                        {v.statut || '-'}
+                      </span>
+                    </td>
+
+                    <td className="p-3">
+                      <button
+                        type="button"
+                        onClick={() => voirVente(v)}
+                        className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-black text-white hover:bg-slate-700"
+                      >
+                        Voir détail
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
 
               {ventesFiltrees.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="p-10 text-center font-bold text-slate-500">
+                  <td colSpan={11} className="p-10 text-center font-bold text-slate-500">
                     Aucune vente trouvée.
                   </td>
                 </tr>
