@@ -25,49 +25,82 @@ export default function VoirVentePage() {
     chargerVente();
   }, [id]);
 
-  async function chargerVente() {
-    if (!id || isNaN(Number(id))) {
-      setLoading(false);
-      return;
-    }
+  function extraireLignes(data: any): any[] {
+  const sources = [
+    data?.details,
+    data?.detailsvente,
+    data?.detailvente,
+    data?.detailsVente,
+    data?.lignes,
+    data?.articles,
+    data?.produits,
+    data?.items,
+    data?.vente?.details,
+    data?.vente?.detailsvente,
+    data?.data?.details,
+    data?.data?.detailsvente,
+  ];
 
-    try {
-      setLoading(true);
-
-      const res = await fetch(`${API}/ventes/${id}`, {
-        cache: 'no-store',
-      });
-
-      const texte = await res.text();
-
-      if (!res.ok) {
-        throw new Error(`Erreur API ${res.status} : ${texte}`);
-      }
-
-      const data = JSON.parse(texte);
-
-      const details = Array.isArray(data.details)
-        ? data.details
-        : Array.isArray(data.detailsvente)
-          ? data.detailsvente
-          : [];
-
-      const paiements = Array.isArray(data.paiements) ? data.paiements : [];
-
-      setVente({
-        ...data,
-        details,
-        detailsvente: details,
-        paiements,
-      });
-    } catch (error) {
-      console.error(error);
-      alert(String(error));
-    } finally {
-      setLoading(false);
-    }
+  for (const s of sources) {
+    if (Array.isArray(s)) return s;
   }
 
+  return [];
+}
+
+function extrairePaiements(data: any): any[] {
+  const sources = [
+    data?.paiements,
+    data?.paiement,
+    data?.payments,
+    data?.vente?.paiements,
+    data?.data?.paiements,
+  ];
+
+  for (const s of sources) {
+    if (Array.isArray(s)) return s;
+  }
+
+  return [];
+}
+
+  async function chargerVente() {
+  if (!id || isNaN(Number(id))) {
+    setLoading(false);
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const res = await fetch(`${API}/ventes/${id}`, {
+      cache: 'no-store',
+    });
+
+    const texte = await res.text();
+
+    if (!res.ok) {
+      throw new Error(`Erreur API ${res.status} : ${texte}`);
+    }
+
+    const data = texte ? JSON.parse(texte) : null;
+
+    const details = extraireLignes(data);
+    const paiements = extrairePaiements(data);
+
+    setVente({
+      ...data,
+      details,
+      detailsvente: details,
+      paiements,
+    });
+  } catch (error) {
+    console.error(error);
+    alert(String(error));
+  } finally {
+    setLoading(false);
+  }
+}
   function normaliserDevise(devise: any): string {
     const d = String(devise ?? 'USD').trim().toUpperCase();
 
@@ -198,17 +231,50 @@ export default function VoirVentePage() {
       paiements?.[0]?.modepaiement ||
       '-';
 
-    const totalUSD = lignes
-      .filter((x: any) => normaliserDevise(x.devise) === 'USD')
-      .reduce((s: number, d: any) => s + montantLigne(d), 0);
+    const totalLignesUSD = lignes
+  .filter((x: any) => normaliserDevise(x.devise) === 'USD')
+  .reduce((s: number, d: any) => s + montantLigne(d), 0);
 
-    const totalCDF = lignes
-      .filter((x: any) => normaliserDevise(x.devise) === 'CDF')
-      .reduce((s: number, d: any) => s + montantLigne(d), 0);
+const totalLignesCDF = lignes
+  .filter((x: any) => normaliserDevise(x.devise) === 'CDF')
+  .reduce((s: number, d: any) => s + montantLigne(d), 0);
 
-    const totalEUR = lignes
-      .filter((x: any) => normaliserDevise(x.devise) === 'EUR')
-      .reduce((s: number, d: any) => s + montantLigne(d), 0);
+const totalLignesEUR = lignes
+  .filter((x: any) => normaliserDevise(x.devise) === 'EUR')
+  .reduce((s: number, d: any) => s + montantLigne(d), 0);
+
+const deviseVente = normaliserDevise(vente.devise);
+
+const montantGlobal =
+  nombreDepuisTexte(vente.montanttotal) ||
+  nombreDepuisTexte(vente.montant_total) ||
+  nombreDepuisTexte(vente.total) ||
+  nombreDepuisTexte(vente.totalvente) ||
+  nombreDepuisTexte(vente.total_vente);
+
+const totalUSD =
+  totalLignesUSD ||
+  nombreDepuisTexte(vente.totalUSD) ||
+  nombreDepuisTexte(vente.total_usd) ||
+  nombreDepuisTexte(vente.montantusd) ||
+  (deviseVente === 'USD' ? montantGlobal : 0);
+
+const totalCDF =
+  totalLignesCDF ||
+  nombreDepuisTexte(vente.totalCDF) ||
+  nombreDepuisTexte(vente.total_cdf) ||
+  nombreDepuisTexte(vente.montantcdf) ||
+  nombreDepuisTexte(vente.montant_cdf) ||
+  nombreDepuisTexte(vente.montantfc) ||
+  nombreDepuisTexte(vente.montant_fc) ||
+  (deviseVente === 'CDF' ? montantGlobal : 0);
+
+const totalEUR =
+  totalLignesEUR ||
+  nombreDepuisTexte(vente.totalEUR) ||
+  nombreDepuisTexte(vente.total_eur) ||
+  nombreDepuisTexte(vente.montanteur) ||
+  (deviseVente === 'EUR' ? montantGlobal : 0);
 
     const remiseUSD = lignes
       .filter((x: any) => normaliserDevise(x.devise) === 'USD')
