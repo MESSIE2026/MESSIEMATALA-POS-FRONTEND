@@ -38,10 +38,7 @@ export default function VentesPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API}/ventes`, {
-        cache: 'no-store',
-      });
-
+      const res = await fetch(`${API}/ventes`, { cache: 'no-store' });
       const data = await lireApi(res);
 
       if (!res.ok) {
@@ -75,15 +72,17 @@ export default function VentesPage() {
   }
 
   function ouvrirRapports() {
-    alert('Phase 5 : rapports ventes à créer progressivement.');
+    router.push('/dashboard/ventes/rapports');
   }
 
-  function formatMontant(v: any) {
+  function formatMontant(v: any, devise?: string | null) {
     const n = Number(v ?? 0);
+    const d = String(devise || '').toUpperCase();
+    const decimals = d === 'CDF' || d === 'FC' ? 0 : 2;
 
     return n.toLocaleString('fr-FR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
     });
   }
 
@@ -124,8 +123,6 @@ export default function VentesPage() {
     });
   }, [ventes, recherche]);
 
-  const totalVentes = ventesFiltrees.length;
-
   return (
     <main className="min-h-screen bg-slate-100 p-6 text-slate-900">
       <section className="overflow-hidden rounded-[28px] bg-white shadow-sm ring-1 ring-slate-200">
@@ -138,7 +135,7 @@ export default function VentesPage() {
             <div>
               <h1 className="text-3xl font-black">Gestion des ventes</h1>
               <p className="mt-2 text-sm text-emerald-50/80">
-                Phase 1 : liste, recherche, détail, nouvelle vente et actualisation.
+                Ventes restaurées progressivement depuis Windows Forms.
               </p>
             </div>
 
@@ -179,10 +176,11 @@ export default function VentesPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 p-5 md:grid-cols-3">
-          <Card title="Ventes affichées" value={totalVentes} />
+        <div className="grid gap-4 p-5 md:grid-cols-4">
+          <Card title="Ventes affichées" value={ventesFiltrees.length} />
           <Card title="Total chargé" value={ventes.length} />
-          <Card title="Phase actuelle" value="Phase 1" />
+          <Card title="Impression" value="A4 / Ticket" />
+          <Card title="Phase" value="2–3" />
         </div>
       </section>
 
@@ -210,7 +208,7 @@ export default function VentesPage() {
                 <th className="p-3">Client</th>
                 <th className="p-3">Caissier</th>
                 <th className="p-3">Paiement</th>
-                <th className="p-3">Montant</th>
+                <th className="p-3 text-right">Montant</th>
                 <th className="p-3">Devise</th>
                 <th className="p-3">Statut</th>
                 <th className="p-3">Actions</th>
@@ -221,15 +219,10 @@ export default function VentesPage() {
               {ventesFiltrees.map((v) => (
                 <tr key={v.id_vente} className="border-b hover:bg-emerald-50/40">
                   <td className="p-3 font-black">#{v.id_vente}</td>
-
-                  <td className="p-3 font-bold text-slate-800">
-                    {v.codefacture || '-'}
-                  </td>
+                  <td className="p-3 font-bold">{v.codefacture || '-'}</td>
 
                   <td className="p-3">
-                    {v.datevente
-                      ? new Date(v.datevente).toLocaleString('fr-FR')
-                      : '-'}
+                    {v.datevente ? new Date(v.datevente).toLocaleString('fr-FR') : '-'}
                   </td>
 
                   <td className="p-3">{v.nomclient || 'CLIENT CASH'}</td>
@@ -237,7 +230,7 @@ export default function VentesPage() {
                   <td className="p-3">{v.modepaiement || '-'}</td>
 
                   <td className="p-3 text-right font-black">
-                    {formatMontant(v.montanttotal)}
+                    {formatMontant(v.montanttotal, v.devise)}
                   </td>
 
                   <td className="p-3 font-bold">{v.devise || '-'}</td>
@@ -285,9 +278,7 @@ function Card({ title, value }: { title: string; value: any }) {
       <p className="text-xs font-black uppercase tracking-wide text-slate-500">
         {title}
       </p>
-      <h2 className="mt-2 text-2xl font-black text-emerald-950">
-        {value}
-      </h2>
+      <h2 className="mt-2 text-2xl font-black text-emerald-950">{value}</h2>
     </div>
   );
 }

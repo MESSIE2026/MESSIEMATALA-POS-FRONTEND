@@ -23,7 +23,6 @@ export default function VoirVentePage() {
   useEffect(() => {
     if (!id) return;
     chargerVente();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   async function chargerVente() {
@@ -50,8 +49,8 @@ export default function VoirVentePage() {
       const details = Array.isArray(data.details)
         ? data.details
         : Array.isArray(data.detailsvente)
-        ? data.detailsvente
-        : [];
+          ? data.detailsvente
+          : [];
 
       const paiements = Array.isArray(data.paiements) ? data.paiements : [];
 
@@ -104,7 +103,6 @@ export default function VoirVentePage() {
   function formatMontant(montant: any, devise?: string): string {
     const n = nombreDepuisTexte(montant);
     const d = normaliserDevise(devise);
-
     const decimals = d === 'CDF' ? 0 : 2;
 
     return n
@@ -158,8 +156,8 @@ export default function VoirVentePage() {
       Array.isArray(vente?.details) && vente.details.length > 0
         ? vente.details
         : Array.isArray(vente?.detailsvente)
-        ? vente.detailsvente
-        : [];
+          ? vente.detailsvente
+          : [];
 
     const paiements = Array.isArray(vente?.paiements) ? vente.paiements : [];
 
@@ -236,17 +234,6 @@ export default function VoirVentePage() {
       .filter((x: any) => normaliserDevise(x.devise) === 'EUR')
       .reduce((s: number, d: any) => s + nombreDepuisTexte(d.tva), 0);
 
-    const tauxFidelite = nombreDepuisTexte(vente.tauxfidelite || 0.5);
-
-    const gainFidelite =
-      nombreDepuisTexte(vente.gainfidelite) ||
-      Math.round(totalUSD * (tauxFidelite / 100) * 100) / 100;
-
-    const soldeCashback =
-      nombreDepuisTexte(vente.soldecashback) ||
-      nombreDepuisTexte(vente.soldefidelite) ||
-      0;
-
     return {
       lignes,
       paiements,
@@ -255,47 +242,27 @@ export default function VoirVentePage() {
       telephoneClient,
       nomCaissier,
       modePaiement,
-
-      codeCarteFidelite:
-        vente.codecarte ||
-        vente.codecartefidelite ||
-        vente.cartefidelite ||
-        vente.code_carte_fidelite ||
-        'FID-000000',
-
-      categorieClient:
-        vente.categorieclient ||
-        vente.categorie_client ||
-        'STANDARD',
-
-      tauxFidelite,
-      gainFidelite,
-      soldeCashback,
-
       totalUSD,
       totalCDF,
       totalEUR,
-
       remiseUSD,
       remiseCDF,
       remiseEUR,
-
       tvaUSD,
       tvaCDF,
       tvaEUR,
-
       statut: vente.statut || 'VALIDEE',
       dateVente: vente.datevente || vente.createdat || null,
     };
   }, [vente, id]);
 
-  function imprimerA4Dialogue() {
-    if (!vente || !infos) return;
+  function construireHtmlA4() {
+    if (!infos) return '';
 
     const dateVente = infos.dateVente ? new Date(infos.dateVente) : new Date();
     const dateOnly = dateVente.toLocaleDateString('fr-FR');
     const heureOnly = dateVente.toLocaleTimeString('fr-FR');
-    const ticketNo = String(vente.id_vente || id || Date.now()).padStart(6, '0');
+    const ticketNo = String(vente?.id_vente || id || Date.now()).padStart(6, '0');
     const logoUrl = `${window.location.origin}/logo.png`;
 
     const lignesHtml =
@@ -303,11 +270,14 @@ export default function VoirVentePage() {
         ? infos.lignes
             .map((d: any) => {
               const devise = normaliserDevise(d.devise);
+              const qte = Math.max(nombreDepuisTexte(d.quantite), 1);
+              const pu = nombreDepuisTexte(d.prixunitaire) || montantLigne(d) / qte;
+
               return `
                 <tr>
-                  <td>${d.nomproduit || '-'}</td>
+                  <td>${d.nomproduit || d.designation || '-'}</td>
                   <td class="center">${d.quantite || 0}</td>
-                  <td class="right">${formatMontant(montantLigne(d) / Math.max(nombreDepuisTexte(d.quantite), 1), devise)} ${devise}</td>
+                  <td class="right">${formatMontant(pu, devise)} ${devise}</td>
                   <td class="center bold">${devise}</td>
                   <td class="right bold">${formatMontant(montantLigne(d), devise)} ${devise}</td>
                 </tr>
@@ -316,13 +286,16 @@ export default function VoirVentePage() {
             .join('')
         : `<tr><td colspan="5" class="center">Détails non chargés</td></tr>`;
 
-    const html = `
+    return `
+      <!doctype html>
       <html>
         <head>
+          <meta charset="utf-8" />
           <title>Impression A4 ${infos.codeFacture}</title>
           <style>
-            @page { size: A4; margin: 12mm; }
+            @page { size: A4 portrait; margin: 12mm; }
             body { font-family: Arial, sans-serif; color: #000; font-size: 12px; }
+            .no-print { margin-bottom: 15px; }
             .top { display: flex; justify-content: space-between; align-items: flex-start; }
             .logo { width: 105px; height: 105px; object-fit: contain; }
             h1 { margin: 0 0 8px 0; font-size: 24px; }
@@ -335,11 +308,15 @@ export default function VoirVentePage() {
             .right { text-align: right; }
             .bold { font-weight: bold; }
             .totaux { width: 62%; margin-left: auto; margin-top: 18px; }
-            .box { border: 1px solid #bbb; padding: 12px; margin-top: 18px; }
             .footer { text-align: center; margin-top: 28px; font-size: 12px; }
+            @media print { .no-print { display: none; } }
           </style>
         </head>
         <body>
+          <div class="no-print">
+            <button onclick="window.print()">Imprimer maintenant</button>
+          </div>
+
           <div class="top">
             <div>
               <h1>ZAIRE MODE SARL</h1>
@@ -377,63 +354,116 @@ export default function VoirVentePage() {
           </table>
 
           <table class="totaux">
-            <thead>
-              <tr>
-                <th></th>
-                ${infos.totalUSD > 0 ? '<th>USD</th>' : ''}
-                ${infos.totalCDF > 0 ? '<th>CDF</th>' : ''}
-                ${infos.totalEUR > 0 ? '<th>EUR</th>' : ''}
-              </tr>
-            </thead>
             <tbody>
-              <tr>
-                <td class="bold">Remise</td>
-                ${infos.totalUSD > 0 ? `<td class="right">${formatMontant(infos.remiseUSD, 'USD')} USD</td>` : ''}
-                ${infos.totalCDF > 0 ? `<td class="right">${formatMontant(infos.remiseCDF, 'CDF')} CDF</td>` : ''}
-                ${infos.totalEUR > 0 ? `<td class="right">${formatMontant(infos.remiseEUR, 'EUR')} EUR</td>` : ''}
-              </tr>
-              <tr>
-                <td class="bold">TVA</td>
-                ${infos.totalUSD > 0 ? `<td class="right">${formatMontant(infos.tvaUSD, 'USD')} USD</td>` : ''}
-                ${infos.totalCDF > 0 ? `<td class="right">${formatMontant(infos.tvaCDF, 'CDF')} CDF</td>` : ''}
-                ${infos.totalEUR > 0 ? `<td class="right">${formatMontant(infos.tvaEUR, 'EUR')} EUR</td>` : ''}
-              </tr>
-              <tr>
-                <td class="bold">TOTAL TTC</td>
-                ${infos.totalUSD > 0 ? `<td class="right bold">${formatMontant(infos.totalUSD, 'USD')} USD</td>` : ''}
-                ${infos.totalCDF > 0 ? `<td class="right bold">${formatMontant(infos.totalCDF, 'CDF')} CDF</td>` : ''}
-                ${infos.totalEUR > 0 ? `<td class="right bold">${formatMontant(infos.totalEUR, 'EUR')} EUR</td>` : ''}
-              </tr>
+              ${infos.totalUSD > 0 ? `<tr><td class="bold">TOTAL USD</td><td class="right bold">${formatMontant(infos.totalUSD, 'USD')} USD</td></tr>` : ''}
+              ${infos.totalCDF > 0 ? `<tr><td class="bold">TOTAL CDF</td><td class="right bold">${formatMontant(infos.totalCDF, 'CDF')} CDF</td></tr>` : ''}
+              ${infos.totalEUR > 0 ? `<tr><td class="bold">TOTAL EUR</td><td class="right bold">${formatMontant(infos.totalEUR, 'EUR')} EUR</td></tr>` : ''}
             </tbody>
           </table>
 
           <p class="bold">Mode : ${infos.modePaiement} | Totaux séparés par devise</p>
-
-          <div class="box">
-            <div class="bold">FIDELITE CLIENT</div>
-            <div>Catégorie : ${infos.categorieClient}</div>
-            <div>Taux : ${formatMontant(infos.tauxFidelite, 'USD')}%</div>
-            <div>Gain sur cette vente : ${formatMontant(infos.gainFidelite, 'USD')} USD</div>
-            <div>Solde Cashback : ${formatMontant(infos.soldeCashback, 'USD')} USD</div>
-            <div>Carte Fidelite : ${infos.codeCarteFidelite}</div>
-          </div>
 
           <div class="footer">
             <div>Merci pour votre fidélité, à la prochaine !</div>
             <div>La Qualité fait la différence.</div>
             <div>Les marchandises vendues ne peuvent être ni reprises, ni échangées.</div>
           </div>
-
-          <script>
-            window.onload = function() {
-              window.focus();
-              window.print();
-            };
-          </script>
         </body>
       </html>
     `;
+  }
 
+  function construireHtmlTicket() {
+    if (!infos) return '';
+
+    const dateVente = infos.dateVente ? new Date(infos.dateVente) : new Date();
+    const logoUrl = `${window.location.origin}/logo.png`;
+
+    const lignesHtml =
+      infos.lignes.length > 0
+        ? infos.lignes
+            .map((d: any) => {
+              const devise = normaliserDevise(d.devise);
+              const qte = Math.max(nombreDepuisTexte(d.quantite), 1);
+              const pu = nombreDepuisTexte(d.prixunitaire) || montantLigne(d) / qte;
+
+              return `
+                <div class="ligne">
+                  <div>${d.nomproduit || d.designation || '-'}</div>
+                  <div class="row">
+                    <span>${qte} x ${formatMontant(pu, devise)} ${devise}</span>
+                    <b>${formatMontant(montantLigne(d), devise)} ${devise}</b>
+                  </div>
+                </div>
+              `;
+            })
+            .join('')
+        : `<div class="center">Détails non chargés</div>`;
+
+    return `
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Ticket ${infos.codeFacture}</title>
+          <style>
+            @page { size: 80mm auto; margin: 4mm; }
+            body { width: 80mm; margin: 0 auto; font-family: Arial, sans-serif; font-size: 11px; color: #000; }
+            .no-print { margin-bottom: 10px; }
+            .center { text-align: center; }
+            .logo { width: 55px; height: 55px; object-fit: contain; }
+            .sep { border-top: 1px dashed #000; margin: 8px 0; }
+            .row { display: flex; justify-content: space-between; gap: 8px; }
+            .ligne { margin-bottom: 7px; }
+            .total { font-size: 13px; font-weight: bold; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="no-print">
+            <button onclick="window.print()">Imprimer maintenant</button>
+          </div>
+
+          <div class="center">
+            <img src="${logoUrl}" class="logo" />
+            <h3>ZAIRE MODE SARL</h3>
+            <div>Masina Plaza</div>
+            <div>+243861507560</div>
+          </div>
+
+          <div class="sep"></div>
+
+          <div>Facture : ${infos.codeFacture}</div>
+          <div>Date : ${dateVente.toLocaleDateString('fr-FR')}</div>
+          <div>Heure : ${dateVente.toLocaleTimeString('fr-FR')}</div>
+          <div>Client : ${infos.nomClient}</div>
+          <div>Caissier : ${infos.nomCaissier}</div>
+          <div>Mode : ${infos.modePaiement}</div>
+
+          <div class="sep"></div>
+
+          ${lignesHtml}
+
+          <div class="sep"></div>
+
+          ${infos.totalUSD > 0 ? `<div class="row total"><span>TOTAL USD</span><span>${formatMontant(infos.totalUSD, 'USD')} USD</span></div>` : ''}
+          ${infos.totalCDF > 0 ? `<div class="row total"><span>TOTAL CDF</span><span>${formatMontant(infos.totalCDF, 'CDF')} CDF</span></div>` : ''}
+          ${infos.totalEUR > 0 ? `<div class="row total"><span>TOTAL EUR</span><span>${formatMontant(infos.totalEUR, 'EUR')} EUR</span></div>` : ''}
+
+          <div class="sep"></div>
+
+          <div class="center">
+            <b>Merci pour votre achat</b><br />
+            ZAIRE.CD<br />
+            Les marchandises vendues ne peuvent être ni reprises, ni échangées.
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
+  function imprimerA4() {
+    const html = construireHtmlA4();
     const win = window.open('', '_blank', 'width=900,height=700');
     if (!win) return;
 
@@ -442,30 +472,31 @@ export default function VoirVentePage() {
     win.document.close();
   }
 
-  function genererPdfA4(duplicata = false) {
+  function imprimerTicket() {
+    const html = construireHtmlTicket();
+    const win = window.open('', '_blank', 'width=420,height=700');
+    if (!win) return;
+
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+  }
+
+  function genererPdfA4() {
     if (!vente || !infos) return;
 
     const doc = new jsPDF('p', 'mm', 'a4');
-
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
+
     const marginLeft = 14;
     const marginRight = 14;
-
-    function verifierEspace(y: number, h: number) {
-      if (y + h > pageHeight - 20) {
-        doc.addPage();
-        return 20;
-      }
-
-      return y;
-    }
 
     const dateVente = infos.dateVente ? new Date(infos.dateVente) : new Date();
     const dateOnly = dateVente.toLocaleDateString('fr-FR');
     const heureOnly = dateVente.toLocaleTimeString('fr-FR');
-
     const ticketNo = String(vente.id_vente || id || Date.now()).padStart(6, '0');
+
     const barcodeFacture = genererCodeBarreBase64(infos.codeFacture);
     const logoUrl = `${window.location.origin}/logo.png`;
 
@@ -483,27 +514,9 @@ export default function VoirVentePage() {
 
     try {
       doc.addImage(logoUrl, 'PNG', 158, 10, 38, 38);
-    } catch (e) {
-      console.log('Logo non chargé', e);
-    }
-
-    if (duplicata) {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
-      doc.text('DUPLICATA', pageWidth / 2, 54, { align: 'center' });
-    }
-
-    doc.setTextColor(245, 245, 245);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(58);
-    doc.text(duplicata ? 'DUPLICATA' : 'ZAIRE', 105, 160, {
-      angle: 45,
-      align: 'center',
-    });
-    doc.setTextColor(0, 0, 0);
+    } catch {}
 
     doc.setDrawColor(60, 60, 60);
-    doc.setLineWidth(0.4);
     doc.line(marginLeft, 58, pageWidth - marginRight, 58);
 
     doc.setFontSize(9);
@@ -528,7 +541,7 @@ export default function VoirVentePage() {
               const pu = nombreDepuisTexte(d.prixunitaire) || montantLigne(d) / quantite;
 
               return [
-                d.nomproduit || '-',
+                d.nomproduit || d.designation || '-',
                 String(d.quantite || 0),
                 `${formatMontantPdf(pu, devise)} ${devise}`,
                 devise,
@@ -540,7 +553,6 @@ export default function VoirVentePage() {
       styles: {
         fontSize: 8,
         cellPadding: 2.3,
-        textColor: [20, 20, 20],
         lineColor: [190, 190, 190],
         lineWidth: 0.2,
         overflow: 'linebreak',
@@ -561,7 +573,7 @@ export default function VoirVentePage() {
       },
     });
 
-    let y = ((doc as any).lastAutoTable?.finalY || 120) + 6;
+    let y = ((doc as any).lastAutoTable?.finalY || 120) + 8;
 
     const devisesActives = [
       infos.totalUSD > 0 ? 'USD' : null,
@@ -575,86 +587,29 @@ export default function VoirVentePage() {
       EUR: infos.totalEUR,
     };
 
-    const remiseParDevise: Record<string, number> = {
-      USD: infos.remiseUSD || 0,
-      CDF: infos.remiseCDF || 0,
-      EUR: infos.remiseEUR || 0,
-    };
-
-    const tvaParDevise: Record<string, number> = {
-      USD: infos.tvaUSD || 0,
-      CDF: infos.tvaCDF || 0,
-      EUR: infos.tvaEUR || 0,
-    };
-
-    y = verifierEspace(y, 35);
-
     autoTable(doc, {
       startY: y,
-      margin: { left: 68, right: marginRight, bottom: 18 },
-      head: [['', ...devisesActives]],
-      body: [
-        ['Remise', ...devisesActives.map((d) => `${formatMontantPdf(remiseParDevise[d], d)} ${d}`)],
-        ['TVA', ...devisesActives.map((d) => `${formatMontantPdf(tvaParDevise[d], d)} ${d}`)],
-        ['TOTAL TTC', ...devisesActives.map((d) => `${formatMontantPdf(totalParDevise[d], d)} ${d}`)],
-      ],
+      margin: { left: 75, right: marginRight, bottom: 18 },
+      head: [['Devise', 'Total']],
+      body: devisesActives.map((d) => [d, `${formatMontantPdf(totalParDevise[d], d)} ${d}`]),
       theme: 'grid',
       styles: {
-        fontSize: 8,
-        cellPadding: 2.5,
-        lineColor: [190, 190, 190],
-        lineWidth: 0.2,
-        overflow: 'linebreak',
-        valign: 'middle',
+        fontSize: 9,
+        cellPadding: 3,
         halign: 'right',
       },
       headStyles: {
         fillColor: [245, 245, 245],
         textColor: [0, 0, 0],
         fontStyle: 'bold',
-        halign: 'center',
       },
       columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 48, halign: 'left' },
-        1: { cellWidth: 38, halign: 'right' },
-        2: { cellWidth: 38, halign: 'right' },
-        3: { cellWidth: 38, halign: 'right' },
-      },
-      didParseCell: (data) => {
-        if (data.row.index === 2) {
-          data.cell.styles.fontStyle = 'bold';
-        }
+        0: { fontStyle: 'bold', halign: 'left' },
+        1: { fontStyle: 'bold', halign: 'right' },
       },
     });
 
-    y = ((doc as any).lastAutoTable?.finalY || y) + 8;
-    y = verifierEspace(y, 12);
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.text(`Mode : ${infos.modePaiement} | Totaux séparés par devise`, marginLeft, y);
-
-    y += 7;
-    y = verifierEspace(y, 45);
-
-    doc.setDrawColor(190, 190, 190);
-    doc.setFillColor(252, 252, 252);
-    doc.rect(marginLeft, y, pageWidth - marginLeft - marginRight, 36, 'FD');
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text('FIDELITE CLIENT', marginLeft + 3, y + 7);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.text(`Catégorie : ${infos.categorieClient}`, marginLeft + 3, y + 13);
-    doc.text(`Taux : ${formatMontantPdf(infos.tauxFidelite, 'USD')}%`, marginLeft + 3, y + 18);
-    doc.text(`Gain sur cette vente : ${formatMontantPdf(infos.gainFidelite, 'USD')} USD`, marginLeft + 3, y + 23);
-    doc.text(`Solde Cashback : ${formatMontantPdf(infos.soldeCashback, 'USD')} USD`, marginLeft + 3, y + 28);
-    doc.text(`Carte Fidelite : ${infos.codeCarteFidelite}`, marginLeft + 3, y + 33);
-
-    y += 47;
-    y = verifierEspace(y, 25);
+    y = ((doc as any).lastAutoTable?.finalY || y) + 12;
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
@@ -664,8 +619,12 @@ export default function VoirVentePage() {
       align: 'center',
     });
 
-    y += 16;
-    y = verifierEspace(y, 80);
+    y += 18;
+
+    if (y + 45 > pageHeight) {
+      doc.addPage();
+      y = 20;
+    }
 
     doc.addImage(barcodeFacture, 'PNG', 62, y, 86, 20);
     doc.setFontSize(8.5);
@@ -678,23 +637,18 @@ export default function VoirVentePage() {
       doc.setPage(i);
       doc.setFontSize(7.5);
       doc.setTextColor(90, 90, 90);
-
       doc.text('ZAIRE.CD - Facture générée par MESSIE MATALA POS', pageWidth / 2, pageHeight - 10, {
         align: 'center',
       });
-
       doc.text(`Page ${i} / ${totalPages}`, pageWidth - marginRight, pageHeight - 10, {
         align: 'right',
       });
     }
 
-    doc.setTextColor(0, 0, 0);
-
-    const nom = `${duplicata ? 'duplicata-a4' : 'facture-a4'}-${infos.codeFacture}.pdf`;
-    doc.save(nom);
+    doc.save(`facture-a4-${infos.codeFacture}.pdf`);
   }
 
-  function genererPdfTicket(duplicata = false) {
+  function genererPdfTicket() {
     if (!vente || !infos) return;
 
     const doc = new jsPDF({
@@ -721,20 +675,10 @@ export default function VoirVentePage() {
     y += 4;
     doc.text('Caisse : POS MASINA PLAZA', 40, y, { align: 'center' });
 
-    if (duplicata) {
-      y += 6;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.rect(18, y - 4, 44, 7);
-      doc.text('DUPLICATA', 40, y + 1, { align: 'center' });
-    }
-
     y += 8;
     doc.line(4, y, 76, y);
     y += 5;
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
     doc.text(`Facture : ${infos.codeFacture}`, 4, y);
     y += 4;
     doc.text(`Date : ${dateVente.toLocaleDateString('fr-FR')}`, 4, y);
@@ -760,7 +704,7 @@ export default function VoirVentePage() {
           ? infos.lignes.map((d: any) => {
               const devise = normaliserDevise(d.devise);
               return [
-                d.nomproduit || '-',
+                d.nomproduit || d.designation || '-',
                 String(d.quantite || 0),
                 formatMontantPdf(d.prixunitaire, devise),
                 formatMontantPdf(montantLigne(d), devise),
@@ -822,8 +766,7 @@ export default function VoirVentePage() {
     y += 4;
     doc.text('ZAIRE.CD', 40, y, { align: 'center' });
 
-    const nom = `${duplicata ? 'duplicata-ticket' : 'ticket'}-${infos.codeFacture}.pdf`;
-    doc.save(nom);
+    doc.save(`ticket-${infos.codeFacture}.pdf`);
   }
 
   if (loading) {
@@ -853,34 +796,34 @@ export default function VoirVentePage() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => genererPdfTicket(false)}
-                className="rounded-xl bg-slate-700 px-4 py-3 text-sm font-black text-white hover:bg-slate-600"
-              >
-                Ticket PDF
-              </button>
-
-              <button
-                type="button"
-                onClick={() => imprimerA4Dialogue()}
+                onClick={imprimerA4}
                 className="rounded-xl bg-red-600 px-4 py-3 text-sm font-black text-white hover:bg-red-500"
               >
-                Impr. A4
+                Imprimer A4
               </button>
 
               <button
                 type="button"
-                onClick={() => genererPdfA4(true)}
+                onClick={imprimerTicket}
+                className="rounded-xl bg-slate-800 px-4 py-3 text-sm font-black text-white hover:bg-slate-700"
+              >
+                Imprimer Ticket
+              </button>
+
+              <button
+                type="button"
+                onClick={genererPdfA4}
                 className="rounded-xl bg-amber-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-amber-300"
               >
-                Duplicata A4 PDF
+                PDF A4
               </button>
 
               <button
                 type="button"
-                onClick={() => genererPdfTicket(true)}
+                onClick={genererPdfTicket}
                 className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-500"
               >
-                Duplicata ticket PDF
+                PDF Ticket
               </button>
 
               <button
@@ -906,7 +849,10 @@ export default function VoirVentePage() {
         <h2 className="text-lg font-black text-slate-900">Résumé</h2>
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <InfoLine label="Date vente" value={infos.dateVente ? new Date(infos.dateVente).toLocaleString('fr-FR') : '-'} />
+          <InfoLine
+            label="Date vente"
+            value={infos.dateVente ? new Date(infos.dateVente).toLocaleString('fr-FR') : '-'}
+          />
           <InfoLine label="Téléphone client" value={infos.telephoneClient} />
           <InfoLine label="Facture" value={infos.codeFacture} />
           <InfoLine label="Nombre articles" value={String(infos.lignes.length)} />
@@ -945,7 +891,7 @@ export default function VoirVentePage() {
                 return (
                   <tr key={i} className="border-b hover:bg-emerald-50/40">
                     <td className="p-3">{d.refproduit || '-'}</td>
-                    <td className="p-3 font-bold">{d.nomproduit || '-'}</td>
+                    <td className="p-3 font-bold">{d.nomproduit || d.designation || '-'}</td>
                     <td className="p-3 text-center">{d.quantite || 0}</td>
                     <td className="p-3 text-right">{formatMontant(d.prixunitaire, devise)}</td>
                     <td className="p-3 text-right">{formatMontant(d.remise, devise)}</td>
