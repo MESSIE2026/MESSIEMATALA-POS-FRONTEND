@@ -148,40 +148,39 @@ export default function Page() {
   }
 
   async function enregistrerEmploye() {
+  const nom = form.nom.trim();
+  const prenom = form.prenom.trim();
+  const poste = form.poste.trim();
+  const matricule = form.matricule.trim();
+
+  if (!nom) return setMessage('Nom obligatoire.');
+  if (!prenom) return setMessage('Prénom obligatoire.');
+  if (!poste) return setMessage('Poste obligatoire.');
+  if (!matricule) return setMessage('Matricule obligatoire.');
+
   const payload = {
-    ...form,
-    nom: form.nom.trim(),
-    prenom: form.prenom.trim(),
+    nom,
+    prenom,
     telephone: form.telephone.trim(),
     email: form.email.trim(),
-    poste: form.poste.trim(),
+    poste,
     departement: form.departement.trim(),
     sexe: form.sexe.trim(),
-    matricule: form.matricule.trim(),
+    matricule,
     pin: form.pin.trim() || '123456',
+    motdepasse: form.pin.trim() || '123456',
+
     idEntreprise: Number(form.idEntreprise || 1),
     idMagasin: Number(form.idMagasin || 1),
+    identreprise: Number(form.idEntreprise || 1),
+    idmagasin: Number(form.idMagasin || 1),
+
+    isManager: form.isManager,
+    ismanager: form.isManager,
+    isactif: true,
   };
 
-  if (!payload.nom) {
-    setMessage('Nom obligatoire.');
-    return;
-  }
-
-  if (!payload.prenom) {
-    setMessage('Prénom obligatoire.');
-    return;
-  }
-
-  if (!payload.poste) {
-    setMessage('Poste obligatoire.');
-    return;
-  }
-
-  if (!payload.matricule) {
-    setMessage('Matricule obligatoire.');
-    return;
-  }
+  console.log('PAYLOAD EMPLOYE =', payload);
 
   setSaving(true);
   setMessage('');
@@ -199,7 +198,12 @@ export default function Page() {
       body: JSON.stringify(payload),
     });
 
-    if (!res.ok) throw new Error(await res.text());
+    const text = await res.text();
+
+    if (!res.ok) {
+      console.error('ERREUR API EMPLOYE =', text);
+      throw new Error(text);
+    }
 
     setMessage(editingId ? 'Employé modifié.' : 'Employé ajouté.');
     resetForm();
