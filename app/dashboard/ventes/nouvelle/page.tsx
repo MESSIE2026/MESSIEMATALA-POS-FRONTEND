@@ -43,8 +43,6 @@ type LigneVente = {
   couleur: string;
 };
 
-const MODES_PAIEMENT = ['CASH', 'MOBILE MONEY', 'CARTE', 'CREDIT CLIENT', 'MIXTE'];
-
 export default function NouvelleVentePage() {
   const router = useRouter();
 
@@ -72,8 +70,7 @@ export default function NouvelleVentePage() {
     chargerClients();
 
     setTimeout(() => {
-      scanRef.current?.focus();
-      scanRef.current?.select();
+      if (autoScanRef.current) scanRef.current?.focus();
     }, 300);
   }, []);
 
@@ -181,26 +178,6 @@ export default function NouvelleVentePage() {
     }
   }
 
-  function choisirClient(valeur: string) {
-    setNomclient(valeur);
-
-    const texte = valeur.trim().toUpperCase();
-
-    const client = clients.find((c) => {
-      const nom = String(c.nom ?? '').trim().toUpperCase();
-      return nom === texte;
-    });
-
-    if (client) {
-      setIdClient(Number(client.id_clients));
-      setNomclient(client.nom ?? '');
-      setTelephone(client.telephone ?? '');
-    } else {
-      setIdClient(null);
-      if (texte === 'CLIENT CASH') setTelephone('');
-    }
-  }
-
   function nettoyerCode(v: unknown) {
     return String(v ?? '')
       .trim()
@@ -213,9 +190,9 @@ export default function NouvelleVentePage() {
   function normaliserDevise(devise?: string | null) {
     const d = String(devise ?? 'USD').trim().toUpperCase();
 
-    if (d === 'FC' || d === 'CDF' || d === 'FRANC' || d === 'FRANCS') return 'CDF';
-    if (d === '$' || d === 'DOLLAR' || d === 'DOLLARS' || d === 'USD') return 'USD';
-    if (d === 'EURO' || d === 'EUROS' || d === 'EUR') return 'EUR';
+    if (d === 'FC' || d === 'CDF') return 'CDF';
+    if (d === '$' || d === 'DOLLAR' || d === 'USD') return 'USD';
+    if (d === 'EURO' || d === 'EUR') return 'EUR';
 
     return 'USD';
   }
@@ -291,7 +268,14 @@ export default function NouvelleVentePage() {
       const code = nettoyerCode(p.codebarre ?? p.code_barre ?? p.barcode);
       const nom = nettoyerCode(p.nomproduit ?? p.nom_produit ?? p.designation);
 
-      return id === q || ref === q || code === q || ref.includes(q) || code.includes(q) || nom.includes(q);
+      return (
+        id === q ||
+        ref === q ||
+        code === q ||
+        ref.includes(q) ||
+        code.includes(q) ||
+        nom.includes(q)
+      );
     });
   }
 
@@ -306,7 +290,10 @@ export default function NouvelleVentePage() {
     const now = Date.now();
     const codeNettoye = nettoyerCode(valeur);
 
-    if (lastScanRef.current.code === codeNettoye && now - lastScanRef.current.time < 500) {
+    if (
+      lastScanRef.current.code === codeNettoye &&
+      now - lastScanRef.current.time < 500
+    ) {
       setScan('');
       refocusScan();
       return;
@@ -337,7 +324,9 @@ export default function NouvelleVentePage() {
 
       if (existe) {
         return old.map((x) =>
-          x.idProduit === produit.id_produit ? { ...x, quantite: x.quantite + 1 } : x,
+          x.idProduit === produit.id_produit
+            ? { ...x, quantite: x.quantite + 1 }
+            : x,
         );
       }
 
@@ -362,10 +351,31 @@ export default function NouvelleVentePage() {
     refocusScan();
   }
 
+  function choisirClient(valeur: string) {
+    setNomclient(valeur);
+
+    const texte = valeur.trim().toUpperCase();
+
+    const client = clients.find((c) => {
+      const nom = String(c.nom ?? '').trim().toUpperCase();
+      return nom === texte;
+    });
+
+    if (client) {
+      setIdClient(Number(client.id_clients));
+      setNomclient(client.nom ?? '');
+      setTelephone(client.telephone ?? '');
+    } else {
+      setIdClient(null);
+    }
+  }
+
   function modifierQte(index: number, qte: number) {
     setLignes((old) =>
       old.map((l, i) =>
-        i === index ? { ...l, quantite: Number.isFinite(qte) && qte > 0 ? qte : 1 } : l,
+        i === index
+          ? { ...l, quantite: Number.isFinite(qte) && qte > 0 ? qte : 1 }
+          : l,
       ),
     );
   }
@@ -373,7 +383,9 @@ export default function NouvelleVentePage() {
   function modifierPrix(index: number, prix: number) {
     setLignes((old) =>
       old.map((l, i) =>
-        i === index ? { ...l, prixunitaire: Number.isFinite(prix) && prix >= 0 ? prix : 0 } : l,
+        i === index
+          ? { ...l, prixunitaire: Number.isFinite(prix) && prix >= 0 ? prix : 0 }
+          : l,
       ),
     );
   }
@@ -381,15 +393,9 @@ export default function NouvelleVentePage() {
   function modifierRemise(index: number, remise: number) {
     setLignes((old) =>
       old.map((l, i) =>
-        i === index ? { ...l, remise: Number.isFinite(remise) && remise >= 0 ? remise : 0 } : l,
-      ),
-    );
-  }
-
-  function modifierTva(index: number, tva: number) {
-    setLignes((old) =>
-      old.map((l, i) =>
-        i === index ? { ...l, tva: Number.isFinite(tva) && tva >= 0 ? tva : 0 } : l,
+        i === index
+          ? { ...l, remise: Number.isFinite(remise) && remise >= 0 ? remise : 0 }
+          : l,
       ),
     );
   }
@@ -399,8 +405,13 @@ export default function NouvelleVentePage() {
     refocusScan();
   }
 
-  function annulerVenteEnCours() {
-    if (lignes.length > 0 && !confirm('Annuler toute la vente en cours ?')) return;
+  function supprimerDernierArticle() {
+    setLignes((old) => old.slice(0, -1));
+    refocusScan();
+  }
+
+  function annulerVente() {
+    if (lignes.length > 0 && !confirm('Annuler toute la vente ?')) return;
 
     setLignes([]);
     setScan('');
@@ -409,6 +420,16 @@ export default function NouvelleVentePage() {
     setTelephone('');
     setIdClient(null);
     setModePaiement('CASH');
+    refocusScan();
+  }
+
+  function retraitFidelite() {
+    alert('Retrait Fidélité : phase suivante. Le bouton est conservé.');
+    refocusScan();
+  }
+
+  function imprimerTicket() {
+    alert('Impression ticket après finalisation. Le bouton est conservé.');
     refocusScan();
   }
 
@@ -428,18 +449,14 @@ export default function NouvelleVentePage() {
     };
   }, [lignes]);
 
-  const remiseTotale = useMemo(() => {
-    return lignes.reduce((s, x) => s + Number(x.remise || 0), 0);
-  }, [lignes]);
-
-  const tvaTotale = useMemo(() => {
-    return lignes.reduce((s, x) => s + Number(x.tva || 0), 0);
-  }, [lignes]);
-
   const devisePrincipale = totaux.USD > 0 ? 'USD' : totaux.CDF > 0 ? 'CDF' : 'EUR';
 
   const totalPrincipal =
-    devisePrincipale === 'USD' ? totaux.USD : devisePrincipale === 'CDF' ? totaux.CDF : totaux.EUR;
+    devisePrincipale === 'USD'
+      ? totaux.USD
+      : devisePrincipale === 'CDF'
+        ? totaux.CDF
+        : totaux.EUR;
 
   const montantRecu = recu.trim() === '' ? totalPrincipal : nombreDepuisPrix(recu);
   const monnaie = Math.max(0, montantRecu - totalPrincipal);
@@ -502,8 +519,6 @@ export default function NouvelleVentePage() {
         devise: devisePrincipale,
         total: totalPrincipal,
         montanttotal: totalPrincipal,
-        remise: remiseTotale,
-        tva: tvaTotale,
 
         idEmploye,
         id_employe: idEmploye,
@@ -556,8 +571,6 @@ export default function NouvelleVentePage() {
           0,
       );
 
-      alert('Vente enregistrée avec succès.');
-
       if (idVente > 0) {
         router.push(`/dashboard/ventes/detail?id=${idVente}`);
       } else {
@@ -574,334 +587,392 @@ export default function NouvelleVentePage() {
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
-      <header className="border-b bg-white px-4 py-3 shadow-sm">
-        <div className="flex flex-wrap justify-between gap-3">
+      <header className="sticky top-0 z-20 border-b bg-white px-3 py-2 shadow-sm">
+        <div className="flex items-center justify-between gap-2">
           <div>
-            <div className="text-lg font-black text-emerald-800">MESSIE MATALA POS</div>
-            <div className="text-xs font-semibold text-slate-500">
-              Vente POS · Web · Mobile · Windows · Mac · Linux · Terminal POS
+            <div className="text-base font-black text-emerald-800">
+              MESSIE MATALA POS
             </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => router.push('/dashboard/ventes')}
-              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-black text-white hover:bg-slate-700"
-            >
-              Liste ventes
-            </button>
-
-            <button
-              type="button"
-              onClick={() => router.push('/dashboard/session-caisse')}
-              className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-black text-slate-950 hover:bg-amber-300"
-            >
-              Session caisse
-            </button>
-
-            <div className="rounded-xl bg-red-50 px-4 py-2 text-sm font-black text-red-700">
-              {caissier}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <section className="grid gap-3 p-3 xl:grid-cols-[1fr_340px]">
-        <section className="space-y-3">
-          <div className="rounded-2xl border bg-white p-3 shadow-sm">
-            <div className="grid gap-3 lg:grid-cols-[1fr_200px_180px]">
-              <input
-                ref={scanRef}
-                value={scan}
-                onFocus={() => {
-                  autoScanRef.current = true;
-                }}
-                onChange={(e) => setScan(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key !== 'Enter') return;
-
-                  e.preventDefault();
-
-                  const valeur = e.currentTarget.value.trim();
-                  const now = Date.now();
-
-                  if (!valeur && lignes.length > 0 && now - lastEnterRef.current < 700) {
-                    finaliserVente();
-                    return;
-                  }
-
-                  lastEnterRef.current = now;
-                  ajouterProduit(valeur);
-                }}
-                className="rounded-xl border-2 border-slate-400 bg-white px-4 py-4 text-lg font-black outline-none focus:border-emerald-700"
-                placeholder="Scanner code-barres, référence ou nom produit..."
-                autoComplete="off"
-                spellCheck={false}
-              />
-
-              <button
-                type="button"
-                onClick={() => ajouterProduit()}
-                className="rounded-xl bg-blue-600 px-4 py-3 font-black text-white hover:bg-blue-700"
-              >
-                Ajouter
-              </button>
-
-              <button
-                type="button"
-                onClick={annulerVenteEnCours}
-                className="rounded-xl bg-red-600 px-4 py-3 font-black text-white hover:bg-red-700"
-              >
-                Annuler vente
-              </button>
-            </div>
-          </div>
-
-          <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
-            <div className="overflow-auto">
-              <table className="w-full min-w-[1100px] border-collapse text-sm">
-                <thead className="bg-slate-900 text-white">
-                  <tr>
-                    <th className="border border-slate-700 p-3 text-left">Référence</th>
-                    <th className="border border-slate-700 p-3 text-left">Désignation</th>
-                    <th className="border border-slate-700 p-3 text-center">Qté</th>
-                    <th className="border border-slate-700 p-3 text-right">PU</th>
-                    <th className="border border-slate-700 p-3 text-right">Remise</th>
-                    <th className="border border-slate-700 p-3 text-right">TVA</th>
-                    <th className="border border-slate-700 p-3 text-center">Taille</th>
-                    <th className="border border-slate-700 p-3 text-center">Couleur</th>
-                    <th className="border border-slate-700 p-3 text-center">Devise</th>
-                    <th className="border border-slate-700 p-3 text-right">Total</th>
-                    <th className="border border-slate-700 p-3 text-center">Action</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {lignes.map((l, i) => (
-                    <tr key={`${l.idProduit}-${i}`} className="font-semibold hover:bg-emerald-50">
-                      <td className="border p-2">{l.refproduit}</td>
-                      <td className="border p-2 font-bold">{l.nomproduit}</td>
-
-                      <td className="border p-2 text-center">
-                        <input
-                          type="number"
-                          value={l.quantite}
-                          onFocus={pauseScan}
-                          onBlur={reprendreScan}
-                          onChange={(e) => modifierQte(i, Number(e.target.value))}
-                          className="w-20 rounded border px-2 py-1 text-center font-black"
-                        />
-                      </td>
-
-                      <td className="border p-2 text-right">
-                        <input
-                          type="number"
-                          value={l.prixunitaire}
-                          onFocus={pauseScan}
-                          onBlur={reprendreScan}
-                          onChange={(e) => modifierPrix(i, Number(e.target.value))}
-                          className="w-28 rounded border px-2 py-1 text-right font-black"
-                        />
-                      </td>
-
-                      <td className="border p-2 text-right">
-                        <input
-                          type="number"
-                          value={l.remise}
-                          onFocus={pauseScan}
-                          onBlur={reprendreScan}
-                          onChange={(e) => modifierRemise(i, Number(e.target.value))}
-                          className="w-24 rounded border px-2 py-1 text-right font-black"
-                        />
-                      </td>
-
-                      <td className="border p-2 text-right">
-                        <input
-                          type="number"
-                          value={l.tva}
-                          onFocus={pauseScan}
-                          onBlur={reprendreScan}
-                          onChange={(e) => modifierTva(i, Number(e.target.value))}
-                          className="w-24 rounded border px-2 py-1 text-right font-black"
-                        />
-                      </td>
-
-                      <td className="border p-2 text-center">{l.taille}</td>
-                      <td className="border p-2 text-center">{l.couleur}</td>
-                      <td className="border p-2 text-center font-black">{normaliserDevise(l.devise)}</td>
-                      <td className="border p-2 text-right font-black">
-                        {formatMontant(totalLigne(l), l.devise)}
-                      </td>
-
-                      <td className="border p-2 text-center">
-                        <button
-                          type="button"
-                          onClick={() => supprimerArticle(i)}
-                          className="rounded bg-red-600 px-3 py-1 font-bold text-white hover:bg-red-700"
-                        >
-                          X
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-
-                  {lignes.length === 0 && (
-                    <tr>
-                      <td colSpan={11} className="h-80 text-center text-lg font-bold text-slate-400">
-                        Aucun article ajouté. Scanner un produit pour commencer.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <aside className="space-y-3">
-          <div className="rounded-2xl border bg-white p-4 shadow-sm">
-            <h2 className="text-lg font-black text-slate-900">Client</h2>
-
-            <div className="mt-3 space-y-3">
-              <input
-                list="clients-list"
-                value={nomclient}
-                onFocus={pauseScan}
-                onBlur={reprendreScan}
-                onChange={(e) => choisirClient(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-3 font-bold outline-none focus:border-emerald-700"
-                placeholder="Client"
-              />
-
-              <datalist id="clients-list">
-                {clients.map((c) => (
-                  <option key={c.id_clients} value={c.nom || ''} />
-                ))}
-              </datalist>
-
-              <input
-                value={telephone}
-                onFocus={pauseScan}
-                onBlur={reprendreScan}
-                onChange={(e) => setTelephone(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-3 font-bold outline-none focus:border-emerald-700"
-                placeholder="Téléphone"
-              />
-            </div>
-          </div>
-
-          <div className="rounded-2xl border bg-white p-4 shadow-sm">
-            <h2 className="text-lg font-black text-slate-900">Paiement</h2>
-
-            <div className="mt-3 space-y-3">
-              <select
-                value={modePaiement}
-                onFocus={pauseScan}
-                onBlur={reprendreScan}
-                onChange={(e) => setModePaiement(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-3 font-black outline-none focus:border-emerald-700"
-              >
-                {MODES_PAIEMENT.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-
-              <input
-                value={recu}
-                onFocus={pauseScan}
-                onBlur={reprendreScan}
-                onChange={(e) => setRecu(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-3 text-right text-xl font-black outline-none focus:border-emerald-700"
-                placeholder="Montant reçu"
-              />
-            </div>
-          </div>
-
-          <div className="rounded-2xl border bg-slate-950 p-4 text-white shadow-sm">
-            <h2 className="text-lg font-black">TOTAL À PAYER</h2>
-
-            <div className="mt-4 space-y-3">
-              <TotalLine label="USD" value={`${formatMontant(totaux.USD, 'USD')} USD`} active={totaux.USD > 0} />
-              <TotalLine label="CDF" value={`${formatMontant(totaux.CDF, 'CDF')} CDF`} active={totaux.CDF > 0} />
-              <TotalLine label="EUR" value={`${formatMontant(totaux.EUR, 'EUR')} EUR`} active={totaux.EUR > 0} />
-            </div>
-
-            <div className="mt-4 rounded-xl bg-white/10 p-3">
-              <div className="flex justify-between text-sm font-bold">
-                <span>Devise principale</span>
-                <span>{devisePrincipale}</span>
-              </div>
-
-              <div className="mt-2 flex justify-between text-sm font-bold">
-                <span>Montant reçu</span>
-                <span>{formatMontant(montantRecu, devisePrincipale)} {devisePrincipale}</span>
-              </div>
-
-              <div className="mt-2 flex justify-between text-sm font-black text-emerald-300">
-                <span>Monnaie</span>
-                <span>{formatMontant(monnaie, devisePrincipale)} {devisePrincipale}</span>
-              </div>
+            <div className="text-[11px] font-semibold text-slate-500">
+              Caisse · Mobile · Web · Desktop · Terminal POS
             </div>
           </div>
 
           <button
             type="button"
+            onClick={() => router.push('/dashboard/session-caisse')}
+            className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-black text-white"
+          >
+            Session
+          </button>
+        </div>
+
+        <div className="mt-2 rounded-lg bg-red-50 px-3 py-1 text-xs font-black text-red-700">
+          {caissier}
+        </div>
+      </header>
+
+      <section className="p-3">
+        <div className="mb-3 grid gap-2 sm:grid-cols-[1fr_120px]">
+          <input
+            ref={scanRef}
+            value={scan}
+            onFocus={() => {
+              autoScanRef.current = true;
+            }}
+            onChange={(e) => setScan(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return;
+
+              e.preventDefault();
+
+              const valeur = e.currentTarget.value.trim();
+              const now = Date.now();
+
+              if (!valeur && lignes.length > 0 && now - lastEnterRef.current < 700) {
+                finaliserVente();
+                return;
+              }
+
+              lastEnterRef.current = now;
+              ajouterProduit(valeur);
+            }}
+            className="rounded-xl border-2 border-slate-400 bg-white px-4 py-3 text-base font-black outline-none focus:border-blue-600"
+            placeholder="Scanner / rechercher produit..."
+            autoComplete="off"
+            spellCheck={false}
+          />
+
+          <button
+            type="button"
+            onClick={() => ajouterProduit()}
+            className="rounded-xl bg-blue-600 px-4 py-3 font-black text-white"
+          >
+            Ajouter
+          </button>
+        </div>
+
+        <section className="mb-3 rounded-2xl border bg-white p-3 shadow-sm">
+          <div className="grid gap-2 sm:grid-cols-3">
+            <input
+              list="liste-clients"
+              value={nomclient}
+              onFocus={pauseScan}
+              onBlur={reprendreScan}
+              onChange={(e) => choisirClient(e.target.value)}
+              className="rounded-xl border px-3 py-2 text-sm font-bold"
+              placeholder="Client"
+            />
+
+            <datalist id="liste-clients">
+              {clients.map((c) => (
+                <option key={c.id_clients} value={c.nom ?? ''}>
+                  {c.telephone ?? ''}
+                </option>
+              ))}
+            </datalist>
+
+            <input
+              value={telephone}
+              onFocus={pauseScan}
+              onBlur={reprendreScan}
+              onChange={(e) => setTelephone(e.target.value)}
+              className="rounded-xl border px-3 py-2 text-sm font-bold"
+              placeholder="Téléphone"
+            />
+
+            <select
+              value={modePaiement}
+              onFocus={pauseScan}
+              onBlur={reprendreScan}
+              onChange={(e) => setModePaiement(e.target.value)}
+              className="rounded-xl border px-3 py-2 text-sm font-black"
+            >
+              <option value="CASH">ESPÈCES</option>
+              <option value="MOBILE MONEY">MOBILE MONEY</option>
+              <option value="CARTE">CARTE</option>
+              <option value="CREDIT">CRÉDIT</option>
+            </select>
+          </div>
+        </section>
+
+        <section className="mb-3 grid grid-cols-3 gap-2">
+          <TotalCard label="USD" value={totaux.USD} devise="USD" />
+          <TotalCard label="CDF" value={totaux.CDF} devise="CDF" />
+          <TotalCard label="EUR" value={totaux.EUR} devise="EUR" />
+        </section>
+
+        <section className="mb-3 rounded-2xl border bg-white p-3 shadow-sm">
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div>
+              <label className="mb-1 block text-xs font-black text-slate-500">
+                Total principal
+              </label>
+              <input
+                value={`${formatMontant(totalPrincipal, devisePrincipale)} ${devisePrincipale}`}
+                readOnly
+                className="w-full rounded-xl border bg-slate-50 px-3 py-2 text-right font-black"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-black text-slate-500">
+                Reçu
+              </label>
+              <input
+                value={recu}
+                onFocus={pauseScan}
+                onBlur={reprendreScan}
+                onChange={(e) => setRecu(e.target.value)}
+                className="w-full rounded-xl border px-3 py-2 text-right font-black"
+                placeholder="0"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-black text-slate-500">
+                Monnaie
+              </label>
+              <input
+                value={`${formatMontant(monnaie, devisePrincipale)} ${devisePrincipale}`}
+                readOnly
+                className="w-full rounded-xl border bg-emerald-50 px-3 py-2 text-right font-black text-emerald-800"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="hidden overflow-hidden rounded-2xl border bg-white shadow-sm md:block">
+          <div className="overflow-auto">
+            <table className="w-full min-w-[950px] border-collapse text-sm">
+              <thead className="bg-slate-900 text-white">
+                <tr>
+                  <th className="border p-3">Référence</th>
+                  <th className="border p-3">Désignation</th>
+                  <th className="border p-3">Qté</th>
+                  <th className="border p-3">PU</th>
+                  <th className="border p-3">Remise</th>
+                  <th className="border p-3">Taille</th>
+                  <th className="border p-3">Couleur</th>
+                  <th className="border p-3">Devise</th>
+                  <th className="border p-3">Total</th>
+                  <th className="border p-3">Action</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {lignes.map((l, i) => (
+                  <tr key={`${l.idProduit}-${i}`} className="text-center font-semibold">
+                    <td className="border p-2">{l.refproduit}</td>
+                    <td className="border p-2 text-left">{l.nomproduit}</td>
+
+                    <td className="border p-2">
+                      <input
+                        type="number"
+                        value={l.quantite}
+                        onFocus={pauseScan}
+                        onBlur={reprendreScan}
+                        onChange={(e) => modifierQte(i, Number(e.target.value))}
+                        className="w-20 rounded border px-2 py-1 text-center"
+                      />
+                    </td>
+
+                    <td className="border p-2">
+                      <input
+                        type="number"
+                        value={l.prixunitaire}
+                        onFocus={pauseScan}
+                        onBlur={reprendreScan}
+                        onChange={(e) => modifierPrix(i, Number(e.target.value))}
+                        className="w-28 rounded border px-2 py-1 text-right"
+                      />
+                    </td>
+
+                    <td className="border p-2">
+                      <input
+                        type="number"
+                        value={l.remise}
+                        onFocus={pauseScan}
+                        onBlur={reprendreScan}
+                        onChange={(e) => modifierRemise(i, Number(e.target.value))}
+                        className="w-24 rounded border px-2 py-1 text-right"
+                      />
+                    </td>
+
+                    <td className="border p-2">{l.taille}</td>
+                    <td className="border p-2">{l.couleur}</td>
+                    <td className="border p-2">{normaliserDevise(l.devise)}</td>
+
+                    <td className="border p-2 font-black">
+                      {formatMontant(totalLigne(l), l.devise)}
+                    </td>
+
+                    <td className="border p-2">
+                      <button
+                        type="button"
+                        onClick={() => supprimerArticle(i)}
+                        className="rounded bg-red-600 px-3 py-1 font-bold text-white"
+                      >
+                        X
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+
+                {lignes.length === 0 && (
+                  <tr>
+                    <td colSpan={10} className="h-64 text-center font-bold text-slate-400">
+                      Aucun article ajouté.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="space-y-2 md:hidden">
+          {lignes.length === 0 && (
+            <div className="rounded-2xl border bg-white p-8 text-center font-bold text-slate-400">
+              Aucun article ajouté.
+            </div>
+          )}
+
+          {lignes.map((l, i) => (
+            <div key={`${l.idProduit}-${i}`} className="rounded-2xl border bg-white p-3 shadow-sm">
+              <div className="flex justify-between gap-2">
+                <div>
+                  <div className="font-black">{l.nomproduit}</div>
+                  <div className="text-xs font-bold text-slate-500">
+                    {l.refproduit} · {l.taille} · {l.couleur}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => supprimerArticle(i)}
+                  className="h-8 rounded-lg bg-red-600 px-3 text-sm font-black text-white"
+                >
+                  X
+                </button>
+              </div>
+
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <input
+                  type="number"
+                  value={l.quantite}
+                  onFocus={pauseScan}
+                  onBlur={reprendreScan}
+                  onChange={(e) => modifierQte(i, Number(e.target.value))}
+                  className="rounded-lg border px-2 py-2 text-center font-black"
+                />
+
+                <input
+                  type="number"
+                  value={l.prixunitaire}
+                  onFocus={pauseScan}
+                  onBlur={reprendreScan}
+                  onChange={(e) => modifierPrix(i, Number(e.target.value))}
+                  className="rounded-lg border px-2 py-2 text-right font-black"
+                />
+
+                <input
+                  type="number"
+                  value={l.remise}
+                  onFocus={pauseScan}
+                  onBlur={reprendreScan}
+                  onChange={(e) => modifierRemise(i, Number(e.target.value))}
+                  className="rounded-lg border px-2 py-2 text-right font-black"
+                />
+              </div>
+
+              <div className="mt-2 text-right text-lg font-black text-emerald-800">
+                {formatMontant(totalLigne(l), l.devise)} {normaliserDevise(l.devise)}
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <section className="sticky bottom-0 mt-3 grid grid-cols-2 gap-2 rounded-t-2xl bg-slate-100 pb-2 pt-2 sm:grid-cols-3 lg:grid-cols-6">
+          <button
+            type="button"
+            onClick={retraitFidelite}
+            className="rounded-xl bg-slate-300 py-3 text-sm font-black text-slate-700"
+          >
+            Retrait Fidélité
+          </button>
+
+          <button
+            type="button"
             onClick={finaliserVente}
             disabled={loading || lignes.length === 0}
-            className={`w-full rounded-2xl py-5 text-xl font-black text-white ${
+            className={`rounded-xl py-3 text-sm font-black text-white ${
               loading || lignes.length === 0
-                ? 'cursor-not-allowed bg-green-300'
+                ? 'bg-green-300'
                 : 'bg-green-600 hover:bg-green-700'
             }`}
           >
-            {loading ? 'Validation...' : 'FINALISER'}
+            {loading ? 'Validation...' : 'Finaliser'}
           </button>
 
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setLignes((old) => old.slice(0, -1))}
-              className="rounded-xl bg-slate-700 py-3 font-black text-white hover:bg-slate-800"
-            >
-              Retirer dernier
-            </button>
+          <button
+            type="button"
+            onClick={annulerVente}
+            className="rounded-xl bg-red-600 py-3 text-sm font-black text-white"
+          >
+            Annuler
+          </button>
 
-            <button
-              type="button"
-              onClick={refocusScan}
-              className="rounded-xl bg-blue-600 py-3 font-black text-white hover:bg-blue-700"
-            >
-              Focus scan
-            </button>
-          </div>
-        </aside>
+          <button
+            type="button"
+            onClick={imprimerTicket}
+            className="rounded-xl bg-slate-300 py-3 text-sm font-black text-slate-700"
+          >
+            Imprimer Ticket
+          </button>
+
+          <button
+            type="button"
+            onClick={supprimerDernierArticle}
+            className="rounded-xl bg-slate-300 py-3 text-sm font-black text-slate-700"
+          >
+            Supprimer article
+          </button>
+
+          <button
+            type="button"
+            onClick={() => router.push('/dashboard/ventes')}
+            className="rounded-xl bg-slate-800 py-3 text-sm font-black text-white"
+          >
+            Retour
+          </button>
+        </section>
       </section>
     </main>
   );
 }
 
-function TotalLine({
+function TotalCard({
   label,
   value,
-  active,
+  devise,
 }: {
   label: string;
-  value: string;
-  active: boolean;
+  value: number;
+  devise: string;
 }) {
+  const d = devise.toUpperCase();
+  const decimals = d === 'CDF' ? 0 : 2;
+
+  const n = Number(value || 0).toLocaleString('fr-FR', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+
   return (
-    <div
-      className={`rounded-xl p-3 ${
-        active ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white/50'
-      }`}
-    >
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-black">{label}</span>
-        <span className="text-xl font-black">{value}</span>
-      </div>
+    <div className="rounded-2xl border bg-white p-3 text-center shadow-sm">
+      <div className="text-sm font-black text-slate-500">{label}</div>
+      <div className="text-xl font-black text-emerald-800">{n}</div>
     </div>
   );
 }
