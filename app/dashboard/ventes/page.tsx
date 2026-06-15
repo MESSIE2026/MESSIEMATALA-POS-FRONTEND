@@ -12,6 +12,10 @@ type Vente = {
   nomclient?: string | null;
   nomcaissier?: string | null;
   montanttotal?: string | number;
+  montant_total?: string | number;
+  total?: string | number;
+  totalvente?: string | number;
+  total_vente?: string | number;
   devise?: string | null;
   modepaiement?: string | null;
   statut: string;
@@ -19,14 +23,24 @@ type Vente = {
   totalUSD?: string | number;
   total_usd?: string | number;
   montantusd?: string | number;
+  montant_usd?: string | number;
+  totalusd?: string | number;
 
   totalCDF?: string | number;
   total_cdf?: string | number;
   montantcdf?: string | number;
+  montant_cdf?: string | number;
+  totalcdf?: string | number;
+  montantfc?: string | number;
+  montant_fc?: string | number;
+  totalfc?: string | number;
+  total_fc?: string | number;
 
   totalEUR?: string | number;
   total_eur?: string | number;
   montanteur?: string | number;
+  montant_eur?: string | number;
+  totaleur?: string | number;
 };
 
 export default function VentesPage() {
@@ -107,24 +121,59 @@ export default function VentesPage() {
     return d || 'USD';
   }
 
-  function montantParDevise(v: Vente, devise: 'USD' | 'CDF' | 'EUR') {
-    if (devise === 'USD') {
-      const direct = nombre(v.totalUSD ?? v.total_usd ?? v.montantusd);
-      if (direct > 0) return direct;
-    }
+  function montantParDevise(v: any, devise: 'USD' | 'CDF' | 'EUR') {
+  const d = normaliserDevise(devise);
 
-    if (devise === 'CDF') {
-      const direct = nombre(v.totalCDF ?? v.total_cdf ?? v.montantcdf);
-      if (direct > 0) return direct;
-    }
+  const champsUSD = [
+    v.totalUSD,
+    v.total_usd,
+    v.montantusd,
+    v.montant_usd,
+    v.totalusd,
+  ];
 
-    if (devise === 'EUR') {
-      const direct = nombre(v.totalEUR ?? v.total_eur ?? v.montanteur);
-      if (direct > 0) return direct;
-    }
+  const champsCDF = [
+    v.totalCDF,
+    v.total_cdf,
+    v.montantcdf,
+    v.montant_cdf,
+    v.totalcdf,
+    v.montantfc,
+    v.montant_fc,
+    v.totalfc,
+    v.total_fc,
+  ];
 
-    return normaliserDevise(v.devise) === devise ? nombre(v.montanttotal) : 0;
+  const champsEUR = [
+    v.totalEUR,
+    v.total_eur,
+    v.montanteur,
+    v.montant_eur,
+    v.totaleur,
+  ];
+
+  const champs =
+    d === 'USD' ? champsUSD : d === 'CDF' ? champsCDF : champsEUR;
+
+  for (const champ of champs) {
+    const n = nombre(champ);
+    if (n > 0) return n;
   }
+
+  const deviseVente = normaliserDevise(v.devise);
+
+  if (deviseVente === d) {
+    return nombre(
+      v.montanttotal ??
+        v.montant_total ??
+        v.total ??
+        v.totalvente ??
+        v.total_vente,
+    );
+  }
+
+  return 0;
+}
 
   function formatMontant(v: any, devise: string) {
     const n = nombre(v);
