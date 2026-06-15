@@ -186,61 +186,98 @@ export default function Page() {
   }
 
   async function enregistrerEmploye() {
-    const nom = form.nom.trim();
-    const prenom = form.prenom.trim();
-    const poste = form.poste.trim();
-    const matricule = form.matricule.trim();
+  const nom = form.nom.trim();
+  const prenom = form.prenom.trim();
+  const poste = form.poste.trim();
+  const matricule = form.matricule.trim();
 
-    if (!nom) return setMessage('Nom obligatoire.');
-    if (!prenom) return setMessage('Prénom obligatoire.');
-    if (!poste) return setMessage('Poste obligatoire.');
-    if (!matricule) return setMessage('Matricule obligatoire.');
+  if (!nom) return setMessage('Nom obligatoire.');
+  if (!prenom) return setMessage('Prénom obligatoire.');
+  if (!poste) return setMessage('Poste obligatoire.');
+  if (!matricule) return setMessage('Matricule obligatoire.');
 
-    const payload = {
-      nom,
-      prenom,
-      telephone: form.telephone.trim(),
-      email: form.email.trim(),
-      poste,
-      departement: form.departement.trim(),
-      sexe: form.sexe.trim(),
-      matricule,
-      pin: form.pin.trim() || '123456',
-      idEntreprise: Number(form.idEntreprise || 1),
-      idMagasin: Number(form.idMagasin || 1),
-      isManager: form.isManager,
-    };
+  const payload = {
+    nom,
+    prenom,
+    telephone: form.telephone.trim(),
+    email: form.email.trim(),
+    poste,
+    departement: form.departement.trim(),
+    sexe: form.sexe.trim(),
+    matricule,
+    pin: form.pin.trim() || '123456',
+    idEntreprise: Number(form.idEntreprise || 1),
+    idMagasin: Number(form.idMagasin || 1),
+    isManager: form.isManager,
+  };
 
-    setSaving(true);
-    setMessage('');
+  setSaving(true);
+  setMessage('');
 
-    try {
-      const url = editingId ? `${API}/employes/${editingId}` : `${API}/employes`;
-      const method = editingId ? 'PUT' : 'POST';
+  try {
+    const url = editingId
+      ? `${API}/employes/${editingId}`
+      : `${API}/employes`;
 
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+    const method = editingId ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await res.text();
+
+    if (!res.ok) {
+      console.error('ERREUR API EMPLOYE =', text);
+      throw new Error(text);
+    }
+
+    const saved: Employe = text ? JSON.parse(text) : null;
+
+    if (saved) {
+      setSelected(saved);
+      setEditingId(saved.id_employe);
+
+      setEmployes((prev) => {
+        const exists = prev.some((e) => e.id_employe === saved.id_employe);
+
+        if (exists) {
+          return prev.map((e) =>
+            e.id_employe === saved.id_employe ? saved : e,
+          );
+        }
+
+        return [saved, ...prev];
       });
 
-      const text = await res.text();
-
-      if (!res.ok) {
-        console.error('ERREUR API EMPLOYE =', text);
-        throw new Error(text);
-      }
-
-      setMessage(editingId ? 'Employé modifié.' : 'Employé ajouté.');
-      resetForm();
-      await chargerEmployes();
-    } catch (error) {
-      console.error(error);
-      setMessage("Erreur pendant l'enregistrement.");
-    } finally {
-      setSaving(false);
+      setForm((old) => ({
+        ...old,
+        nom: saved.nom || old.nom,
+        prenom: saved.prenom || old.prenom,
+        telephone: saved.telephone || old.telephone,
+        email: saved.email || old.email,
+        poste: saved.poste || old.poste,
+        departement: saved.departement || old.departement,
+        sexe: saved.sexe || old.sexe,
+        matricule: saved.matricule || old.matricule,
+        pin: saved.motdepasse || old.pin,
+        codeCarte: saved.codecarteemploye || old.codeCarte,
+        idEntreprise: Number(saved.identreprise || old.idEntreprise || 1),
+        idMagasin: Number(saved.idmagasin || old.idMagasin || 1),
+        isManager: bitIsTrue(saved.ismanager),
+      }));
     }
+
+    setMessage(editingId ? 'Employé modifié.' : 'Employé ajouté.');
+  } catch (error) {
+    console.error(error);
+    setMessage("Erreur pendant l'enregistrement.");
+  } finally {
+    setSaving(false);
   }
+}
 
   async function desactiverEmploye(id: number) {
     if (!confirm('Désactiver cet employé ?')) return;
@@ -278,9 +315,9 @@ export default function Page() {
     }
   }
 
-  const profileName = `${selected?.nom || form.nom || 'Nouvel'} ${
-    selected?.prenom || form.prenom || 'employé'
-  }`;
+  const profileName = `${form.nom || selected?.nom || 'Nouvel'} ${
+  form.prenom || selected?.prenom || 'employé'
+}`;
 
   return (
     <main className="min-h-screen bg-slate-100 p-3 sm:p-6">
