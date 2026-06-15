@@ -148,40 +148,69 @@ export default function Page() {
   }
 
   async function enregistrerEmploye() {
-    if (!form.nom.trim()) return setMessage('Nom obligatoire.');
-    if (!form.prenom.trim()) return setMessage('Prénom obligatoire.');
-    if (!form.poste.trim()) return setMessage('Poste obligatoire.');
-    if (!form.matricule.trim()) return setMessage('Matricule obligatoire.');
+  const payload = {
+    ...form,
+    nom: form.nom.trim(),
+    prenom: form.prenom.trim(),
+    telephone: form.telephone.trim(),
+    email: form.email.trim(),
+    poste: form.poste.trim(),
+    departement: form.departement.trim(),
+    sexe: form.sexe.trim(),
+    matricule: form.matricule.trim(),
+    pin: form.pin.trim() || '123456',
+    idEntreprise: Number(form.idEntreprise || 1),
+    idMagasin: Number(form.idMagasin || 1),
+  };
 
-    setSaving(true);
-    setMessage('');
-
-    try {
-      const url = editingId
-        ? `${API}/employes/${editingId}`
-        : `${API}/employes`;
-
-      const method = editingId ? 'PUT' : 'POST';
-
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-
-      if (!res.ok) throw new Error(await res.text());
-
-      setMessage(editingId ? 'Employé modifié.' : 'Employé ajouté.');
-      resetForm();
-      await chargerEmployes();
-    } catch (error) {
-      console.error(error);
-      setMessage("Erreur pendant l'enregistrement.");
-    } finally {
-      setSaving(false);
-    }
+  if (!payload.nom) {
+    setMessage('Nom obligatoire.');
+    return;
   }
 
+  if (!payload.prenom) {
+    setMessage('Prénom obligatoire.');
+    return;
+  }
+
+  if (!payload.poste) {
+    setMessage('Poste obligatoire.');
+    return;
+  }
+
+  if (!payload.matricule) {
+    setMessage('Matricule obligatoire.');
+    return;
+  }
+
+  setSaving(true);
+  setMessage('');
+
+  try {
+    const url = editingId
+      ? `${API}/employes/${editingId}`
+      : `${API}/employes`;
+
+    const method = editingId ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+
+    setMessage(editingId ? 'Employé modifié.' : 'Employé ajouté.');
+    resetForm();
+    await chargerEmployes();
+  } catch (error) {
+    console.error(error);
+    setMessage("Erreur pendant l'enregistrement.");
+  } finally {
+    setSaving(false);
+  }
+}
   async function desactiverEmploye(id: number) {
     if (!confirm('Désactiver cet employé ?')) return;
 
