@@ -264,6 +264,7 @@ export default function VoirVentePage() {
     const heureOnly = dateVente.toLocaleTimeString('fr-FR');
     const ticketNo = String(vente?.id_vente || id || Date.now()).padStart(6, '0');
     const logoUrl = `${window.location.origin}/logo.png`;
+    const barcodeUrl = genererCodeBarreBase64(infos.codeFacture);
 
     const lignesHtml =
       infos.lignes.length > 0
@@ -275,99 +276,162 @@ export default function VoirVentePage() {
 
               return `
                 <tr>
+                  <td>${d.refproduit || '-'}</td>
                   <td>${d.nomproduit || d.designation || '-'}</td>
-                  <td class="center">${d.quantite || 0}</td>
+                  <td class="center">${qte}</td>
                   <td class="right">${formatMontant(pu, devise)} ${devise}</td>
+                  <td class="right">${formatMontant(d.remise, devise)} ${devise}</td>
                   <td class="center bold">${devise}</td>
                   <td class="right bold">${formatMontant(montantLigne(d), devise)} ${devise}</td>
                 </tr>
               `;
             })
             .join('')
-        : `<tr><td colspan="5" class="center">Détails non chargés</td></tr>`;
+        : `<tr><td colspan="7" class="center">Détails non chargés</td></tr>`;
 
     return `
       <!doctype html>
       <html>
         <head>
           <meta charset="utf-8" />
-          <title>Impression A4 ${infos.codeFacture}</title>
+          <title>Facture A4 ${infos.codeFacture}</title>
           <style>
             @page { size: A4 portrait; margin: 12mm; }
-            body { font-family: Arial, sans-serif; color: #000; font-size: 12px; }
-            .no-print { margin-bottom: 15px; }
-            .top { display: flex; justify-content: space-between; align-items: flex-start; }
+            * { box-sizing: border-box; }
+            body {
+              font-family: Arial, Helvetica, sans-serif;
+              color: #000;
+              font-size: 12px;
+              margin: 0;
+              background: #fff;
+            }
+            .page { width: 100%; }
+            .top {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              gap: 20px;
+            }
             .logo { width: 105px; height: 105px; object-fit: contain; }
-            h1 { margin: 0 0 8px 0; font-size: 24px; }
-            .line { border-top: 1px solid #333; margin: 22px 0; }
-            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 60px; font-weight: bold; }
-            table { width: 100%; border-collapse: collapse; margin-top: 25px; }
-            th { background: #111827; color: white; padding: 9px; border: 1px solid #999; }
-            td { padding: 8px; border: 1px solid #bbb; }
+            h1 { margin: 0 0 8px 0; font-size: 24px; letter-spacing: .3px; }
+            .company-line { line-height: 1.55; }
+            .line { border-top: 1.4px solid #111; margin: 18px 0; }
+            .grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 8px 60px;
+              font-weight: bold;
+            }
+            .box {
+              border: 1px solid #999;
+              padding: 7px 9px;
+              border-radius: 2px;
+            }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th {
+              background: #111827;
+              color: white;
+              padding: 8px;
+              border: 1px solid #777;
+              font-size: 11px;
+            }
+            td { padding: 7px; border: 1px solid #aaa; vertical-align: middle; }
             .center { text-align: center; }
             .right { text-align: right; }
             .bold { font-weight: bold; }
-            .totaux { width: 62%; margin-left: auto; margin-top: 18px; }
-            .footer { text-align: center; margin-top: 28px; font-size: 12px; }
-            @media print { .no-print { display: none; } }
+            .totaux { width: 58%; margin-left: auto; margin-top: 15px; }
+            .totaux td { padding: 8px; }
+            .paiement {
+              margin-top: 12px;
+              border: 1px solid #999;
+              padding: 8px;
+              font-weight: bold;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 22px;
+              font-size: 12px;
+              line-height: 1.55;
+            }
+            .barcode-box {
+              text-align: center;
+              margin-top: 18px;
+              page-break-inside: avoid;
+            }
+            .barcode { width: 86mm; height: 22mm; object-fit: contain; }
+            .small { font-size: 10px; }
           </style>
         </head>
         <body>
-          <div class="no-print">
-            <button onclick="window.print()">Imprimer maintenant</button>
-          </div>
-
-          <div class="top">
-            <div>
-              <h1>ZAIRE MODE SARL</h1>
-              <div>23, Bld Lumumba / Immeuble Masina Plaza</div>
-              <div>+243861507560 / E-MAIL: Zaireshop@hotmail.com</div>
-              <div>PAGE: ZAIRE.CD</div>
-              <div>RCCM: 25-B-01497</div>
-              <div>IDNAT: 01-F4300-N73258E</div>
+          <div class="page">
+            <div class="top">
+              <div class="company-line">
+                <h1>ZAIRE MODE SARL</h1>
+                <div>23, Bld Lumumba / Immeuble Masina Plaza</div>
+                <div>+243861507560 / E-MAIL: Zaireshop@hotmail.com</div>
+                <div>PAGE: ZAIRE.CD</div>
+                <div>RCCM: 25-B-01497</div>
+                <div>IDNAT: 01-F4300-N73258E</div>
+              </div>
+              <img class="logo" src="${logoUrl}" />
             </div>
-            <img class="logo" src="${logoUrl}" />
+
+            <div class="line"></div>
+
+            <div class="grid">
+              <div class="box">Ticket N° : ${ticketNo}</div>
+              <div class="box">FACTURE N° : ${infos.codeFacture}</div>
+              <div class="box">Date : ${dateOnly}</div>
+              <div class="box">Caissier : ${infos.nomCaissier}</div>
+              <div class="box">Heure : ${heureOnly}</div>
+              <div class="box">Client : ${infos.nomClient}</div>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Référence</th>
+                  <th>Article</th>
+                  <th>Qté</th>
+                  <th>PU</th>
+                  <th>Remise</th>
+                  <th>Devise</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>${lignesHtml}</tbody>
+            </table>
+
+            <table class="totaux">
+              <tbody>
+                ${infos.totalUSD > 0 ? `<tr><td class="bold">TOTAL USD</td><td class="right bold">${formatMontant(infos.totalUSD, 'USD')} USD</td></tr>` : ''}
+                ${infos.totalCDF > 0 ? `<tr><td class="bold">TOTAL CDF</td><td class="right bold">${formatMontant(infos.totalCDF, 'CDF')} CDF</td></tr>` : ''}
+                ${infos.totalEUR > 0 ? `<tr><td class="bold">TOTAL EUR</td><td class="right bold">${formatMontant(infos.totalEUR, 'EUR')} EUR</td></tr>` : ''}
+              </tbody>
+            </table>
+
+            <div class="paiement">Mode : ${infos.modePaiement} | Totaux séparés par devise</div>
+
+            <div class="footer">
+              <div><b>Merci pour votre fidélité, à la prochaine !</b></div>
+              <div>La Qualité fait la différence.</div>
+              <div>Les marchandises vendues ne peuvent être ni reprises, ni échangées.</div>
+            </div>
+
+            <div class="barcode-box">
+              <img src="${barcodeUrl}" class="barcode" />
+              <div class="small">Code Facture : ${infos.codeFacture}</div>
+            </div>
           </div>
 
-          <div class="line"></div>
-
-          <div class="grid">
-            <div>Ticket N° : ${ticketNo}</div>
-            <div>FACTURE N° : ${infos.codeFacture}</div>
-            <div>Date : ${dateOnly}</div>
-            <div>Caissier : ${infos.nomCaissier}</div>
-            <div>Heure : ${heureOnly}</div>
-            <div>Client : ${infos.nomClient}</div>
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Article</th>
-                <th>Qté</th>
-                <th>PU</th>
-                <th>Devise</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>${lignesHtml}</tbody>
-          </table>
-
-          <table class="totaux">
-            <tbody>
-              ${infos.totalUSD > 0 ? `<tr><td class="bold">TOTAL USD</td><td class="right bold">${formatMontant(infos.totalUSD, 'USD')} USD</td></tr>` : ''}
-              ${infos.totalCDF > 0 ? `<tr><td class="bold">TOTAL CDF</td><td class="right bold">${formatMontant(infos.totalCDF, 'CDF')} CDF</td></tr>` : ''}
-              ${infos.totalEUR > 0 ? `<tr><td class="bold">TOTAL EUR</td><td class="right bold">${formatMontant(infos.totalEUR, 'EUR')} EUR</td></tr>` : ''}
-            </tbody>
-          </table>
-
-          <p class="bold">Mode : ${infos.modePaiement} | Totaux séparés par devise</p>
-
-          <div class="footer">
-            <div>Merci pour votre fidélité, à la prochaine !</div>
-            <div>La Qualité fait la différence.</div>
-            <div>Les marchandises vendues ne peuvent être ni reprises, ni échangées.</div>
-          </div>
+          <script>
+            window.onload = function () {
+              setTimeout(function () {
+                window.focus();
+                window.print();
+              }, 500);
+            };
+          </script>
         </body>
       </html>
     `;
@@ -378,6 +442,7 @@ export default function VoirVentePage() {
 
     const dateVente = infos.dateVente ? new Date(infos.dateVente) : new Date();
     const logoUrl = `${window.location.origin}/logo.png`;
+    const barcodeUrl = genererCodeBarreBase64(infos.codeFacture);
 
     const lignesHtml =
       infos.lignes.length > 0
@@ -389,7 +454,7 @@ export default function VoirVentePage() {
 
               return `
                 <div class="ligne">
-                  <div>${d.nomproduit || d.designation || '-'}</div>
+                  <div class="article">${d.nomproduit || d.designation || '-'}</div>
                   <div class="row">
                     <span>${qte} x ${formatMontant(pu, devise)} ${devise}</span>
                     <b>${formatMontant(montantLigne(d), devise)} ${devise}</b>
@@ -408,27 +473,34 @@ export default function VoirVentePage() {
           <title>Ticket ${infos.codeFacture}</title>
           <style>
             @page { size: 80mm auto; margin: 4mm; }
-            body { width: 80mm; margin: 0 auto; font-family: Arial, sans-serif; font-size: 11px; color: #000; }
-            .no-print { margin-bottom: 10px; }
+            * { box-sizing: border-box; }
+            body {
+              width: 80mm;
+              margin: 0 auto;
+              font-family: Arial, Helvetica, sans-serif;
+              font-size: 11px;
+              color: #000;
+              background: #fff;
+            }
             .center { text-align: center; }
             .logo { width: 55px; height: 55px; object-fit: contain; }
+            h3 { margin: 4px 0; font-size: 13px; }
             .sep { border-top: 1px dashed #000; margin: 8px 0; }
             .row { display: flex; justify-content: space-between; gap: 8px; }
             .ligne { margin-bottom: 7px; }
+            .article { font-weight: bold; margin-bottom: 2px; }
             .total { font-size: 13px; font-weight: bold; }
-            @media print { .no-print { display: none; } }
+            .barcode { width: 60mm; height: 18mm; object-fit: contain; }
+            .footer { line-height: 1.45; }
           </style>
         </head>
         <body>
-          <div class="no-print">
-            <button onclick="window.print()">Imprimer maintenant</button>
-          </div>
-
           <div class="center">
             <img src="${logoUrl}" class="logo" />
             <h3>ZAIRE MODE SARL</h3>
             <div>Masina Plaza</div>
             <div>+243861507560</div>
+            <div>ZAIRE.CD</div>
           </div>
 
           <div class="sep"></div>
@@ -453,10 +525,26 @@ export default function VoirVentePage() {
           <div class="sep"></div>
 
           <div class="center">
-            <b>Merci pour votre achat</b><br />
-            ZAIRE.CD<br />
+            <img src="${barcodeUrl}" class="barcode" />
+            <div>Code Facture : ${infos.codeFacture}</div>
+          </div>
+
+          <div class="sep"></div>
+
+          <div class="center footer">
+            <b>Merci pour votre fidélité, à la prochaine !</b><br />
+            La Qualité fait la différence.<br />
             Les marchandises vendues ne peuvent être ni reprises, ni échangées.
           </div>
+
+          <script>
+            window.onload = function () {
+              setTimeout(function () {
+                window.focus();
+                window.print();
+              }, 500);
+            };
+          </script>
         </body>
       </html>
     `;
@@ -664,16 +752,16 @@ export default function VoirVentePage() {
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.text('MESSIE MATALA POS', 40, y, { align: 'center' });
+    doc.text('ZAIRE MODE SARL', 40, y, { align: 'center' });
 
     y += 5;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.text('Entreprise : ZAIRE', 40, y, { align: 'center' });
+    doc.text('Masina Plaza', 40, y, { align: 'center' });
     y += 4;
-    doc.text('Magasin : ZAIRE MASINA PLAZA', 40, y, { align: 'center' });
+    doc.text('+243861507560', 40, y, { align: 'center' });
     y += 4;
-    doc.text('Caisse : POS MASINA PLAZA', 40, y, { align: 'center' });
+    doc.text('ZAIRE.CD', 40, y, { align: 'center' });
 
     y += 8;
     doc.line(4, y, 76, y);
@@ -762,9 +850,11 @@ export default function VoirVentePage() {
     doc.text(`Code Facture : ${infos.codeFacture}`, 40, y, { align: 'center' });
 
     y += 8;
-    doc.text('Merci pour votre achat', 40, y, { align: 'center' });
+    doc.text('Merci pour votre fidélité, à la prochaine !', 40, y, { align: 'center' });
     y += 4;
-    doc.text('ZAIRE.CD', 40, y, { align: 'center' });
+    doc.text('La Qualité fait la différence.', 40, y, { align: 'center' });
+    y += 4;
+    doc.text('Les marchandises vendues ne peuvent être ni reprises, ni échangées.', 40, y, { align: 'center', maxWidth: 70 });
 
     doc.save(`ticket-${infos.codeFacture}.pdf`);
   }
