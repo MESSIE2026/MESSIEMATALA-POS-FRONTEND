@@ -65,7 +65,9 @@ export default function NouvelleVentePage() {
   const [telephone, setTelephone] = useState('');
   const [caissier, setCaissier] = useState('NON CONNECTÉ');
   const [modePaiement, setModePaiement] = useState('CASH');
-  const [recu, setRecu] = useState('');
+  const [recuUSD, setRecuUSD] = useState('');
+const [recuCDF, setRecuCDF] = useState('');
+const [recuEUR, setRecuEUR] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -431,7 +433,9 @@ export default function NouvelleVentePage() {
 
     setLignes([]);
     setScan('');
-    setRecu('');
+    setRecuUSD('');
+setRecuCDF('');
+setRecuEUR('');
     setNomclient('CLIENT CASH');
     setTelephone('');
     setIdClient(null);
@@ -476,8 +480,13 @@ export default function NouvelleVentePage() {
         ? totaux.CDF
         : totaux.EUR;
 
-  const montantRecu = recu.trim() === '' ? totalPrincipal : nombreDepuisPrix(recu);
-  const monnaie = Math.max(0, montantRecu - totalPrincipal);
+  const montantRecuUSD = nombreDepuisPrix(recuUSD);
+const montantRecuCDF = nombreDepuisPrix(recuCDF);
+const montantRecuEUR = nombreDepuisPrix(recuEUR);
+
+const monnaieUSD = Math.max(0, montantRecuUSD - totaux.USD);
+const monnaieCDF = Math.max(0, montantRecuCDF - totaux.CDF);
+const monnaieEUR = Math.max(0, montantRecuEUR - totaux.EUR);
 
   async function finaliserVente() {
     if (loading) return;
@@ -553,14 +562,36 @@ export default function NouvelleVentePage() {
         lignes: articles,
 
         paiements: [
-          {
-            modepaiement: modePaiement,
-            modePaiement,
-            montant: montantRecu,
-            devise: devisePrincipale,
-            reference: `WEB-POS-${Date.now()}`,
-          },
-        ],
+  ...(montantRecuUSD > 0
+    ? [{
+        modepaiement: modePaiement,
+        modePaiement,
+        montant: montantRecuUSD,
+        devise: 'USD',
+        reference: `WEB-POS-USD-${Date.now()}`,
+      }]
+    : []),
+
+  ...(montantRecuCDF > 0
+    ? [{
+        modepaiement: modePaiement,
+        modePaiement,
+        montant: montantRecuCDF,
+        devise: 'CDF',
+        reference: `WEB-POS-CDF-${Date.now()}`,
+      }]
+    : []),
+
+  ...(montantRecuEUR > 0
+    ? [{
+        modepaiement: modePaiement,
+        modePaiement,
+        montant: montantRecuEUR,
+        devise: 'EUR',
+        reference: `WEB-POS-EUR-${Date.now()}`,
+      }]
+    : []),
+],
       };
 
       const res = await fetch(`${API}/ventes`, {
@@ -725,45 +756,45 @@ export default function NouvelleVentePage() {
         </section>
 
         <section className="mb-3 rounded-2xl border bg-white p-3 shadow-sm">
-          <div className="grid gap-2 sm:grid-cols-3">
-            <div>
-              <label className="mb-1 block text-xs font-black text-slate-500">
-                Total principal
-              </label>
-              <input
-                value={`${formatMontant(totalPrincipal, devisePrincipale)} ${devisePrincipale}`}
-                readOnly
-                className="w-full rounded-xl border bg-slate-50 px-3 py-2 text-right font-black"
-              />
-            </div>
+  <div className="mb-2 text-xs font-black uppercase text-slate-500">
+    Totaux et montants reçus par devise
+  </div>
 
-            <div>
-              <label className="mb-1 block text-xs font-black text-slate-500">
-                Montant reçu
-              </label>
-              <input
-                value={recu}
-                onFocus={pauseScan}
-                onBlur={reprendreScan}
-                onChange={(e) => setRecu(e.target.value)}
-                className="w-full rounded-xl border px-3 py-2 text-right font-black"
-                placeholder="Ex : 50000"
-                inputMode="decimal"
-              />
-            </div>
+  <div className="grid gap-2 md:grid-cols-3">
+    <DevisePaiementCard
+      devise="USD"
+      total={totaux.USD}
+      recu={recuUSD}
+      setRecu={setRecuUSD}
+      monnaie={monnaieUSD}
+      formatMontant={formatMontant}
+      pauseScan={pauseScan}
+      reprendreScan={reprendreScan}
+    />
 
-            <div>
-              <label className="mb-1 block text-xs font-black text-slate-500">
-                Monnaie à remettre
-              </label>
-              <input
-                value={`${formatMontant(monnaie, devisePrincipale)} ${devisePrincipale}`}
-                readOnly
-                className="w-full rounded-xl border bg-emerald-50 px-3 py-2 text-right font-black text-emerald-800"
-              />
-            </div>
-          </div>
-        </section>
+    <DevisePaiementCard
+      devise="CDF"
+      total={totaux.CDF}
+      recu={recuCDF}
+      setRecu={setRecuCDF}
+      monnaie={monnaieCDF}
+      formatMontant={formatMontant}
+      pauseScan={pauseScan}
+      reprendreScan={reprendreScan}
+    />
+
+    <DevisePaiementCard
+      devise="EUR"
+      total={totaux.EUR}
+      recu={recuEUR}
+      setRecu={setRecuEUR}
+      monnaie={monnaieEUR}
+      formatMontant={formatMontant}
+      pauseScan={pauseScan}
+      reprendreScan={reprendreScan}
+    />
+  </div>
+</section>
 
         <section className="hidden overflow-hidden rounded-2xl border bg-white shadow-sm md:block">
           <div className="overflow-auto">
@@ -1064,6 +1095,65 @@ export default function NouvelleVentePage() {
         </section>
       </section>
     </main>
+  );
+}
+
+function DevisePaiementCard({
+  devise,
+  total,
+  recu,
+  setRecu,
+  monnaie,
+  formatMontant,
+  pauseScan,
+  reprendreScan,
+}: {
+  devise: string;
+  total: number;
+  recu: string;
+  setRecu: (v: string) => void;
+  monnaie: number;
+  formatMontant: (montant: number, devise?: string) => string;
+  pauseScan: () => void;
+  reprendreScan: () => void;
+}) {
+  return (
+    <div className="rounded-2xl border bg-slate-50 p-3">
+      <div className="mb-2 text-center text-sm font-black text-slate-700">
+        Paiement {devise}
+      </div>
+
+      <label className="mb-1 block text-xs font-black text-slate-500">
+        Montant principal {devise}
+      </label>
+      <input
+        value={`${formatMontant(total, devise)} ${devise}`}
+        readOnly
+        className="mb-2 w-full rounded-xl border bg-white px-3 py-2 text-right font-black"
+      />
+
+      <label className="mb-1 block text-xs font-black text-slate-500">
+        Montant reçu {devise}
+      </label>
+      <input
+        value={recu}
+        onFocus={pauseScan}
+        onBlur={reprendreScan}
+        onChange={(e) => setRecu(e.target.value.replace(/[^\d.,]/g, ''))}
+        className="mb-2 w-full rounded-xl border bg-white px-3 py-2 text-right font-black"
+        placeholder={`Reçu en ${devise}`}
+        inputMode="decimal"
+      />
+
+      <label className="mb-1 block text-xs font-black text-slate-500">
+        Monnaie {devise}
+      </label>
+      <input
+        value={`${formatMontant(monnaie, devise)} ${devise}`}
+        readOnly
+        className="w-full rounded-xl border bg-emerald-50 px-3 py-2 text-right font-black text-emerald-800"
+      />
+    </div>
   );
 }
 
