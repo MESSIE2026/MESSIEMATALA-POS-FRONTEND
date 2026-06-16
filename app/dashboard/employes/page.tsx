@@ -87,6 +87,11 @@ function safePhoto(src?: string | null) {
   if (!src) return '';
   if (src.startsWith('data:image')) return src;
   if (src.includes('/uploads/default.png')) return '';
+
+  if (src.startsWith('/uploads/')) {
+    return `${API}${src}`;
+  }
+
   return src;
 }
 
@@ -236,7 +241,10 @@ dateEmbauche: emp.dateembauche
     if (!matricule) return showMessage('Matricule obligatoire.', 'error');
 
 
-    let photoPath = form.photoPreview || '/uploads/default.png';
+   let photoPath =
+  form.photoPreview && !form.photoPreview.startsWith('data:image')
+    ? form.photoPreview
+    : '/uploads/default.png';
 
 if (photoFile) {
   const fd = new FormData();
