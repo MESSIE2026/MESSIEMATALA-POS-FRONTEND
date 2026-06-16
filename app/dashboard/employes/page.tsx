@@ -108,6 +108,7 @@ export default function Page() {
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [imageGrandFormat, setImageGrandFormat] = useState('');
 
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>(
@@ -427,10 +428,11 @@ setPhotoFile(null);
                 <div className="relative">
                  {safePhoto(form.photoPreview) ? (
   <img
-    src={safePhoto(form.photoPreview)}
-                      alt="Photo employé"
-                      className="h-32 w-32 rounded-[2rem] object-cover ring-4 ring-blue-100"
-                    />
+  src={safePhoto(form.photoPreview)}
+  alt="Photo employé"
+  onClick={() => setImageGrandFormat(safePhoto(form.photoPreview))}
+  className="h-32 w-32 cursor-zoom-in rounded-[2rem] object-cover ring-4 ring-blue-100"
+/>
                   ) : (
                     <div className="grid h-32 w-32 place-items-center rounded-[2rem] bg-gradient-to-br from-blue-600 to-slate-950 text-4xl font-black text-white ring-4 ring-blue-100">
                       {initials(
@@ -769,10 +771,14 @@ setPhotoFile(null);
                           <div className="flex items-center gap-3">
                             {safePhoto(emp.photopath) ? (
   <img
-    src={safePhoto(emp.photopath)}
-                                alt="Profil"
-                                className="h-12 w-12 rounded-2xl object-cover ring-2 ring-blue-100"
-                              />
+  src={safePhoto(emp.photopath)}
+  alt="Profil"
+  onClick={(e) => {
+    e.stopPropagation();
+    setImageGrandFormat(safePhoto(emp.photopath));
+  }}
+  className="h-12 w-12 cursor-zoom-in rounded-2xl object-cover ring-2 ring-blue-100"
+/>
                             ) : (
                               <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-900 text-sm font-black text-white">
                                 {initials(emp.nom || '', emp.prenom || '')}
@@ -871,10 +877,14 @@ setPhotoFile(null);
                     <div className="flex items-center gap-3">
                       {safePhoto(emp.photopath) ? (
   <img
-    src={safePhoto(emp.photopath)}
-    alt="Profil"
-    className="h-14 w-14 rounded-2xl object-cover ring-2 ring-blue-100"
-  />
+  src={safePhoto(emp.photopath)}
+  alt="Profil"
+  onClick={(e) => {
+    e.stopPropagation();
+    setImageGrandFormat(safePhoto(emp.photopath));
+  }}
+  className="h-14 w-14 cursor-zoom-in rounded-2xl object-cover ring-2 ring-blue-100"
+/>
 ) : (
   <div className="grid h-14 w-14 place-items-center rounded-2xl bg-blue-900 text-lg font-black text-white">
     {initials(emp.nom || '', emp.prenom || '')}
@@ -917,6 +927,36 @@ setPhotoFile(null);
           </section>
         </section>
       </div>
+        {imageGrandFormat && (
+  <div
+    onClick={() => setImageGrandFormat('')}
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+  >
+    <a
+      href={imageGrandFormat}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="absolute left-4 top-4 rounded-full bg-white px-4 py-2 text-sm font-black text-slate-950"
+    >
+      📥 Télécharger
+    </a>
+
+    <button
+      onClick={() => setImageGrandFormat('')}
+      className="absolute right-4 top-4 rounded-full bg-white px-4 py-2 text-lg font-black text-slate-950"
+    >
+      ×
+    </button>
+
+    <img
+      src={imageGrandFormat}
+      alt="Photo employé grand format"
+      onClick={(e) => e.stopPropagation()}
+      className="max-h-[95vh] max-w-[98vw] rounded-3xl object-contain shadow-2xl"
+    />
+  </div>
+)}
+      
     </main>
   );
 }
