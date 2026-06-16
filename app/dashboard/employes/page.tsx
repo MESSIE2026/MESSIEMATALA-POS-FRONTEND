@@ -80,6 +80,13 @@ function initials(nom: string, prenom: string) {
   return `${nom?.[0] || ''}${prenom?.[0] || ''}`.toUpperCase() || 'EM';
 }
 
+function safePhoto(src?: string | null) {
+  if (!src) return '';
+  if (src.startsWith('data:image')) return src;
+  if (src.includes('/uploads/default.png')) return '';
+  return src;
+}
+
 export default function Page() {
   const [employes, setEmployes] = useState<Employe[]>([]);
   const [selected, setSelected] = useState<Employe | null>(null);
@@ -245,6 +252,7 @@ export default function Page() {
       const url = editingId ? `${API}/employes/${editingId}` : `${API}/employes`;
       const method = editingId ? 'PUT' : 'POST';
 
+      console.log('PAYLOAD EMPLOYE =', payload);
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -378,9 +386,9 @@ export default function Page() {
             <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
               <div className="flex flex-col items-center text-center">
                 <div className="relative">
-                  {form.photoPreview ? (
-                    <img
-                      src={form.photoPreview}
+                 {safePhoto(form.photoPreview) ? (
+  <img
+    src={safePhoto(form.photoPreview)}
                       alt="Photo employé"
                       className="h-32 w-32 rounded-[2rem] object-cover ring-4 ring-blue-100"
                     />
@@ -720,9 +728,9 @@ export default function Page() {
                       >
                         <td className="p-3">
                           <div className="flex items-center gap-3">
-                            {emp.photopath ? (
-                              <img
-                                src={emp.photopath}
+                            {safePhoto(emp.photopath) ? (
+  <img
+    src={safePhoto(emp.photopath)}
                                 alt="Profil"
                                 className="h-12 w-12 rounded-2xl object-cover ring-2 ring-blue-100"
                               />
@@ -822,17 +830,17 @@ export default function Page() {
                     className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200"
                   >
                     <div className="flex items-center gap-3">
-                      {emp.photopath ? (
-                        <img
-                          src={emp.photopath}
-                          alt="Profil"
-                          className="h-14 w-14 rounded-2xl object-cover ring-2 ring-blue-100"
-                        />
-                      ) : (
-                        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-blue-900 text-lg font-black text-white">
-                          {initials(emp.nom || '', emp.prenom || '')}
-                        </div>
-                      )}
+                      {safePhoto(emp.photopath) ? (
+  <img
+    src={safePhoto(emp.photopath)}
+    alt="Profil"
+    className="h-14 w-14 rounded-2xl object-cover ring-2 ring-blue-100"
+  />
+) : (
+  <div className="grid h-14 w-14 place-items-center rounded-2xl bg-blue-900 text-lg font-black text-white">
+    {initials(emp.nom || '', emp.prenom || '')}
+  </div>
+)}
 
                       <div className="min-w-0">
                         <p className="text-lg font-black text-slate-950">
