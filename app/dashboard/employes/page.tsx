@@ -217,25 +217,27 @@ export default function Page() {
     if (!matricule) return showMessage('Matricule obligatoire.', 'error');
 
     const payload = {
-      nom,
-      prenom,
-      telephone: form.telephone.trim(),
-      email: form.email.trim(),
-      poste,
-      departement: form.departement.trim(),
-      sexe: form.sexe.trim(),
-      matricule,
-      pin: form.pin.trim() || '123456',
-      idEntreprise: Number(form.idEntreprise || 1),
-      idMagasin: Number(form.idMagasin || 1),
-      isManager: form.isManager,
-      adresse: form.adresse.trim(),
-      dateNaissance: form.dateNaissance || null,
-      dateEmbauche: form.dateEmbauche || null,
-      photoPath: form.photoPreview || '',
-      codeCarte: form.codeCarte || '',
-    };
-
+  nom,
+  prenom,
+  telephone: form.telephone.trim(),
+  email: form.email.trim(),
+  poste,
+  departement: form.departement.trim(),
+  sexe: form.sexe.trim(),
+  matricule,
+  pin: form.pin.trim() || '123456',
+  idEntreprise: Number(form.idEntreprise || 1),
+  idMagasin: Number(form.idMagasin || 1),
+  isManager: form.isManager,
+  adresse: form.adresse.trim(),
+  dateNaissance: form.dateNaissance || null,
+  dateEmbauche: form.dateEmbauche || null,
+  photoPath:
+    form.photoPreview && form.photoPreview.startsWith('data:image')
+      ? '/uploads/default.png'
+      : form.photoPreview || '/uploads/default.png',
+  codeCarte: form.codeCarte || '',
+};
     setSaving(true);
     setMessage('');
 
