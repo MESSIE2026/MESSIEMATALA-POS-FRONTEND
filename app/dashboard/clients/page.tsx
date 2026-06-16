@@ -100,9 +100,19 @@ export default function ClientsPage() {
 
       setClients(list);
 
-      if (!clientSelectionne && list.length > 0) {
-        selectionnerClient(list[0]);
-      }
+      if (list.length > 0) {
+  const currentId = clientSelectionne?.id_clients;
+
+  const sameClient = list.find(
+    (c) => c.id_clients === currentId,
+  );
+
+  if (sameClient) {
+    selectionnerClient(sameClient);
+  } else {
+    selectionnerClient(list[0]);
+  }
+}
     } catch (err) {
       console.error(err);
       showMessage('Impossible de charger les clients.', 'error');
@@ -254,13 +264,38 @@ export default function ClientsPage() {
 
       if (!res.ok) throw new Error(await res.text());
 
-      showMessage(
-        clientSelectionne ? 'Client modifié avec succès.' : 'Client ajouté avec succès.',
-        'success',
-      );
+      const savedData = await res.json();
 
-      await chargerClients();
-      setPhotoFile(null);
+const savedClient = Array.isArray(savedData)
+  ? savedData[0]
+  : savedData;
+
+showMessage(
+  clientSelectionne
+    ? 'Client modifié avec succès.'
+    : 'Client ajouté avec succès.',
+  'success',
+);
+
+setRecherche('');
+setPhotoFile(null);
+
+await chargerClients();
+
+if (savedClient) {
+  setClientSelectionne(savedClient);
+
+  setForm({
+    nom: savedClient.nom || '',
+    prenom: savedClient.prenom || '',
+    telephone: savedClient.telephone || '',
+    adresse: savedClient.adresse || '',
+    email: savedClient.email || '',
+    codecarte: savedClient.codecarte || '',
+    categorieclient: savedClient.categorieclient || 'STANDARD',
+    photoPreview: savedClient.photopath || '',
+  });
+}
     } catch (err) {
       console.error(err);
       showMessage("Erreur pendant l'enregistrement du client.", 'error');
