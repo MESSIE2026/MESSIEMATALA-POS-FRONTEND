@@ -94,6 +94,7 @@ export default function Page() {
   const [employes, setEmployes] = useState<Employe[]>([]);
   const [selected, setSelected] = useState<Employe | null>(null);
   const [form, setForm] = useState<FormEmploye>(emptyForm);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const [filtre, setFiltre] = useState<Filtre>('actifs');
@@ -208,16 +209,18 @@ dateEmbauche: emp.dateembauche
   }
 
   function choisirPhoto(file?: File) {
-    if (!file) return;
+  if (!file) return;
 
-    const reader = new FileReader();
+  setPhotoFile(file);
 
-    reader.onload = () => {
-      setForm((f) => ({ ...f, photoPreview: String(reader.result || '') }));
-    };
+  const reader = new FileReader();
 
-    reader.readAsDataURL(file);
-  }
+  reader.onload = () => {
+    setForm((f) => ({ ...f, photoPreview: String(reader.result || '') }));
+  };
+
+  reader.readAsDataURL(file);
+}
 
   async function enregistrerEmploye() {
     const nom = form.nom.trim();
@@ -229,6 +232,26 @@ dateEmbauche: emp.dateembauche
     if (!prenom) return showMessage('Prénom obligatoire.', 'error');
     if (!poste) return showMessage('Poste obligatoire.', 'error');
     if (!matricule) return showMessage('Matricule obligatoire.', 'error');
+
+
+    let photoPath = form.photoPreview || '/uploads/default.png';
+
+if (photoFile) {
+  const fd = new FormData();
+  fd.append('file', photoFile);
+
+  const uploadRes = await fetch(`${API}/uploads/employes`, {
+    method: 'POST',
+    body: fd,
+  });
+
+  if (!uploadRes.ok) {
+    throw new Error(await uploadRes.text());
+  }
+
+  const uploadData = await uploadRes.json();
+  photoPath = uploadData.path;
+}
 
     const payload = {
   nom,
@@ -246,10 +269,7 @@ dateEmbauche: emp.dateembauche
   adresse: form.adresse.trim(),
   dateNaissance: form.dateNaissance || null,
   dateEmbauche: form.dateEmbauche || null,
-  photoPath:
-    form.photoPreview && form.photoPreview.startsWith('data:image')
-      ? '/uploads/default.png'
-      : form.photoPreview || '/uploads/default.png',
+  photoPath,
   codeCarte: form.codeCarte || '',
 };
     setSaving(true);
@@ -294,6 +314,7 @@ dateEmbauche: emp.dateembauche
 
       showMessage(editingId ? 'Employé modifié.' : 'Employé ajouté.', 'success');
 await chargerEmployes();
+setPhotoFile(null);
     } catch (error) {
       console.error(error);
       showMessage("Erreur pendant l'enregistrement.", 'error');
