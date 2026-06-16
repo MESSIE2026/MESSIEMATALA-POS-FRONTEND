@@ -932,14 +932,33 @@ setPhotoFile(null);
     onClick={() => setImageGrandFormat('')}
     className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
   >
-    <a
-      href={imageGrandFormat}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="absolute left-4 top-4 rounded-full bg-white px-4 py-2 text-sm font-black text-slate-950"
-    >
-      📥 Télécharger
-    </a>
+    <button
+  onClick={async () => {
+    try {
+      const response = await fetch(imageGrandFormat);
+      const blob = await response.blob();
+
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download =
+        imageGrandFormat.split('/').pop() || 'photo-employe.jpg';
+
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert("Impossible de télécharger l'image.");
+    }
+  }}
+  className="absolute left-4 top-4 rounded-full bg-white px-4 py-2 text-sm font-black text-slate-950"
+>
+  📥 Télécharger
+</button>
 
     <button
       onClick={() => setImageGrandFormat('')}
