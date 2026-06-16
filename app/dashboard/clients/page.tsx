@@ -239,16 +239,15 @@ export default function ClientsPage() {
       const photoPath = await uploadPhotoClient();
 
       const payload = {
-        nom: form.nom.trim(),
-        prenom: form.prenom.trim(),
-        telephone: form.telephone.trim(),
-        adresse: form.adresse.trim(),
-        email: form.email.trim(),
-        codecarte: form.codecarte.trim(),
-        categorieclient: form.categorieclient,
-        photopath: photoPath,
-        photoPath,
-      };
+  nom: form.nom.trim(),
+  prenom: form.prenom.trim(),
+  telephone: form.telephone.trim(),
+  adresse: form.adresse.trim(),
+  email: form.email.trim(),
+  codecarte: form.codecarte.trim(),
+  categorieclient: form.categorieclient,
+  ...(photoPath ? { photopath: photoPath, photoPath } : {}),
+};
 
       const url = clientSelectionne
         ? `${API_URL}/clients/${clientSelectionne.id_clients}`
