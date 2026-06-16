@@ -30,6 +30,9 @@ type Employe = {
   nomentreprise?: string | null;
   idmagasin?: number | null;
   nommagasin?: string | null;
+  adresse?: string | null;
+datenaissance?: string | null;
+dateembauche?: string | null;
 };
 
 type FormEmploye = {
@@ -64,7 +67,7 @@ const emptyForm: FormEmploye = {
   pin: '',
   adresse: '',
   dateNaissance: '',
-  dateEmbauche: new Date().toISOString().slice(0, 10),
+  dateEmbauche: '',
   codeCarte: '',
   photoPreview: '',
   idEntreprise: 1,
@@ -187,9 +190,13 @@ export default function Page() {
       sexe: emp.sexe || 'M',
       matricule: emp.matricule || '',
       pin: emp.motdepasse || '',
-      adresse: '',
-      dateNaissance: '',
-      dateEmbauche: '',
+      adresse: emp.adresse || '',
+dateNaissance: emp.datenaissance
+  ? String(emp.datenaissance).slice(0, 10)
+  : '',
+dateEmbauche: emp.dateembauche
+  ? String(emp.dateembauche).slice(0, 10)
+  : '',
       codeCarte: emp.codecarteemploye || '',
       photoPreview: emp.photopath || '',
       idEntreprise: Number(emp.identreprise || 1),
@@ -286,6 +293,7 @@ export default function Page() {
       }
 
       showMessage(editingId ? 'Employé modifié.' : 'Employé ajouté.', 'success');
+await chargerEmployes();
     } catch (error) {
       console.error(error);
       showMessage("Erreur pendant l'enregistrement.", 'error');
