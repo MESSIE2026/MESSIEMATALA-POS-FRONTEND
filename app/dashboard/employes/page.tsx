@@ -181,6 +181,8 @@ export default function Page() {
     setEditingId(emp.id_employe);
     setOnglet('identite');
 
+    console.log('PHOTO EMPLOYE =', emp.photopath);
+
     setForm({
       nom: emp.nom || '',
       prenom: emp.prenom || '',
