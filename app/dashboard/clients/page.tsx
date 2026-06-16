@@ -201,7 +201,7 @@ export default function ClientsPage() {
       const fd = new FormData();
       fd.append('file', photoFile);
 
-      const uploadRes = await fetch(`${API_URL}/uploads/clients`, {
+      const uploadRes = await fetch(`${API_URL}/uploads/employes`, {
         method: 'POST',
         body: fd,
       });
