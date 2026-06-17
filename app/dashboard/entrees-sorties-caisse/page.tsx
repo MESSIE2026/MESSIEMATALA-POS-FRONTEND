@@ -188,21 +188,64 @@ export default function Page() {
         throw new Error(paiementAgent ? 'Sélectionne un agent.' : 'Sélectionne un fournisseur.');
       }
 
-      const body = {
-        typeMouvement,
-        montant: Number(montant),
-        devise,
-        motif,
-        description,
-        idTiers: idTiers ? Number(idTiers) : undefined,
-        nomTiers: nomTiers || undefined,
-        typeTiers: typeTiers || undefined,
+      const rawUser =
+  localStorage.getItem('employe') ||
+  localStorage.getItem('user') ||
+  localStorage.getItem('utilisateur') ||
+  '{}';
 
-        idSession: 1,
-        idEntreprise: 1,
-        idMagasin: 1,
-        idPoste: 1,
-      };
+const user = JSON.parse(rawUser);
+
+const idEmploye = Number(
+  user.id_employe ??
+    user.idEmploye ??
+    user.ID_Employe ??
+    user.idutilisateur ??
+    user.idUtilisateur ??
+    user.id ??
+    0,
+);
+
+const nomCaissier =
+  localStorage.getItem('nomcaissier') ||
+  `${user.prenom ?? ''} ${user.nom ?? ''}`.trim() ||
+  user.nomutilisateur ||
+  user.email ||
+  'SYSTEM';
+
+const body = {
+  typeMouvement,
+  montant: Number(montant),
+  devise,
+  motif,
+  description,
+  idTiers: idTiers ? Number(idTiers) : undefined,
+  nomTiers: nomTiers || undefined,
+  typeTiers: typeTiers || undefined,
+
+  idSession: null,
+
+  idEntreprise:
+    user.idEntreprise ??
+    user.identreprise ??
+    user.id_entreprise ??
+    null,
+
+  idMagasin:
+    user.idMagasin ??
+    user.idmagasin ??
+    user.id_magasin ??
+    null,
+
+  idPoste:
+    user.idPoste ??
+    user.idposte ??
+    user.id_poste ??
+    null,
+
+  idCaissier: idEmploye || null,
+  nomCaissier,
+};
 
       const res = await fetch(`${API}/entrees-sorties-caisse/mouvements`, {
         method: 'POST',
