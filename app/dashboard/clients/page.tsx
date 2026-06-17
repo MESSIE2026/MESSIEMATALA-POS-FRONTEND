@@ -16,18 +16,14 @@ type Client = {
   codecarte?: string | null;
   categorieclient?: string | null;
   photopath?: string | null;
-
   totalachats?: string | number | null;
   nbtickets?: string | number | null;
   dernierachat?: string | null;
   segment?: string | null;
-
   soldecredit?: string | number | null;
   plafond?: string | number | null;
-
   points?: string | number | null;
   cashbacksolde?: string | number | null;
-
   actif?: any;
 };
 
@@ -45,8 +41,7 @@ const emptyForm = {
 };
 
 function money(v: any) {
-  const n = Number(v || 0);
-  return n.toLocaleString('fr-FR');
+  return Number(v || 0).toLocaleString('fr-FR');
 }
 
 function initials(nom?: string | null, prenom?: string | null) {
@@ -63,6 +58,7 @@ function safePhoto(src?: string | null) {
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [clientSelectionne, setClientSelectionne] = useState<Client | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const [form, setForm] = useState(emptyForm);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -79,9 +75,7 @@ export default function ClientsPage() {
   const [saving, setSaving] = useState(false);
 
   const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>(
-    'info',
-  );
+  const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
 
   function showMessage(text: string, type: 'success' | 'error' | 'info' = 'info') {
     setMessage(text);
@@ -100,19 +94,9 @@ export default function ClientsPage() {
 
       setClients(list);
 
-      if (list.length > 0) {
-  const currentId = clientSelectionne?.id_clients;
-
-  const sameClient = list.find(
-    (c) => c.id_clients === currentId,
-  );
-
-  if (sameClient) {
-    selectionnerClient(sameClient);
-  } else {
-    selectionnerClient(list[0]);
-  }
-}
+      if (!editingId && !clientSelectionne && list.length > 0) {
+        selectionnerClient(list[0]);
+      }
     } catch (err) {
       console.error(err);
       showMessage('Impossible de charger les clients.', 'error');
@@ -128,7 +112,6 @@ export default function ClientsPage() {
 
   const clientsFiltres = useMemo(() => {
     const q = recherche.toLowerCase().trim();
-
     if (!q) return clients;
 
     return clients.filter((c) =>
@@ -152,8 +135,7 @@ export default function ClientsPage() {
   const stats = useMemo(() => {
     return {
       total: clients.length,
-      vip: clients.filter((c) => c.categorieclient === 'VIP' || c.segment === 'VIP')
-        .length,
+      vip: clients.filter((c) => c.categorieclient === 'VIP' || c.segment === 'VIP').length,
       credit: clients.filter((c) => Number(c.soldecredit || 0) > 0).length,
       fidelite: clients.filter((c) => Number(c.points || 0) > 0).length,
     };
@@ -161,6 +143,7 @@ export default function ClientsPage() {
 
   function resetForm() {
     setClientSelectionne(null);
+    setEditingId(null);
     setForm(emptyForm);
     setPhotoFile(null);
     setHistorique([]);
@@ -172,6 +155,7 @@ export default function ClientsPage() {
 
   function selectionnerClient(c: Client) {
     setClientSelectionne(c);
+    setEditingId(c.id_clients);
 
     setForm({
       nom: c.nom || '',
@@ -186,6 +170,7 @@ export default function ClientsPage() {
 
     setPhotoFile(null);
     setOnglet('fiche');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function choisirPhoto(file?: File) {
@@ -216,9 +201,7 @@ export default function ClientsPage() {
         body: fd,
       });
 
-      if (!uploadRes.ok) {
-        throw new Error(await uploadRes.text());
-      }
+      if (!uploadRes.ok) throw new Error(await uploadRes.text());
 
       const uploadData = await uploadRes.json();
       photoPath = uploadData.path;
@@ -228,7 +211,10 @@ export default function ClientsPage() {
   }
 
   async function enregistrerClient() {
-    if (!form.nom.trim() && !form.telephone.trim()) {
+    const nom = form.nom.trim();
+    const telephone = form.telephone.trim();
+
+    if (!nom && !telephone) {
       return showMessage('Entrez au moins le nom ou le téléphone du client.', 'error');
     }
 
@@ -239,21 +225,23 @@ export default function ClientsPage() {
       const photoPath = await uploadPhotoClient();
 
       const payload = {
-  nom: form.nom.trim(),
-  prenom: form.prenom.trim(),
-  telephone: form.telephone.trim(),
-  adresse: form.adresse.trim(),
-  email: form.email.trim(),
-  codecarte: form.codecarte.trim(),
-  categorieclient: form.categorieclient,
-  ...(photoPath ? { photopath: photoPath, photoPath } : {}),
-};
+        nom,
+        prenom: form.prenom.trim(),
+        telephone,
+        adresse: form.adresse.trim(),
+        email: form.email.trim(),
+        codecarte: form.codecarte.trim(),
+        categorieclient: form.categorieclient || 'STANDARD',
+        ...(photoPath ? { photopath: photoPath, photoPath } : {}),
+      };
 
-      const url = clientSelectionne
-        ? `${API_URL}/clients/${clientSelectionne.id_clients}`
+      console.log('PAYLOAD CLIENT =', payload);
+
+      const url = editingId
+        ? `${API_URL}/clients/${editingId}`
         : `${API_URL}/clients`;
 
-      const method = clientSelectionne ? 'PATCH' : 'POST';
+      const method = editingId ? 'PATCH' : 'POST';
 
       const res = await fetch(url, {
         method,
@@ -261,40 +249,52 @@ export default function ClientsPage() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error(await res.text());
+      const text = await res.text();
 
-      const savedData = await res.json();
+      if (!res.ok) {
+        console.error('ERREUR API CLIENT =', text);
+        throw new Error(text);
+      }
 
-const savedClient = Array.isArray(savedData)
-  ? savedData[0]
-  : savedData;
+      const savedData = text ? JSON.parse(text) : null;
+      const savedClient: Client | null = Array.isArray(savedData)
+        ? savedData[0]
+        : savedData;
 
-showMessage(
-  clientSelectionne
-    ? 'Client modifié avec succès.'
-    : 'Client ajouté avec succès.',
-  'success',
-);
+      if (savedClient) {
+        setClientSelectionne(savedClient);
+        setEditingId(savedClient.id_clients);
 
-setRecherche('');
-setPhotoFile(null);
+        setClients((prev) => {
+          const exists = prev.some((c) => c.id_clients === savedClient.id_clients);
 
-await chargerClients();
+          if (exists) {
+            return prev.map((c) =>
+              c.id_clients === savedClient.id_clients ? savedClient : c,
+            );
+          }
 
-if (savedClient) {
-  setClientSelectionne(savedClient);
+          return [savedClient, ...prev];
+        });
 
-  setForm({
-    nom: savedClient.nom || '',
-    prenom: savedClient.prenom || '',
-    telephone: savedClient.telephone || '',
-    adresse: savedClient.adresse || '',
-    email: savedClient.email || '',
-    codecarte: savedClient.codecarte || '',
-    categorieclient: savedClient.categorieclient || 'STANDARD',
-    photoPreview: savedClient.photopath || '',
-  });
-}
+        setForm({
+          nom: savedClient.nom || '',
+          prenom: savedClient.prenom || '',
+          telephone: savedClient.telephone || '',
+          adresse: savedClient.adresse || '',
+          email: savedClient.email || '',
+          codecarte: savedClient.codecarte || '',
+          categorieclient: savedClient.categorieclient || 'STANDARD',
+          photoPreview: savedClient.photopath || '',
+        });
+      }
+
+      showMessage(editingId ? 'Client modifié avec succès.' : 'Client ajouté avec succès.', 'success');
+
+      setRecherche('');
+      setPhotoFile(null);
+
+      await chargerClients();
     } catch (err) {
       console.error(err);
       showMessage("Erreur pendant l'enregistrement du client.", 'error');
@@ -304,11 +304,11 @@ if (savedClient) {
   }
 
   async function supprimerClient() {
-    if (!clientSelectionne) return showMessage('Sélectionnez un client.', 'error');
+    if (!editingId) return showMessage('Sélectionnez un client.', 'error');
     if (!confirm('Voulez-vous vraiment supprimer ce client ?')) return;
 
     try {
-      const res = await fetch(`${API_URL}/clients/${clientSelectionne.id_clients}`, {
+      const res = await fetch(`${API_URL}/clients/${editingId}`, {
         method: 'DELETE',
       });
 
@@ -324,15 +324,25 @@ if (savedClient) {
   }
 
   async function genererCarte() {
-    if (!clientSelectionne) return showMessage('Sélectionnez un client.', 'error');
+    if (!editingId) return showMessage('Sélectionnez un client.', 'error');
 
     try {
-      const res = await fetch(
-        `${API_URL}/clients/${clientSelectionne.id_clients}/generer-carte`,
-        { method: 'POST' },
-      );
+      const res = await fetch(`${API_URL}/clients/${editingId}/generer-carte`, {
+        method: 'POST',
+      });
 
       if (!res.ok) throw new Error(await res.text());
+
+      const savedData = await res.json();
+      const savedClient = Array.isArray(savedData) ? savedData[0] : savedData;
+
+      if (savedClient) {
+        setClientSelectionne(savedClient);
+        setEditingId(savedClient.id_clients);
+        setClients((prev) =>
+          prev.map((c) => (c.id_clients === savedClient.id_clients ? savedClient : c)),
+        );
+      }
 
       showMessage('Carte fidélité générée.', 'success');
       await chargerClients();
@@ -343,13 +353,10 @@ if (savedClient) {
   }
 
   async function chargerHistorique() {
-    if (!clientSelectionne) return showMessage('Sélectionnez un client.', 'error');
+    if (!editingId) return showMessage('Sélectionnez un client.', 'error');
 
     try {
-      const res = await fetch(
-        `${API_URL}/clients/${clientSelectionne.id_clients}/historique`,
-      );
-
+      const res = await fetch(`${API_URL}/clients/${editingId}/historique`);
       if (!res.ok) throw new Error(await res.text());
 
       const data = await res.json();
@@ -362,11 +369,10 @@ if (savedClient) {
   }
 
   async function chargerCredits() {
-    if (!clientSelectionne) return showMessage('Sélectionnez un client.', 'error');
+    if (!editingId) return showMessage('Sélectionnez un client.', 'error');
 
     try {
-      const res = await fetch(`${API_URL}/clients/${clientSelectionne.id_clients}/credits`);
-
+      const res = await fetch(`${API_URL}/clients/${editingId}/credits`);
       if (!res.ok) throw new Error(await res.text());
 
       const data = await res.json();
@@ -379,11 +385,10 @@ if (savedClient) {
   }
 
   async function chargerFidelite() {
-    if (!clientSelectionne) return showMessage('Sélectionnez un client.', 'error');
+    if (!editingId) return showMessage('Sélectionnez un client.', 'error');
 
     try {
-      const res = await fetch(`${API_URL}/clients/${clientSelectionne.id_clients}/fidelite`);
-
+      const res = await fetch(`${API_URL}/clients/${editingId}/fidelite`);
       if (!res.ok) throw new Error(await res.text());
 
       const data = await res.json();
@@ -396,7 +401,7 @@ if (savedClient) {
   }
 
   async function encaisserCredit() {
-    if (!clientSelectionne) return showMessage('Sélectionnez un client.', 'error');
+    if (!editingId) return showMessage('Sélectionnez un client.', 'error');
 
     await chargerCredits();
 
@@ -575,12 +580,12 @@ if (savedClient) {
                   >
                     {saving
                       ? 'Enregistrement...'
-                      : clientSelectionne
+                      : editingId
                         ? 'Modifier client'
                         : 'Ajouter client'}
                   </button>
 
-                  {clientSelectionne && (
+                  {editingId && (
                     <button
                       onClick={supprimerClient}
                       className="rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white"
@@ -721,7 +726,7 @@ if (savedClient) {
                         key={c.id_clients}
                         onClick={() => selectionnerClient(c)}
                         className={`cursor-pointer border-t border-slate-100 hover:bg-blue-50 ${
-                          clientSelectionne?.id_clients === c.id_clients ? 'bg-blue-50' : ''
+                          editingId === c.id_clients ? 'bg-blue-50' : ''
                         }`}
                       >
                         <td className="p-3">
