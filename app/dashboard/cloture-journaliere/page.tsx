@@ -250,7 +250,19 @@ export default function Page() {
     }
   }
 
-  async function ouvrirPdf() {
+  function ouvrirPdf() {
+  const url = `${API}/cloture-journaliere/pdf?date=${encodeURIComponent(date)}`;
+
+  const win = window.open(url, '_blank');
+
+  setTimeout(() => {
+    try {
+      win?.print();
+    } catch {}
+  }, 1500);
+}
+
+async function telechargerPdf() {
   try {
     const res = await fetch(
       `${API}/cloture-journaliere/pdf?date=${encodeURIComponent(date)}`
@@ -261,7 +273,6 @@ export default function Page() {
     }
 
     const blob = await res.blob();
-
     const url = window.URL.createObjectURL(blob);
 
     const a = document.createElement('a');
@@ -271,7 +282,7 @@ export default function Page() {
     document.body.appendChild(a);
     a.click();
 
-    document.body.removeChild(a);
+    a.remove();
     window.URL.revokeObjectURL(url);
   } catch (e) {
     console.error(e);
@@ -614,7 +625,7 @@ export default function Page() {
               </button>
 
               <button
-                onClick={ouvrirPdf}
+                onClick={telechargerPdf}
                 className="w-full rounded-2xl bg-blue-700 px-5 py-4 font-black text-white"
               >
                 Exporter PDF
