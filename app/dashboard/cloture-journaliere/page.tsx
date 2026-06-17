@@ -20,12 +20,38 @@ type ResumeBloc = {
   balanceUSD: number;
 };
 
+type Modalites = {
+  totalEspeceFC?: number;
+  totalEspeceUSD?: number;
+
+  versementBankBrutFC?: number;
+  versementBankBrutUSD?: number;
+  soustractionBankFC?: number;
+  soustractionBankUSD?: number;
+  stockBankNetFC?: number;
+  stockBankNetUSD?: number;
+
+  versementSimBrutFC?: number;
+  versementSimBrutUSD?: number;
+  soustractionSimFC?: number;
+  soustractionSimUSD?: number;
+  versementSimNetFC?: number;
+  versementSimNetUSD?: number;
+
+  envoiPatronneFC?: number;
+  envoiPatronneUSD?: number;
+
+  locationMoisFC?: number;
+  locationMoisUSD?: number;
+};
+
 type Resume = {
   date: string;
   jour: ResumeBloc;
   semaine: ResumeBloc;
   mois: ResumeBloc;
   observation?: string;
+  modalites?: Modalites;
 };
 
 type Cloture = {
@@ -55,6 +81,19 @@ function money(v: any) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+function dateLongFr(dateISO: string) {
+  try {
+    return new Date(dateISO).toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: '2-digit',
+    });
+  } catch {
+    return dateISO;
+  }
 }
 
 export default function Page() {
@@ -211,13 +250,17 @@ export default function Page() {
     }
   }
 
-  function imprimer() {
-    window.print();
+  function ouvrirPdf() {
+    window.open(
+      `${API}/cloture-journaliere/pdf?date=${encodeURIComponent(date)}`,
+      '_blank',
+    );
   }
 
   const jour = resume?.jour;
   const semaine = resume?.semaine;
   const mois = resume?.mois;
+  const modalites = resume?.modalites;
 
   const totalJourFC = useMemo(() => jour?.balanceFC ?? 0, [jour]);
   const totalJourUSD = useMemo(() => jour?.balanceUSD ?? 0, [jour]);
@@ -227,17 +270,25 @@ export default function Page() {
       <div className="mx-auto max-w-7xl space-y-5">
         <section className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.25em] text-blue-700">
-                Caisse / Finance
-              </p>
-              <h1 className="mt-2 text-3xl font-black text-slate-950">
-                Clôture journalière de caisse
-              </h1>
-              <p className="mt-2 text-sm font-semibold text-slate-500">
-                Récapitulatif journalier, hebdomadaire, mensuel, observation,
-                validation et manager.
-              </p>
+            <div className="flex items-center gap-4">
+              <img
+                src="/logo.png"
+                alt="ZAIRE MODE"
+                className="h-16 w-16 rounded-2xl object-contain ring-1 ring-slate-200"
+              />
+
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-blue-700">
+                  Caisse / Finance
+                </p>
+                <h1 className="mt-1 text-3xl font-black text-slate-950">
+                  Clôture journalière de caisse
+                </h1>
+                <p className="mt-1 text-sm font-semibold text-slate-500">
+                  Document identique à l’ancien Windows Forms : jour, semaine,
+                  mois, recettes, BANK, SIM, patronne et signatures.
+                </p>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -247,6 +298,7 @@ export default function Page() {
                 onChange={(e) => setDate(e.target.value)}
                 className="rounded-2xl border border-slate-300 px-4 py-3 font-bold"
               />
+
               <button
                 onClick={charger}
                 disabled={loading}
@@ -254,8 +306,9 @@ export default function Page() {
               >
                 Actualiser
               </button>
+
               <button
-                onClick={imprimer}
+                onClick={ouvrirPdf}
                 className="rounded-2xl bg-blue-700 px-5 py-3 font-black text-white"
               >
                 Imprimer / PDF
@@ -271,9 +324,139 @@ export default function Page() {
         )}
 
         <section className="grid gap-4 lg:grid-cols-3">
-          <InfoCard title="Date clôture" value={date} />
+          <InfoCard title="Date clôture" value={dateLongFr(date)} />
           <InfoCard title="Caissier" value={nomCaissier} />
           <InfoCard title="ID caissier" value={String(idCaissier || '-')} />
+        </section>
+
+        <section className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <h2 className="text-xl font-black text-slate-950">
+            Aperçu document Windows Forms
+          </h2>
+
+          <div className="mt-4 rounded-2xl border border-slate-300 bg-white p-5">
+            <div className="text-center">
+              <img
+                src="/logo.png"
+                alt="ZAIRE MODE"
+                className="mx-auto mb-2 h-16 w-16 object-contain"
+              />
+              <h3 className="text-2xl font-black">ZAIRE MODE SARL</h3>
+              <p className="text-sm font-semibold">
+                23, Bld Lumumba, Q1 Masina Sans Fil
+              </p>
+              <p className="text-sm font-semibold">
+                RCCM: 25-B-01497 | ID.NAT: 01-F4300-N73258E
+              </p>
+            </div>
+
+            <div className="my-4 border-y border-slate-800 py-3 text-center">
+              <h3 className="font-black">
+                MOUVEMENTS DE CAISSE - CLÔTURE JOURNALIÈRE
+              </h3>
+            </div>
+
+            <div className="mb-4 flex justify-between text-sm font-bold">
+              <p>Date : {dateLongFr(date)}</p>
+              <p>Caissier : {nomCaissier}</p>
+            </div>
+
+            <PdfTable
+              title="RÉCAPITULATIF DU JOUR"
+              fc={{
+                entrees: jour?.entreesFC,
+                sorties: jour?.sortiesFC,
+                balance: jour?.balanceFC,
+              }}
+              usd={{
+                entrees: jour?.entreesUSD,
+                sorties: jour?.sortiesUSD,
+                balance: jour?.balanceUSD,
+              }}
+            />
+
+            <div className="mt-3 border border-slate-800">
+              <h4 className="border-b border-slate-800 p-2 font-black">
+                OBSERVATIONS DU JOUR
+              </h4>
+              <div className="min-h-24 whitespace-pre-wrap p-3 text-sm font-semibold">
+                {observation || resume?.observation || '-'}
+              </div>
+            </div>
+
+            <PdfTable
+              title="RÉCAPITULATIF HEBDOMADAIRE"
+              fc={{
+                entrees: semaine?.entreesFC,
+                sorties: semaine?.sortiesFC,
+                balance: semaine?.balanceFC,
+              }}
+              usd={{
+                entrees: semaine?.entreesUSD,
+                sorties: semaine?.sortiesUSD,
+                balance: semaine?.balanceUSD,
+              }}
+            />
+
+            <PdfTable
+              title="RÉCAPITULATIF MENSUEL"
+              fc={{
+                entrees: mois?.entreesFC,
+                sorties: mois?.sortiesFC,
+                balance: mois?.balanceFC,
+              }}
+              usd={{
+                entrees: mois?.entreesUSD,
+                sorties: mois?.sortiesUSD,
+                balance: mois?.balanceUSD,
+              }}
+            />
+
+            <div className="mt-3 border border-slate-800 p-3 text-sm">
+              <h4 className="mb-2 font-black">DÉTAIL DES RECETTES MENSUELLES</h4>
+
+              <p>
+                Argent Photos : FC {money(mois?.photoFC)} | USD{' '}
+                {money(mois?.photoUSD)}
+              </p>
+              <p>
+                Vente : FC {money(mois?.venteFC)} | USD {money(mois?.venteUSD)}
+              </p>
+
+              <div className="mt-3 space-y-1 font-semibold">
+                <p>
+                  TOTAL GÉNÉRAL ESPÈCE : FC {money(modalites?.totalEspeceFC)} |
+                  USD {money(modalites?.totalEspeceUSD)}
+                </p>
+                <p>
+                  VERSEMENT BANK : FC {money(modalites?.stockBankNetFC)} | USD{' '}
+                  {money(modalites?.stockBankNetUSD)}
+                </p>
+                <p>
+                  VERSEMENT SIM : FC {money(modalites?.versementSimNetFC)} | USD{' '}
+                  {money(modalites?.versementSimNetUSD)}
+                </p>
+                <p>
+                  ENVOI PATRONNE : FC {money(modalites?.envoiPatronneFC)} | USD{' '}
+                  {money(modalites?.envoiPatronneUSD)}
+                </p>
+                <p>
+                  LOCATION MENSUELLE : FC {money(modalites?.locationMoisFC)} |
+                  USD {money(modalites?.locationMoisUSD)}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 border-t border-slate-800 pt-6">
+              <div className="flex justify-between font-bold">
+                <p>Signature du Caissier : {nomCaissier}</p>
+                <p>Signature Administration : MESSIE MATALA</p>
+              </div>
+              <p className="mt-5 text-xs font-semibold text-slate-500">
+                Document généré le {new Date().toLocaleString('fr-FR')}
+              </p>
+            </div>
+          </div>
         </section>
 
         <section className="grid gap-5 xl:grid-cols-2">
@@ -332,6 +515,55 @@ export default function Page() {
           />
         </section>
 
+        <section className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <h2 className="text-xl font-black text-slate-950">
+            Modalités ancienne version Windows Forms
+          </h2>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <Small
+              label="Total Espèce FC"
+              value={`${money(modalites?.totalEspeceFC)} FC`}
+            />
+            <Small
+              label="Total Espèce USD"
+              value={`${money(modalites?.totalEspeceUSD)} USD`}
+            />
+            <Small
+              label="Stock BANK net FC"
+              value={`${money(modalites?.stockBankNetFC)} FC`}
+            />
+            <Small
+              label="Stock BANK net USD"
+              value={`${money(modalites?.stockBankNetUSD)} USD`}
+            />
+            <Small
+              label="Versement SIM net FC"
+              value={`${money(modalites?.versementSimNetFC)} FC`}
+            />
+            <Small
+              label="Versement SIM net USD"
+              value={`${money(modalites?.versementSimNetUSD)} USD`}
+            />
+            <Small
+              label="Envoi Patronne FC"
+              value={`${money(modalites?.envoiPatronneFC)} FC`}
+            />
+            <Small
+              label="Envoi Patronne USD"
+              value={`${money(modalites?.envoiPatronneUSD)} USD`}
+            />
+            <Small
+              label="Location mois FC"
+              value={`${money(modalites?.locationMoisFC)} FC`}
+            />
+            <Small
+              label="Location mois USD"
+              value={`${money(modalites?.locationMoisUSD)} USD`}
+            />
+          </div>
+        </section>
+
         <section className="grid gap-5 lg:grid-cols-[1fr_320px]">
           <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
             <h2 className="text-xl font-black text-slate-950">Observation</h2>
@@ -339,7 +571,7 @@ export default function Page() {
               value={observation}
               onChange={(e) => setObservation(e.target.value)}
               rows={7}
-              placeholder="Observation de la journée..."
+              placeholder="Exemple : ARGENT PHOTOS : 77.500FC&#10;VENTE :&#10; - BOUCLE D'OREILLE : 5$"
               className="mt-4 w-full rounded-2xl border border-slate-300 p-4 font-semibold outline-none focus:border-blue-600"
             />
           </div>
@@ -364,7 +596,7 @@ export default function Page() {
               </button>
 
               <button
-                onClick={imprimer}
+                onClick={ouvrirPdf}
                 className="w-full rounded-2xl bg-blue-700 px-5 py-4 font-black text-white"
               >
                 Exporter PDF
@@ -438,40 +670,6 @@ export default function Page() {
             </table>
           </div>
 
-          <div className="space-y-3 lg:hidden">
-            {clotures.map((c) => (
-              <div
-                key={c.id}
-                className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200"
-              >
-                <div className="flex justify-between gap-3">
-                  <div>
-                    <p className="text-lg font-black text-slate-950">
-                      Clôture N° {c.id}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {String(c.datecloture).slice(0, 10)} ·{' '}
-                      {c.nomcaissier || c.idcaissier}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => supprimer(c.id)}
-                    className="rounded-xl bg-red-600 px-3 py-2 text-xs font-black text-white"
-                  >
-                    Suppr.
-                  </button>
-                </div>
-
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <Small label="Entrées FC" value={`${money(c.entreesfc)} FC`} />
-                  <Small label="Sorties FC" value={`${money(c.sortiesfc)} FC`} />
-                  <Small label="Balance FC" value={`${money(c.balancefc)} FC`} />
-                  <Small label="Balance USD" value={`${money(c.balanceusd)} USD`} />
-                </div>
-              </div>
-            ))}
-          </div>
-
           {!clotures.length && (
             <div className="rounded-3xl bg-slate-50 p-8 text-center font-black text-slate-500">
               Aucune clôture trouvée.
@@ -488,6 +686,58 @@ function InfoCard({ title, value }: { title: string; value: string }) {
     <div className="rounded-[1.5rem] bg-white p-4 shadow-sm ring-1 ring-slate-200">
       <p className="text-xs font-black uppercase text-slate-500">{title}</p>
       <p className="mt-2 text-xl font-black text-slate-950">{value}</p>
+    </div>
+  );
+}
+
+function PdfTable({
+  title,
+  fc,
+  usd,
+}: {
+  title: string;
+  fc: { entrees?: number; sorties?: number; balance?: number };
+  usd: { entrees?: number; sorties?: number; balance?: number };
+}) {
+  return (
+    <div className="mt-3 border border-slate-800">
+      <h4 className="border-b border-slate-800 p-2 font-black">{title}</h4>
+      <table className="w-full text-sm">
+        <thead className="bg-slate-100">
+          <tr className="border-b border-slate-800">
+            <th className="border-r border-slate-800 p-2 text-left">DEV.</th>
+            <th className="border-r border-slate-800 p-2 text-right">
+              ENTRÉES
+            </th>
+            <th className="border-r border-slate-800 p-2 text-right">
+              SORTIES
+            </th>
+            <th className="p-2 text-right">BALANCE</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="border-b border-slate-800">
+            <td className="border-r border-slate-800 p-2 font-bold">FC</td>
+            <td className="border-r border-slate-800 p-2 text-right">
+              {money(fc.entrees)}
+            </td>
+            <td className="border-r border-slate-800 p-2 text-right">
+              {money(fc.sorties)}
+            </td>
+            <td className="p-2 text-right">{money(fc.balance)}</td>
+          </tr>
+          <tr>
+            <td className="border-r border-slate-800 p-2 font-bold">USD</td>
+            <td className="border-r border-slate-800 p-2 text-right">
+              {money(usd.entrees)}
+            </td>
+            <td className="border-r border-slate-800 p-2 text-right">
+              {money(usd.sorties)}
+            </td>
+            <td className="p-2 text-right">{money(usd.balance)}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }
