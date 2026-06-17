@@ -197,12 +197,9 @@ export default function Page() {
 const user = JSON.parse(rawUser);
 
 const idEmploye = Number(
-  user.id_employe ??
+  user.idemploye ??
+    user.id_employe ??
     user.idEmploye ??
-    user.ID_Employe ??
-    user.idutilisateur ??
-    user.idUtilisateur ??
-    user.id ??
     0,
 );
 

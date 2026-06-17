@@ -229,7 +229,11 @@ const password = String(passwordParam ?? login.password ?? '').trim();
 
     saveEmployeSession(
   {
-    id_employe: Number(data.user?.idutilisateur || data.user?.id || 0),
+    id_employe: Number(
+  data.user?.idemploye ||
+  data.user?.id_employe ||
+  0
+),
     nom: data.user?.nom || '',
     prenom: data.user?.prenom || '',
     poste: data.user?.role || '',
