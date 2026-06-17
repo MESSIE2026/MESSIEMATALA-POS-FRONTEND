@@ -250,12 +250,34 @@ export default function Page() {
     }
   }
 
-  function ouvrirPdf() {
-    window.open(
-      `${API}/cloture-journaliere/pdf?date=${encodeURIComponent(date)}`,
-      '_blank',
+  async function ouvrirPdf() {
+  try {
+    const res = await fetch(
+      `${API}/cloture-journaliere/pdf?date=${encodeURIComponent(date)}`
     );
+
+    if (!res.ok) {
+      throw new Error('Erreur téléchargement PDF');
+    }
+
+    const blob = await res.blob();
+
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Cloture_${date}.pdf`;
+
+    document.body.appendChild(a);
+    a.click();
+
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error(e);
+    alert('Impossible de télécharger le PDF.');
   }
+}
 
   const jour = resume?.jour;
   const semaine = resume?.semaine;
