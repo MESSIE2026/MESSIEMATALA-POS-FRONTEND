@@ -251,7 +251,7 @@ export default function Page() {
   }
 
   function ouvrirPdf() {
-  const url = `${API}/cloture-journaliere/pdf?date=${encodeURIComponent(date)}`;
+  const url = `${API}/cloture-journaliere/pdf-print?date=${encodeURIComponent(date)}`;
 
   const win = window.open(url, '_blank');
 
