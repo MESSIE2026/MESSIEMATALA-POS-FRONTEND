@@ -125,13 +125,15 @@ export default function Page() {
 
       const emp = JSON.parse(raw);
 
-      const id = Number(
-        emp.idemploye ??
-          emp.id_employe ??
-          emp.idEmploye ??
-          emp.id ??
-          0,
-      );
+     const id = Number(
+  emp.idemploye ??
+    emp.id_employe ??
+    emp.idEmploye ??
+    emp.idutilisateur ??
+    emp.idUtilisateur ??
+    emp.id ??
+    0,
+);
 
       setIdCaissier(id);
 
