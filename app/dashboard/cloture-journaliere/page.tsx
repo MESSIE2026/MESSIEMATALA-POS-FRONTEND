@@ -308,11 +308,11 @@ export default function Page() {
               </button>
 
               <button
-                onClick={ouvrirPdf}
-                className="rounded-2xl bg-blue-700 px-5 py-3 font-black text-white"
-              >
-                Imprimer / PDF
-              </button>
+  onClick={ouvrirPdf}
+  className="rounded-2xl bg-slate-700 px-5 py-3 font-black text-white"
+>
+  Impression Directe
+</button>
             </div>
           </div>
         </section>
