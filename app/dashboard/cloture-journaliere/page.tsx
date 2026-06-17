@@ -153,34 +153,42 @@ export default function Page() {
   }
 
   async function charger() {
-    setLoading(true);
-    setMessage('');
+  setLoading(true);
+  setMessage('');
 
-    try {
-      const [r1, r2] = await Promise.all([
-        fetch(`${API}/cloture-journaliere/resume?date=${date}`, {
-          cache: 'no-store',
-        }),
-        fetch(`${API}/cloture-journaliere`, {
-          cache: 'no-store',
-        }),
-      ]);
+  try {
+    const [r1, r2] = await Promise.all([
+      fetch(`${API}/cloture-journaliere/resume?date=${date}`, {
+        cache: 'no-store',
+      }),
+      fetch(`${API}/cloture-journaliere`, {
+        cache: 'no-store',
+      }),
+    ]);
 
-      const d1 = await lire(r1);
-      const d2 = await lire(r2);
+    const d1 = await lire(r1);
+    const d2 = await lire(r2);
 
-      if (!r1.ok) throw new Error(JSON.stringify(d1));
-      if (!r2.ok) throw new Error(JSON.stringify(d2));
+    if (!r1.ok) throw new Error(JSON.stringify(d1));
+    if (!r2.ok) throw new Error(JSON.stringify(d2));
 
-      setResume(d1);
+    setResume(d1);
+    setClotures(Array.isArray(d2) ? d2 : []);
+
+    const brouillonKey = `CLOTURE_OBSERVATION_${date}`;
+    const brouillon = localStorage.getItem(brouillonKey);
+
+    if (brouillon !== null) {
+      setObservation(brouillon);
+    } else {
       setObservation(d1?.observation || '');
-      setClotures(Array.isArray(d2) ? d2 : []);
-    } catch (e: any) {
-      setMessage(e?.message || 'Erreur chargement clôture.');
-    } finally {
-      setLoading(false);
     }
+  } catch (e: any) {
+    setMessage(e?.message || 'Erreur chargement clôture.');
+  } finally {
+    setLoading(false);
   }
+}
 
   async function valider() {
     if (!idCaissier) {
@@ -215,8 +223,9 @@ export default function Page() {
       }
 
       setMessage(data?.message || 'Clôture validée.');
-      setObservation('');
-      await charger();
+localStorage.removeItem(`CLOTURE_OBSERVATION_${date}`);
+setObservation('');
+await charger();
     } catch (e: any) {
       setMessage(e?.message || 'Erreur validation clôture.');
     } finally {
@@ -598,7 +607,11 @@ async function telechargerPdf() {
             <h2 className="text-xl font-black text-slate-950">Observation</h2>
             <textarea
               value={observation}
-              onChange={(e) => setObservation(e.target.value)}
+              onChange={(e) => {
+  const value = e.target.value;
+  setObservation(value);
+  localStorage.setItem(`CLOTURE_OBSERVATION_${date}`, value);
+}}
               rows={7}
               placeholder="Exemple : ARGENT PHOTOS : 77.500FC&#10;VENTE :&#10; - BOUCLE D'OREILLE : 5$"
               className="mt-4 w-full rounded-2xl border border-slate-300 p-4 font-semibold outline-none focus:border-blue-600"
