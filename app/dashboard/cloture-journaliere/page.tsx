@@ -271,24 +271,20 @@ export default function Page() {
         <section className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
-              <img
-                src="/logo.png"
-                alt="ZAIRE MODE"
-                className="h-16 w-16 rounded-2xl object-contain ring-1 ring-slate-200"
-              />
-
+            
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-blue-700">
-                  Caisse / Finance
-                </p>
-                <h1 className="mt-1 text-3xl font-black text-slate-950">
-                  Clôture journalière de caisse
-                </h1>
-                <p className="mt-1 text-sm font-semibold text-slate-500">
-                  Document identique à l’ancien Windows Forms : jour, semaine,
-                  mois, recettes, BANK, SIM, patronne et signatures.
-                </p>
-              </div>
+  <p className="text-xs font-black uppercase tracking-[0.25em] text-blue-700">
+    Caisse / Finance
+  </p>
+
+  <h1 className="mt-1 text-3xl font-black text-slate-950">
+    Clôture journalière de caisse
+  </h1>
+
+  <p className="mt-1 text-sm font-semibold text-slate-500">
+    Synthèse Générale : jour, semaine, mois.
+  </p>
+</div>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -453,7 +449,7 @@ export default function Page() {
                 <p>Signature Administration : MESSIE MATALA</p>
               </div>
               <p className="mt-5 text-xs font-semibold text-slate-500">
-                Document généré le {new Date().toLocaleString('fr-FR')}
+               Document généré le {resume?.date ? dateLongFr(resume.date) : dateLongFr(date)}
               </p>
             </div>
           </div>
