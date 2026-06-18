@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 
-const API = process.env.NEXT_PUBLIC_CENTRAL_API || 'http://localhost:3002';
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  'https://messiematala-pos-backend-production.up.railway.app';
 
 type BackupItem = {
   id: number;
@@ -40,8 +42,8 @@ export default function SauvegardesPage() {
 
     try {
       const [resItems, resStats] = await Promise.all([
-        fetch(`${API}/backups`, { cache: 'no-store' }),
-        fetch(`${API}/backups/stats`, { cache: 'no-store' }),
+        fetch(`${API_URL}/backups`, { cache: 'no-store' }),
+        fetch(`${API_URL}/backups/stats`, { cache: 'no-store' }),
       ]);
 
       const jsonItems = await resItems.json().catch(() => []);
@@ -78,7 +80,7 @@ export default function SauvegardesPage() {
     setMessage('');
 
     try {
-      const res = await fetch(`${API}/backups/create`, {
+      const res = await fetch(`${API_URL}/backups/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identreprise: 1 }),
@@ -110,7 +112,7 @@ export default function SauvegardesPage() {
     setLoadingAction(true);
 
     try {
-      const res = await fetch(`${API}/backups/restore/${x.id}`, {
+      const res = await fetch(`${API_URL}/backups/restore/${x.id}`, {
         method: 'POST',
       });
 
@@ -137,7 +139,7 @@ export default function SauvegardesPage() {
     setLoadingAction(true);
 
     try {
-      const res = await fetch(`${API}/backups/${x.id}`, {
+      const res = await fetch(`${API_URL}/backups/${x.id}`, {
         method: 'DELETE',
       });
 
@@ -157,7 +159,7 @@ export default function SauvegardesPage() {
   }
 
   function telecharger(x: BackupItem) {
-    window.open(`${API}/backups/download/${x.id}`, '_blank');
+    window.open(`${API_URL}/backups/download/${x.id}`, '_blank');
   }
 
   return (

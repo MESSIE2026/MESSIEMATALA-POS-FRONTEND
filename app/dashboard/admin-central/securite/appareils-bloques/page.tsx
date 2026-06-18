@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-const API = process.env.NEXT_PUBLIC_CENTRAL_API || 'http://localhost:3002';
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  'https://messiematala-pos-backend-production.up.railway.app';
 
 export default function AppareilsBloquesPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -24,10 +26,10 @@ export default function AppareilsBloquesPage() {
 
     try {
       const [resItems, resStats] = await Promise.all([
-        fetch(`${API}/appareils/bloques?search=${encodeURIComponent(search)}`, {
+        fetch(`${API_URL}/appareils/bloques?search=${encodeURIComponent(search)}`, {
           cache: 'no-store',
         }),
-        fetch(`${API}/appareils/stats`, {
+        fetch(`${API_URL}/appareils/stats`, {
           cache: 'no-store',
         }),
       ]);
@@ -49,7 +51,7 @@ export default function AppareilsBloquesPage() {
   const ok = window.confirm(`Débloquer l’appareil ${x.deviceid} ?`);
   if (!ok) return;
 
-  const res = await fetch(`${API}/appareils/debloquer`, {
+  const res = await fetch(`${API_URL}/appareils/debloquer`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

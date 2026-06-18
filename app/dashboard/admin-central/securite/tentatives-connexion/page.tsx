@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 
-const API = process.env.NEXT_PUBLIC_CENTRAL_API || 'http://localhost:3002';
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  'https://messiematala-pos-backend-production.up.railway.app';
 
 export default function TentativesConnexionPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -11,8 +13,8 @@ export default function TentativesConnexionPage() {
 
   async function charger() {
     const [resItems, resStats] = await Promise.all([
-      fetch(`${API}/login-attempts?search=${encodeURIComponent(search)}`),
-      fetch(`${API}/login-attempts/stats`),
+      fetch(`${API_URL}/login-attempts?search=${encodeURIComponent(search)}`),
+      fetch(`${API_URL}/login-attempts/stats`),
     ]);
 
     const jsonItems = await resItems.json();
@@ -28,7 +30,7 @@ export default function TentativesConnexionPage() {
     const ok = window.confirm(`Débloquer le compte ${email} ?`);
     if (!ok) return;
 
-    await fetch(`${API}/login-attempts/debloquer`, {
+    await fetch(`${API_URL}/login-attempts/debloquer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),

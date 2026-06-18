@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-const API = process.env.NEXT_PUBLIC_CENTRAL_API || 'http://localhost:3002';
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  'https://messiematala-pos-backend-production.up.railway.app';
 
 export default function AppareilsApprouvesPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -24,10 +26,10 @@ export default function AppareilsApprouvesPage() {
 
     try {
       const [resItems, resStats] = await Promise.all([
-        fetch(`${API}/appareils/approuves?search=${encodeURIComponent(search)}`, {
+        fetch(`${API_URL}/appareils/approuves?search=${encodeURIComponent(search)}`, {
           cache: 'no-store',
         }),
-        fetch(`${API}/appareils/stats`, {
+        fetch(`${API_URL}/appareils/stats`, {
           cache: 'no-store',
         }),
       ]);
@@ -55,7 +57,7 @@ export default function AppareilsApprouvesPage() {
 
     if (motif === null) return;
 
-    await fetch(`${API}/appareils/bloquer`, {
+    await fetch(`${API_URL}/appareils/bloquer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
