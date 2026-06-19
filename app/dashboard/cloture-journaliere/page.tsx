@@ -23,24 +23,12 @@ type ResumeBloc = {
 type Modalites = {
   totalEspeceFC?: number;
   totalEspeceUSD?: number;
-
-  versementBankBrutFC?: number;
-  versementBankBrutUSD?: number;
-  soustractionBankFC?: number;
-  soustractionBankUSD?: number;
   stockBankNetFC?: number;
   stockBankNetUSD?: number;
-
-  versementSimBrutFC?: number;
-  versementSimBrutUSD?: number;
-  soustractionSimFC?: number;
-  soustractionSimUSD?: number;
   versementSimNetFC?: number;
   versementSimNetUSD?: number;
-
   envoiPatronneFC?: number;
   envoiPatronneUSD?: number;
-
   locationMoisFC?: number;
   locationMoisUSD?: number;
 };
@@ -61,13 +49,9 @@ type Cloture = {
   nomcaissier?: string;
   entreesfc?: number;
   sortiesfc?: number;
-  photofc?: number;
-  ventefc?: number;
   balancefc?: number;
   entreesusd?: number;
   sortiesusd?: number;
-  photousd?: number;
-  venteusd?: number;
   balanceusd?: number;
   observation?: string;
 };
@@ -107,6 +91,22 @@ export default function Page() {
   const [idCaissier, setIdCaissier] = useState(0);
   const [nomCaissier, setNomCaissier] = useState('CAISSIER WEB');
 
+  const [managerOuvert, setManagerOuvert] = useState(false);
+  const [signatureModal, setSignatureModal] = useState(false);
+  const [managerLogin, setManagerLogin] = useState('');
+  const [managerPin, setManagerPin] = useState('');
+  const [signatureManager, setSignatureManager] = useState<any>(null);
+
+  const nomEntreprise =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('ZAIRE_NOM_ENTREPRISE') || 'ENTREPRISE'
+      : 'ENTREPRISE';
+
+  const adresseEntreprise =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('ZAIRE_ADRESSE_ENTREPRISE') || ''
+      : '';
+
   useEffect(() => {
     chargerEmploye();
     charger();
@@ -125,15 +125,15 @@ export default function Page() {
 
       const emp = JSON.parse(raw);
 
-     const id = Number(
-  emp.idemploye ??
-    emp.id_employe ??
-    emp.idEmploye ??
-    emp.idutilisateur ??
-    emp.idUtilisateur ??
-    emp.id ??
-    0,
-);
+      const id = Number(
+        emp.idemploye ??
+          emp.id_employe ??
+          emp.idEmploye ??
+          emp.idutilisateur ??
+          emp.idUtilisateur ??
+          emp.id ??
+          0,
+      );
 
       setIdCaissier(id);
 
@@ -155,42 +155,38 @@ export default function Page() {
   }
 
   async function charger() {
-  setLoading(true);
-  setMessage('');
+    setLoading(true);
+    setMessage('');
 
-  try {
-    const [r1, r2] = await Promise.all([
-      fetch(`${API}/cloture-journaliere/resume?date=${date}`, {
-        cache: 'no-store',
-      }),
-      fetch(`${API}/cloture-journaliere`, {
-        cache: 'no-store',
-      }),
-    ]);
+    try {
+      const [r1, r2] = await Promise.all([
+        fetch(`${API}/cloture-journaliere/resume?date=${date}`, {
+          cache: 'no-store',
+        }),
+        fetch(`${API}/cloture-journaliere`, {
+          cache: 'no-store',
+        }),
+      ]);
 
-    const d1 = await lire(r1);
-    const d2 = await lire(r2);
+      const d1 = await lire(r1);
+      const d2 = await lire(r2);
 
-    if (!r1.ok) throw new Error(JSON.stringify(d1));
-    if (!r2.ok) throw new Error(JSON.stringify(d2));
+      if (!r1.ok) throw new Error(JSON.stringify(d1));
+      if (!r2.ok) throw new Error(JSON.stringify(d2));
 
-    setResume(d1);
-    setClotures(Array.isArray(d2) ? d2 : []);
+      setResume(d1);
+      setClotures(Array.isArray(d2) ? d2 : []);
 
-    const brouillonKey = `CLOTURE_OBSERVATION_${date}`;
-    const brouillon = localStorage.getItem(brouillonKey);
+      const brouillonKey = `CLOTURE_OBSERVATION_${date}`;
+      const brouillon = localStorage.getItem(brouillonKey);
 
-    if (brouillon !== null) {
-      setObservation(brouillon);
-    } else {
-      setObservation(d1?.observation || '');
+      setObservation(brouillon !== null ? brouillon : d1?.observation || '');
+    } catch (e: any) {
+      setMessage(e?.message || 'Erreur chargement clôture.');
+    } finally {
+      setLoading(false);
     }
-  } catch (e: any) {
-    setMessage(e?.message || 'Erreur chargement clôture.');
-  } finally {
-    setLoading(false);
   }
-}
 
   async function valider() {
     if (!idCaissier) {
@@ -224,10 +220,10 @@ export default function Page() {
         throw new Error(data?.message || JSON.stringify(data));
       }
 
+      localStorage.removeItem(`CLOTURE_OBSERVATION_${date}`);
+      setObservation('');
       setMessage(data?.message || 'Clôture validée.');
-localStorage.removeItem(`CLOTURE_OBSERVATION_${date}`);
-setObservation('');
-await charger();
+      await charger();
     } catch (e: any) {
       setMessage(e?.message || 'Erreur validation clôture.');
     } finally {
@@ -235,8 +231,58 @@ await charger();
     }
   }
 
+  function ouvrirManagerAvecSignature() {
+    setManagerLogin('');
+    setManagerPin('');
+    setSignatureModal(true);
+  }
+
+  async function validerOuvertureManager() {
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const res = await fetch(`${API}/signature-manager/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          managerLogin,
+          managerPin,
+          typeAction: 'OUVERTURE_MANAGER_CLOTURES',
+          permissionCode: 'CLOTURE_MANAGER',
+          reference: `CLOTURE-${date}`,
+          details: "Demande d'accès au manager des clôtures journalières.",
+          idEmployeDemandeur: idCaissier || undefined,
+        }),
+      });
+
+      const data = await lire(res);
+
+      if (!res.ok || !data?.approved) {
+        throw new Error(data?.message || 'Accès refusé. Signature manager requise.');
+      }
+
+      setSignatureManager(data);
+      setSignatureModal(false);
+      setManagerOuvert(true);
+      await charger();
+
+      setMessage(`Accès manager autorisé par ${data.managerNom || 'Manager'}.`);
+    } catch (e: any) {
+      setSignatureManager(null);
+      setMessage(e?.message || 'Accès refusé. Signature manager requise.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function supprimer(id: number) {
-    if (!confirm('Supprimer cette clôture ?')) return;
+    if (!managerOuvert || !signatureManager?.approved) {
+      setMessage('Accès refusé. Signature manager requise.');
+      return;
+    }
+
+    if (!confirm('Voulez-vous vraiment supprimer cette clôture ?')) return;
 
     setLoading(true);
 
@@ -252,7 +298,7 @@ await charger();
         throw new Error(data?.message || JSON.stringify(data));
       }
 
-      setMessage(data?.message || 'Clôture supprimée.');
+      setMessage(data?.message || 'Clôture supprimée avec succès.');
       await charger();
     } catch (e: any) {
       setMessage(e?.message || 'Erreur suppression.');
@@ -262,44 +308,39 @@ await charger();
   }
 
   function ouvrirPdf() {
-  const url = `${API}/cloture-journaliere/pdf-print?date=${encodeURIComponent(date)}`;
+    const url = `${API}/cloture-journaliere/pdf-print?date=${encodeURIComponent(date)}`;
+    const win = window.open(url, '_blank');
 
-  const win = window.open(url, '_blank');
-
-  setTimeout(() => {
-    try {
-      win?.print();
-    } catch {}
-  }, 1500);
-}
-
-async function telechargerPdf() {
-  try {
-    const res = await fetch(
-      `${API}/cloture-journaliere/pdf?date=${encodeURIComponent(date)}`
-    );
-
-    if (!res.ok) {
-      throw new Error('Erreur téléchargement PDF');
-    }
-
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Cloture_${date}.pdf`;
-
-    document.body.appendChild(a);
-    a.click();
-
-    a.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (e) {
-    console.error(e);
-    alert('Impossible de télécharger le PDF.');
+    setTimeout(() => {
+      try {
+        win?.print();
+      } catch {}
+    }, 1500);
   }
-}
+
+  async function telechargerPdf() {
+    try {
+      const res = await fetch(
+        `${API}/cloture-journaliere/pdf?date=${encodeURIComponent(date)}`,
+      );
+
+      if (!res.ok) throw new Error('Erreur téléchargement PDF');
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Cloture_${date}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert('Impossible de télécharger le PDF.');
+    }
+  }
 
   const jour = resume?.jour;
   const semaine = resume?.semaine;
@@ -314,21 +355,18 @@ async function telechargerPdf() {
       <div className="mx-auto max-w-7xl space-y-5">
         <section className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-4">
-            
-              <div>
-  <p className="text-xs font-black uppercase tracking-[0.25em] text-blue-700">
-    Caisse / Finance
-  </p>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-blue-700">
+                Caisse / Finance
+              </p>
 
-  <h1 className="mt-1 text-3xl font-black text-slate-950">
-    Clôture journalière de caisse
-  </h1>
+              <h1 className="mt-1 text-3xl font-black text-slate-950">
+                Clôture journalière de caisse
+              </h1>
 
-  <p className="mt-1 text-sm font-semibold text-slate-500">
-    Synthèse Générale : jour, semaine, mois.
-  </p>
-</div>
+              <p className="mt-1 text-sm font-semibold text-slate-500">
+                Synthèse générale : jour, semaine, mois.
+              </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -348,11 +386,18 @@ async function telechargerPdf() {
               </button>
 
               <button
-  onClick={ouvrirPdf}
-  className="rounded-2xl bg-slate-700 px-5 py-3 font-black text-white"
->
-  Impression Directe
-</button>
+                onClick={ouvrirPdf}
+                className="rounded-2xl bg-slate-700 px-5 py-3 font-black text-white"
+              >
+                Impression Directe
+              </button>
+
+              <button
+                onClick={ouvrirManagerAvecSignature}
+                className="rounded-2xl bg-emerald-700 px-5 py-3 font-black text-white"
+              >
+                Manager 🔒
+              </button>
             </div>
           </div>
         </section>
@@ -371,23 +416,15 @@ async function telechargerPdf() {
 
         <section className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <h2 className="text-xl font-black text-slate-950">
-            Aperçu document Windows Forms
+            Aperçu document
           </h2>
 
           <div className="mt-4 rounded-2xl border border-slate-300 bg-white p-5">
             <div className="text-center">
-              <img
-                src="/logo.png"
-                alt="ZAIRE MODE"
-                className="mx-auto mb-2 h-16 w-16 object-contain"
-              />
-              <h3 className="text-2xl font-black">ZAIRE MODE SARL</h3>
-              <p className="text-sm font-semibold">
-                23, Bld Lumumba, Q1 Masina Sans Fil
-              </p>
-              <p className="text-sm font-semibold">
-                RCCM: 25-B-01497 | ID.NAT: 01-F4300-N73258E
-              </p>
+              <h3 className="text-2xl font-black">{nomEntreprise}</h3>
+              {adresseEntreprise && (
+                <p className="text-sm font-semibold">{adresseEntreprise}</p>
+              )}
             </div>
 
             <div className="my-4 border-y border-slate-800 py-3 text-center">
@@ -490,10 +527,11 @@ async function telechargerPdf() {
             <div className="mt-5 border-t border-slate-800 pt-6">
               <div className="flex justify-between font-bold">
                 <p>Signature du Caissier : {nomCaissier}</p>
-                <p>Signature Administration : MESSIE MATALA</p>
+                <p>Signature Administration : __________________</p>
               </div>
               <p className="mt-5 text-xs font-semibold text-slate-500">
-               Document généré le {resume?.date ? dateLongFr(resume.date) : dateLongFr(date)}
+                Document généré le{' '}
+                {resume?.date ? dateLongFr(resume.date) : dateLongFr(date)}
               </p>
             </div>
           </div>
@@ -561,46 +599,16 @@ async function telechargerPdf() {
           </h2>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Small
-              label="Total Espèce FC"
-              value={`${money(modalites?.totalEspeceFC)} FC`}
-            />
-            <Small
-              label="Total Espèce USD"
-              value={`${money(modalites?.totalEspeceUSD)} USD`}
-            />
-            <Small
-              label="Stock BANK net FC"
-              value={`${money(modalites?.stockBankNetFC)} FC`}
-            />
-            <Small
-              label="Stock BANK net USD"
-              value={`${money(modalites?.stockBankNetUSD)} USD`}
-            />
-            <Small
-              label="Versement SIM net FC"
-              value={`${money(modalites?.versementSimNetFC)} FC`}
-            />
-            <Small
-              label="Versement SIM net USD"
-              value={`${money(modalites?.versementSimNetUSD)} USD`}
-            />
-            <Small
-              label="Envoi Patronne FC"
-              value={`${money(modalites?.envoiPatronneFC)} FC`}
-            />
-            <Small
-              label="Envoi Patronne USD"
-              value={`${money(modalites?.envoiPatronneUSD)} USD`}
-            />
-            <Small
-              label="Location mois FC"
-              value={`${money(modalites?.locationMoisFC)} FC`}
-            />
-            <Small
-              label="Location mois USD"
-              value={`${money(modalites?.locationMoisUSD)} USD`}
-            />
+            <Small label="Total Espèce FC" value={`${money(modalites?.totalEspeceFC)} FC`} />
+            <Small label="Total Espèce USD" value={`${money(modalites?.totalEspeceUSD)} USD`} />
+            <Small label="Stock BANK net FC" value={`${money(modalites?.stockBankNetFC)} FC`} />
+            <Small label="Stock BANK net USD" value={`${money(modalites?.stockBankNetUSD)} USD`} />
+            <Small label="Versement SIM net FC" value={`${money(modalites?.versementSimNetFC)} FC`} />
+            <Small label="Versement SIM net USD" value={`${money(modalites?.versementSimNetUSD)} USD`} />
+            <Small label="Envoi Patronne FC" value={`${money(modalites?.envoiPatronneFC)} FC`} />
+            <Small label="Envoi Patronne USD" value={`${money(modalites?.envoiPatronneUSD)} USD`} />
+            <Small label="Location mois FC" value={`${money(modalites?.locationMoisFC)} FC`} />
+            <Small label="Location mois USD" value={`${money(modalites?.locationMoisUSD)} USD`} />
           </div>
         </section>
 
@@ -610,10 +618,10 @@ async function telechargerPdf() {
             <textarea
               value={observation}
               onChange={(e) => {
-  const value = e.target.value;
-  setObservation(value);
-  localStorage.setItem(`CLOTURE_OBSERVATION_${date}`, value);
-}}
+                const value = e.target.value;
+                setObservation(value);
+                localStorage.setItem(`CLOTURE_OBSERVATION_${date}`, value);
+              }}
               rows={7}
               placeholder="Exemple : ARGENT PHOTOS : 77.500FC&#10;VENTE :&#10; - BOUCLE D'OREILLE : 5$"
               className="mt-4 w-full rounded-2xl border border-slate-300 p-4 font-semibold outline-none focus:border-blue-600"
@@ -633,7 +641,10 @@ async function telechargerPdf() {
               </button>
 
               <button
-                onClick={() => setObservation('')}
+                onClick={() => {
+                  setObservation('');
+                  localStorage.removeItem(`CLOTURE_OBSERVATION_${date}`);
+                }}
                 className="w-full rounded-2xl bg-slate-100 px-5 py-4 font-black text-slate-800"
               >
                 Annuler / Vider
@@ -653,74 +664,140 @@ async function telechargerPdf() {
             </div>
           </div>
         </section>
-
-        <section className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-black text-slate-950">
-                Manager clôtures
-              </h2>
-              <p className="text-sm font-semibold text-slate-500">
-                Liste des dernières clôtures validées.
-              </p>
-            </div>
-            <button
-              onClick={charger}
-              className="rounded-2xl bg-slate-950 px-5 py-3 font-black text-white"
-            >
-              Actualiser manager
-            </button>
-          </div>
-
-          <div className="hidden overflow-x-auto rounded-2xl ring-1 ring-slate-200 lg:block">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-950 text-xs uppercase text-white">
-                <tr>
-                  <th className="p-3">ID</th>
-                  <th className="p-3">Date</th>
-                  <th className="p-3">Caissier</th>
-                  <th className="p-3">Entrées FC</th>
-                  <th className="p-3">Sorties FC</th>
-                  <th className="p-3">Balance FC</th>
-                  <th className="p-3">Entrées USD</th>
-                  <th className="p-3">Sorties USD</th>
-                  <th className="p-3">Balance USD</th>
-                  <th className="p-3">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {clotures.map((c) => (
-                  <tr key={c.id} className="border-t border-slate-100">
-                    <td className="p-3 font-black">{c.id}</td>
-                    <td className="p-3">{String(c.datecloture).slice(0, 10)}</td>
-                    <td className="p-3">{c.nomcaissier || c.idcaissier}</td>
-                    <td className="p-3">{money(c.entreesfc)}</td>
-                    <td className="p-3">{money(c.sortiesfc)}</td>
-                    <td className="p-3 font-black">{money(c.balancefc)}</td>
-                    <td className="p-3">{money(c.entreesusd)}</td>
-                    <td className="p-3">{money(c.sortiesusd)}</td>
-                    <td className="p-3 font-black">{money(c.balanceusd)}</td>
-                    <td className="p-3">
-                      <button
-                        onClick={() => supprimer(c.id)}
-                        className="rounded-xl bg-red-50 px-3 py-2 text-xs font-black text-red-700"
-                      >
-                        Supprimer
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {!clotures.length && (
-            <div className="rounded-3xl bg-slate-50 p-8 text-center font-black text-slate-500">
-              Aucune clôture trouvée.
-            </div>
-          )}
-        </section>
       </div>
+
+      {signatureModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/70 p-4">
+          <div className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-xl">
+            <h2 className="text-2xl font-black text-slate-950">
+              Signature manager requise
+            </h2>
+
+            <p className="mt-2 text-sm font-semibold text-slate-500">
+              Demande d&apos;accès au manager des clôtures journalières.
+            </p>
+
+            <input
+              value={managerLogin}
+              onChange={(e) => setManagerLogin(e.target.value)}
+              placeholder="Email ou nom utilisateur manager"
+              className="mt-5 w-full rounded-2xl border border-slate-300 px-4 py-3 font-bold"
+            />
+
+            <input
+              type="password"
+              value={managerPin}
+              onChange={(e) => setManagerPin(e.target.value)}
+              placeholder="PIN signature"
+              className="mt-3 w-full rounded-2xl border border-slate-300 px-4 py-3 font-bold"
+            />
+
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={validerOuvertureManager}
+                disabled={loading}
+                className="flex-1 rounded-2xl bg-emerald-700 px-5 py-3 font-black text-white disabled:opacity-50"
+              >
+                Valider
+              </button>
+
+              <button
+                onClick={() => setSignatureModal(false)}
+                className="rounded-2xl bg-slate-200 px-5 py-3 font-black text-slate-800"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {managerOuvert && (
+        <section className="fixed inset-0 z-50 bg-slate-950/60 p-4">
+          <div className="mx-auto max-h-[92vh] max-w-7xl overflow-auto rounded-[2rem] bg-white p-5 shadow-xl">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-black text-slate-950">
+                  Manager - Clôtures journalières
+                </h2>
+
+                <p className="text-sm font-semibold text-slate-500">
+                  Autorisé par {signatureManager?.managerNom || 'Manager'}.
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={charger}
+                  className="rounded-2xl bg-slate-950 px-5 py-3 font-black text-white"
+                >
+                  Actualiser
+                </button>
+
+                <button
+                  onClick={() => setManagerOuvert(false)}
+                  className="rounded-2xl bg-slate-200 px-5 py-3 font-black text-slate-800"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl ring-1 ring-slate-200">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-950 text-xs uppercase text-white">
+                  <tr>
+                    <th className="p-3">ID</th>
+                    <th className="p-3">Date</th>
+                    <th className="p-3">Caissier</th>
+                    <th className="p-3">Entrées FC</th>
+                    <th className="p-3">Sorties FC</th>
+                    <th className="p-3">Balance FC</th>
+                    <th className="p-3">Entrées USD</th>
+                    <th className="p-3">Sorties USD</th>
+                    <th className="p-3">Balance USD</th>
+                    <th className="p-3">Observation</th>
+                    <th className="p-3">Action</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {clotures.map((c) => (
+                    <tr key={c.id} className="border-t border-slate-100">
+                      <td className="p-3 font-black">{c.id}</td>
+                      <td className="p-3">{String(c.datecloture).slice(0, 10)}</td>
+                      <td className="p-3">{c.nomcaissier || c.idcaissier || '-'}</td>
+                      <td className="p-3">{money(c.entreesfc)}</td>
+                      <td className="p-3">{money(c.sortiesfc)}</td>
+                      <td className="p-3 font-black">{money(c.balancefc)}</td>
+                      <td className="p-3">{money(c.entreesusd)}</td>
+                      <td className="p-3">{money(c.sortiesusd)}</td>
+                      <td className="p-3 font-black">{money(c.balanceusd)}</td>
+                      <td className="p-3">{c.observation || '-'}</td>
+                      <td className="p-3">
+                        <button
+                          onClick={() => supprimer(c.id)}
+                          className="rounded-xl bg-red-600 px-4 py-2 text-xs font-black text-white"
+                        >
+                          Supprimer
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {!clotures.length && (
+                    <tr>
+                      <td colSpan={11} className="p-8 text-center font-black text-slate-500">
+                        Aucune clôture trouvée.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      )}
     </main>
   );
 }
@@ -747,37 +824,23 @@ function PdfTable({
     <div className="mt-3 border border-slate-800">
       <h4 className="border-b border-slate-800 p-2 font-black">{title}</h4>
       <table className="w-full text-sm">
-        <thead className="bg-slate-100">
-          <tr className="border-b border-slate-800">
+        <tbody>
+          <tr className="border-b border-slate-800 bg-slate-100">
             <th className="border-r border-slate-800 p-2 text-left">DEV.</th>
-            <th className="border-r border-slate-800 p-2 text-right">
-              ENTRÉES
-            </th>
-            <th className="border-r border-slate-800 p-2 text-right">
-              SORTIES
-            </th>
+            <th className="border-r border-slate-800 p-2 text-right">ENTRÉES</th>
+            <th className="border-r border-slate-800 p-2 text-right">SORTIES</th>
             <th className="p-2 text-right">BALANCE</th>
           </tr>
-        </thead>
-        <tbody>
           <tr className="border-b border-slate-800">
             <td className="border-r border-slate-800 p-2 font-bold">FC</td>
-            <td className="border-r border-slate-800 p-2 text-right">
-              {money(fc.entrees)}
-            </td>
-            <td className="border-r border-slate-800 p-2 text-right">
-              {money(fc.sorties)}
-            </td>
+            <td className="border-r border-slate-800 p-2 text-right">{money(fc.entrees)}</td>
+            <td className="border-r border-slate-800 p-2 text-right">{money(fc.sorties)}</td>
             <td className="p-2 text-right">{money(fc.balance)}</td>
           </tr>
           <tr>
             <td className="border-r border-slate-800 p-2 font-bold">USD</td>
-            <td className="border-r border-slate-800 p-2 text-right">
-              {money(usd.entrees)}
-            </td>
-            <td className="border-r border-slate-800 p-2 text-right">
-              {money(usd.sorties)}
-            </td>
+            <td className="border-r border-slate-800 p-2 text-right">{money(usd.entrees)}</td>
+            <td className="border-r border-slate-800 p-2 text-right">{money(usd.sorties)}</td>
             <td className="p-2 text-right">{money(usd.balance)}</td>
           </tr>
         </tbody>
@@ -786,57 +849,29 @@ function PdfTable({
   );
 }
 
-function RecapCard({
-  title,
-  devise,
-  entrees,
-  sorties,
-  photo,
-  vente,
-  balance,
-}: {
-  title: string;
-  devise: string;
-  entrees?: number;
-  sorties?: number;
-  photo?: number;
-  vente?: number;
-  balance?: number;
-}) {
+function RecapCard(props: any) {
   return (
     <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
-      <h2 className="text-xl font-black text-blue-700">{title}</h2>
+      <h2 className="text-xl font-black text-blue-700">{props.title}</h2>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <Small label="Entrées" value={`${money(entrees)} ${devise}`} />
-        <Small label="Sorties" value={`${money(sorties)} ${devise}`} />
-        <Small label="Photo" value={`${money(photo)} ${devise}`} />
-        <Small label="Vente" value={`${money(vente)} ${devise}`} />
-        <Small label="Balance" value={`${money(balance)} ${devise}`} />
+        <Small label="Entrées" value={`${money(props.entrees)} ${props.devise}`} />
+        <Small label="Sorties" value={`${money(props.sorties)} ${props.devise}`} />
+        <Small label="Photo" value={`${money(props.photo)} ${props.devise}`} />
+        <Small label="Vente" value={`${money(props.vente)} ${props.devise}`} />
+        <Small label="Balance" value={`${money(props.balance)} ${props.devise}`} />
       </div>
     </div>
   );
 }
 
-function MiniCard({
-  title,
-  devise,
-  entrees,
-  sorties,
-  balance,
-}: {
-  title: string;
-  devise: string;
-  entrees?: number;
-  sorties?: number;
-  balance?: number;
-}) {
+function MiniCard(props: any) {
   return (
     <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
-      <h2 className="text-lg font-black text-slate-950">{title}</h2>
+      <h2 className="text-lg font-black text-slate-950">{props.title}</h2>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <Small label="Entrées" value={`${money(entrees)} ${devise}`} />
-        <Small label="Sorties" value={`${money(sorties)} ${devise}`} />
-        <Small label="Balance" value={`${money(balance)} ${devise}`} />
+        <Small label="Entrées" value={`${money(props.entrees)} ${props.devise}`} />
+        <Small label="Sorties" value={`${money(props.sorties)} ${props.devise}`} />
+        <Small label="Balance" value={`${money(props.balance)} ${props.devise}`} />
       </div>
     </div>
   );
