@@ -58,6 +58,10 @@ export default function LoginPage() {
   const [secondesRestantes, setSecondesRestantes] = useState(0);
   const [rememberMe, setRememberMe] = useState(true);
 
+  const [showUnlockSignature, setShowUnlockSignature] = useState(false);
+const [managerLogin, setManagerLogin] = useState('');
+const [signaturePin, setSignaturePin] = useState('');
+
   const [licence, setLicence] = useState({
     clelicence: '',
     identreprise: 1,
@@ -156,6 +160,89 @@ export default function LoginPage() {
     ville: localStorage.getItem('ZAIRE_VILLE') || 'Kinshasa',
     pays: localStorage.getItem('ZAIRE_PAYS') || 'RDC',
   };
+}
+
+async function debloquerAvecSignatureManager() {
+  setMessage('');
+
+  const CLIENT_API = getClientApi();
+  const username = String(login.username || '').trim();
+
+  if (!CLIENT_API) {
+    setMessage('Serveur client introuvable.');
+    return;
+  }
+
+  if (!username) {
+    setMessage('Veuillez saisir le compte bloqué.');
+    return;
+  }
+
+  if (!managerLogin.trim()) {
+    setMessage('Login manager obligatoire.');
+    return;
+  }
+
+  if (!signaturePin.trim()) {
+    setMessage('PIN manager obligatoire.');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const validationRes = await fetch(`${CLIENT_API}/signature-manager/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        managerLogin: managerLogin.trim(),
+        managerPin: signaturePin.trim(),
+        typeAction: 'DEBLOCAGE_COMPTE_LOGIN',
+        permissionCode: 'LOGIN_ATTEMPTS_DEBLOQUER',
+        reference: username,
+        details: `Déblocage manuel du compte ${username}`,
+        idEmployeDemandeur: undefined,
+      }),
+    });
+
+    const validationData = await lireReponse(validationRes);
+
+    if (!validationRes.ok || !validationData?.approved) {
+      setMessage(validationData?.message || 'Signature manager refusée.');
+      return;
+    }
+
+    const res = await fetch(`${CLIENT_API}/login-attempts/debloquer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: username,
+        managerLogin: managerLogin.trim(),
+        idSignature: validationData.idSignature,
+      }),
+    });
+
+    const data = await lireReponse(res);
+
+    if (!res.ok) {
+      setMessage(data?.message || 'Déblocage impossible.');
+      return;
+    }
+
+    localStorage.removeItem('LOGIN_BLOQUE_JUSQUA');
+
+    setSecondesRestantes(0);
+    setSignaturePin('');
+    setManagerLogin('');
+    setShowUnlockSignature(false);
+
+    setMessage(data?.message || 'Compte débloqué avec succès.');
+  } catch (error) {
+    console.error(error);
+    setMessage('Erreur réseau pendant le déblocage.');
+  } finally {
+    setLoading(false);
+  }
 }
 
   async function connecter(usernameParam?: string, passwordParam?: string) {
@@ -515,8 +602,47 @@ const password = String(passwordParam ?? login.password ?? '').trim();
 
           {secondesRestantes > 0 && (
   <div className="mt-3 rounded-2xl bg-red-600 px-4 py-3 text-center text-sm font-bold text-white">
-    Compte bloqué. Réessayez dans{' '}
-    {Math.floor(secondesRestantes / 60)} min {secondesRestantes % 60} sec.
+    <div>
+      Compte bloqué. Réessayez dans{' '}
+      {Math.floor(secondesRestantes / 60)} min {secondesRestantes % 60} sec.
+    </div>
+
+    <button
+      type="button"
+      onClick={() => setShowUnlockSignature((v) => !v)}
+      className="mt-3 rounded-xl bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-red-700 hover:bg-red-50"
+    >
+      Débloquer avec signature manager
+    </button>
+
+    {showUnlockSignature && (
+      <div className="mt-3 rounded-xl bg-white/15 p-3">
+        <input
+          type="text"
+          value={managerLogin}
+          onChange={(e) => setManagerLogin(e.target.value)}
+          placeholder="Login manager"
+          className="w-full rounded-lg border border-white/30 bg-white px-3 py-2 text-center text-sm font-bold text-slate-900 outline-none"
+        />
+
+        <input
+          type="password"
+          value={signaturePin}
+          onChange={(e) => setSignaturePin(e.target.value)}
+          placeholder="PIN manager"
+          className="mt-2 w-full rounded-lg border border-white/30 bg-white px-3 py-2 text-center text-sm font-bold text-slate-900 outline-none"
+        />
+
+        <button
+          type="button"
+          onClick={debloquerAvecSignatureManager}
+          disabled={loading}
+          className="mt-3 w-full rounded-lg bg-emerald-950 px-4 py-2 text-xs font-black uppercase tracking-widest text-white disabled:opacity-60"
+        >
+          {loading ? 'Déblocage...' : 'Valider le déblocage'}
+        </button>
+      </div>
+    )}
   </div>
 )}
 

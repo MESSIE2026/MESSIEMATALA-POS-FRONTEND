@@ -30,14 +30,46 @@ export default function TentativesConnexionPage() {
     return;
   }
 
-  const ok = window.confirm(`Débloquer le compte ${email} ?`);
-  if (!ok) return;
+  const managerLogin = window.prompt('Login manager :');
+  if (!managerLogin?.trim()) {
+    alert('Login manager obligatoire.');
+    return;
+  }
+
+  const managerPin = window.prompt('PIN Signature Manager :');
+  if (!managerPin?.trim()) {
+    alert('PIN manager obligatoire.');
+    return;
+  }
 
   try {
+    const validationRes = await fetch(`${API_URL}/signature-manager/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        managerLogin: managerLogin.trim(),
+        managerPin: managerPin.trim(),
+        typeAction: 'DEBLOCAGE_COMPTE_LOGIN',
+        permissionCode: 'LOGIN_ATTEMPTS_DEBLOQUER',
+        reference: email,
+        details: `Déblocage manuel du compte ${email}`,
+      }),
+    });
+
+    const validationData = await validationRes.json();
+
+    if (!validationRes.ok || !validationData?.approved) {
+      throw new Error(validationData?.message || 'Signature manager refusée.');
+    }
+
     const res = await fetch(`${API_URL}/login-attempts/debloquer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({
+        email,
+        managerLogin: managerLogin.trim(),
+        idSignature: validationData.idSignature,
+      }),
     });
 
     const text = await res.text();
@@ -54,12 +86,33 @@ export default function TentativesConnexionPage() {
     }
 
     alert(data?.message || 'Compte débloqué avec succès.');
+
+    setItems((prev) =>
+      prev.map((item) =>
+        String(item.email || '').toLowerCase() === email.toLowerCase()
+          ? {
+              ...item,
+              bloque_jusqua: null,
+              motif: 'Compte débloqué par Signature Manager',
+            }
+          : item,
+      ),
+    );
+
     await charger();
   } catch (error: any) {
     alert(error?.message || 'Impossible de débloquer ce compte.');
-    console.error('ERREUR DEBLOCAGE =', error);
+    console.error('ERREUR DEBLOCAGE SIGNATURE =', error);
   }
 }
+  function estEncoreBloque(date?: string | null) {
+    if (!date) return false;
+
+    const time = new Date(date).getTime();
+    if (Number.isNaN(time)) return false;
+
+    return time > Date.now();
+  }
 
   useEffect(() => {
     charger();
@@ -119,21 +172,23 @@ export default function TentativesConnexionPage() {
         <tbody>
           {items.map((x) => (
             <tr key={x.id}>
-              <td style={td}>{new Date(x.createdat).toLocaleString('fr-FR')}</td>
-              <td style={td}>{x.email}</td>
+              <td style={td}>
+                {x.createdat ? new Date(x.createdat).toLocaleString('fr-FR') : '-'}
+              </td>
+              <td style={td}>{x.email || '-'}</td>
               <td style={td}>{x.adresse_ip || '-'}</td>
               <td style={td}>{x.appareil || '-'}</td>
               <td style={td}>{x.succes ? '✅ Succès' : '❌ Échec'}</td>
-              <td style={td}>{x.motif}</td>
+              <td style={td}>{x.motif || '-'}</td>
               <td style={td}>
-                {x.bloque_jusqua
+                {estEncoreBloque(x.bloque_jusqua)
                   ? new Date(x.bloque_jusqua).toLocaleString('fr-FR')
                   : '-'}
               </td>
               <td style={td}>
-                {x.bloque_jusqua ? (
+                {estEncoreBloque(x.bloque_jusqua) ? (
                   <button
-                   onClick={() => debloquer(String(x.email || '').trim())}
+                    onClick={() => debloquer(String(x.email || '').trim())}
                     style={{
                       padding: '7px 12px',
                       borderRadius: 8,
