@@ -183,6 +183,13 @@ async function debloquerAvecSignatureManager() {
     return;
   }
 
+  if (managerLogin.trim().toLowerCase() === username.toLowerCase()) {
+  setMessage(
+    'Le compte bloqué ne peut pas se débloquer lui-même. Utilisez un autre compte manager.',
+  );
+  return;
+}
+
   if (!signaturePin.trim()) {
     setMessage('PIN manager obligatoire.');
     return;
