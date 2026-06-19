@@ -157,6 +157,30 @@ export default function ConfigurationSystemePage() {
         idposte: finalPoste,
       });
 
+      const appareilRes = await fetch(
+  `${finalApiUrl}/configuration-systeme/valider-appareil`,
+  {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      deviceid: deviceId,
+      identreprise: Number(finalEntreprise),
+      idmagasin: Number(finalMagasin),
+      iddepot: finalDepot ? Number(finalDepot) : null,
+      idposte: Number(finalPoste),
+    }),
+  },
+);
+
+if (!appareilRes.ok) {
+  const err = await appareilRes.json().catch(() => null);
+  setStatutLicence(
+    err?.message ||
+      'Licence valide, mais impossible d’approuver automatiquement cet appareil.',
+  );
+  return;
+}
+
       localStorage.setItem("ZAIRE_LICENCE_KEY", cleLicence.trim());
       localStorage.setItem("ZAIRE_CLIENT_NAME", data.clientName || "");
       localStorage.setItem("ZAIRE_PLAN", data.plan || "");

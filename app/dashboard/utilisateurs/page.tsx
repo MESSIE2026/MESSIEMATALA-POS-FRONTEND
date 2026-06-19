@@ -61,6 +61,19 @@ function actifBool(v: any) {
   return v === true || v === 1 || v === '1' || v === 't' || v === 'true';
 }
 
+function isManagerRole(role?: string) {
+  return [
+    'superadmin',
+    'super_admin',
+    'superviseur',
+    'manager',
+    'gerant',
+    'gestionnaire',
+    'programmeur',
+    'admin',
+  ].includes(String(role || '').toLowerCase());
+}
+
 export default function Page() {
   const [users, setUsers] = useState<Utilisateur[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -285,6 +298,40 @@ export default function Page() {
     setConnexions(Array.isArray(data) ? data : []);
   }
 
+  async function configurerPinManager(u: Utilisateur) {
+  if (!u.idemploye) {
+    setMessage('Impossible : ce manager n’est pas lié à un employé.');
+    return;
+  }
+
+  const pin = prompt(`Nouveau PIN signature pour ${u.nomutilisateur}`);
+
+  if (!pin) return;
+
+  if (pin.length < 4) {
+    setMessage('Le PIN doit avoir au moins 4 caractères.');
+    return;
+  }
+
+  const res = await fetch(`${getApi()}/signature-manager/setup-pin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      managerLogin: u.email || u.nomutilisateur,
+      newPin: pin,
+    }),
+  });
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    setMessage(data?.message || 'Erreur configuration PIN.');
+    return;
+  }
+
+  setMessage(data?.message || 'PIN signature configuré avec succès.');
+}
+
   return (
     <main className="min-h-screen bg-[#f5f3ea] p-6 text-slate-900">
       <div className="mx-auto max-w-7xl space-y-6">
@@ -498,68 +545,94 @@ export default function Page() {
                     const actif = actifBool(u.actif);
 
                     return (
-                      <tr
-                        key={u.id}
-                        onClick={() => selectionner(u)}
-                        className="cursor-pointer border-b border-slate-100 hover:bg-emerald-50"
-                      >
-                        <td className="p-3 font-bold">{u.id}</td>
-                        <td className="p-3 font-black text-emerald-900">
-                          {u.nomutilisateur}
-                        </td>
-                        <td className="p-3">{u.prenom} {u.nom}</td>
-                        <td className="p-3">{u.nomentreprise || '-'}</td>
-                        <td className="p-3">{u.nommagasin || '-'}</td>
-                        <td className="p-3">{u.email || '-'}</td>
-                        <td className="p-3">{u.telephone || '-'}</td>
-                        <td className="p-3">
-                          <select
-                            value={u.role || ''}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => changerRole(u, e.target.value)}
-                            className="rounded-xl border border-emerald-100 bg-white px-3 py-2 font-bold text-emerald-700"
-                          >
-                            {roles.map((r) => (
-                              <option key={r.idrole} value={r.nomrole}>
-                                {r.nomrole}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="p-3">
-                          <span className={actif ? 'font-black text-emerald-700' : 'font-black text-red-600'}>
-                            {actif ? 'ACTIF' : 'INACTIF'}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                changerEtat(u);
-                              }}
-                              className={
-                                actif
-                                  ? 'rounded-xl bg-red-600 px-3 py-2 text-xs font-bold text-white'
-                                  : 'rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white'
-                              }
-                            >
-                              {actif ? 'Désactiver' : 'Réactiver'}
-                            </button>
+  <tr
+    key={u.id}
+    onClick={() => selectionner(u)}
+    className="cursor-pointer border-b border-slate-100 hover:bg-emerald-50"
+  >
+    <td className="p-3 font-bold">{u.id}</td>
 
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                voirConnexions(u);
-                              }}
-                              className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                            >
-                              Connexions
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
+    <td className="p-3 font-black text-emerald-900">
+      {u.nomutilisateur}
+    </td>
+
+    <td className="p-3">
+      {u.prenom} {u.nom}
+    </td>
+
+    <td className="p-3">{u.nomentreprise || '-'}</td>
+    <td className="p-3">{u.nommagasin || '-'}</td>
+    <td className="p-3">{u.email || '-'}</td>
+    <td className="p-3">{u.telephone || '-'}</td>
+
+    <td className="p-3">
+      <select
+        value={u.role || ''}
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => changerRole(u, e.target.value)}
+        className="rounded-xl border border-emerald-100 bg-white px-3 py-2 font-bold text-emerald-700"
+      >
+        {roles.map((r) => (
+          <option key={r.idrole} value={r.nomrole}>
+            {r.nomrole}
+          </option>
+        ))}
+      </select>
+    </td>
+
+    <td className="p-3">
+      <span
+        className={
+          actif
+            ? 'font-black text-emerald-700'
+            : 'font-black text-red-600'
+        }
+      >
+        {actif ? 'ACTIF' : 'INACTIF'}
+      </span>
+    </td>
+
+    <td className="p-3">
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            changerEtat(u);
+          }}
+          className={
+            actif
+              ? 'rounded-xl bg-red-600 px-3 py-2 text-xs font-bold text-white'
+              : 'rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white'
+          }
+        >
+          {actif ? 'Désactiver' : 'Réactiver'}
+        </button>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            voirConnexions(u);
+          }}
+          className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+        >
+          Connexions
+        </button>
+
+        {isManagerRole(u.role) && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              configurerPinManager(u);
+            }}
+            className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white"
+          >
+            PIN Manager
+          </button>
+        )}
+      </div>
+    </td>
+  </tr>
+);
                   })}
 
                   {!loading && usersFiltres.length === 0 && (
