@@ -25,19 +25,41 @@ export default function TentativesConnexionPage() {
   }
 
   async function debloquer(email: string) {
-    if (!email) return;
+  if (!email) {
+    alert('Email introuvable.');
+    return;
+  }
 
-    const ok = window.confirm(`Débloquer le compte ${email} ?`);
-    if (!ok) return;
+  const ok = window.confirm(`Débloquer le compte ${email} ?`);
+  if (!ok) return;
 
-    await fetch(`${API_URL}/login-attempts/debloquer`, {
+  try {
+    const res = await fetch(`${API_URL}/login-attempts/debloquer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
     });
 
+    const text = await res.text();
+
+    let data: any = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = { message: text };
+    }
+
+    if (!res.ok) {
+      throw new Error(data?.message || 'Erreur pendant le déblocage.');
+    }
+
+    alert(data?.message || 'Compte débloqué avec succès.');
     await charger();
+  } catch (error: any) {
+    alert(error?.message || 'Impossible de débloquer ce compte.');
+    console.error('ERREUR DEBLOCAGE =', error);
   }
+}
 
   useEffect(() => {
     charger();
@@ -111,7 +133,7 @@ export default function TentativesConnexionPage() {
               <td style={td}>
                 {x.bloque_jusqua ? (
                   <button
-                    onClick={() => debloquer(x.email)}
+                   onClick={() => debloquer(String(x.email || '').trim())}
                     style={{
                       padding: '7px 12px',
                       borderRadius: 8,
