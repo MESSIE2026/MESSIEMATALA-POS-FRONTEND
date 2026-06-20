@@ -336,9 +336,12 @@ async function chargerParametresDocuments() {
 
   async function telechargerPdf() {
     try {
-      const res = await fetch(
-        `${API}/cloture-journaliere/pdf?date=${encodeURIComponent(date)}`,
-      );
+      const idEntreprise =
+  localStorage.getItem('ZAIRE_ID_ENTREPRISE') || '1';
+
+const res = await fetch(
+  `${API}/cloture-journaliere/pdf?date=${encodeURIComponent(date)}&idEntreprise=${encodeURIComponent(idEntreprise)}`,
+);
 
       if (!res.ok) throw new Error('Erreur téléchargement PDF');
 

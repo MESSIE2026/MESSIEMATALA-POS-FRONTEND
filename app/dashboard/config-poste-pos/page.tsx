@@ -1170,36 +1170,35 @@ async function uploadImageDocument(
                 {paramsDocs.mentionLegale || 'Merci pour votre confiance.'}
               </div>
             </div>
+<div className="flex flex-col items-center justify-end rounded-xl bg-slate-50 p-3">
+  <div className="relative h-36 w-full overflow-hidden">
+    {paramsDocs.cachetUrl && (
+      <img
+        src={imageDocument(paramsDocs.cachetUrl)}
+        alt="Cachet"
+        className="absolute left-1/2 top-0 h-28 -translate-x-1/2 object-contain opacity-35"
+      />
+    )}
 
-            <div className="flex flex-col items-center justify-end rounded-xl bg-slate-50 p-3">
-              <div className="relative flex h-28 w-full items-center justify-center">
-                {paramsDocs.cachetUrl && (
-                  <img
-                    src={imageDocument(paramsDocs.cachetUrl)}
-                    alt="Cachet"
-                    className="absolute right-2 top-0 h-20 object-contain opacity-40"
-                  />
-                )}
+    {paramsDocs.signatureDirectionUrl && (
+      <img
+        src={imageDocument(paramsDocs.signatureDirectionUrl)}
+        alt="Signature"
+        className="absolute left-1/2 top-10 z-10 h-24 -translate-x-1/2 object-contain"
+      />
+    )}
+  </div>
 
-                {paramsDocs.signatureDirectionUrl && (
-                  <img
-                    src={imageDocument(paramsDocs.signatureDirectionUrl)}
-                    alt="Signature"
-                    className="relative z-10 mt-8 h-16 object-contain"
-                  />
-                )}
-              </div>
+  <div className="text-center">
+    <div className="text-sm font-black text-slate-900">
+      {paramsDocs.nomResponsable || 'Nom du responsable'}
+    </div>
 
-              <div className="mt-2 text-center">
-                <div className="text-sm font-black text-slate-900">
-                  {paramsDocs.nomResponsable || 'Nom du responsable'}
-                </div>
-
-                <div className="text-xs font-semibold text-slate-500">
-                  {paramsDocs.fonctionResponsable || 'Direction'}
-                </div>
-              </div>
-            </div>
+    <div className="text-xs font-semibold text-slate-500">
+      {paramsDocs.fonctionResponsable || 'Direction'}
+    </div>
+  </div>
+</div>
           </div>
         </div>
       </div>
