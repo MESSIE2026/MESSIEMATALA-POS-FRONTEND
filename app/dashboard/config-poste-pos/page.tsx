@@ -458,9 +458,14 @@ if (!res.ok || !data?.idmagasin) {
 
 async function ouvrirManager() {
   const entrepriseActive =
-    idEntreprise ||
-    localStorage.getItem('ZAIRE_ID_ENTREPRISE') ||
-    '1';
+  idEntreprise ||
+  localStorage.getItem('ZAIRE_ID_ENTREPRISE') ||
+  '';
+
+if (!entrepriseActive) {
+  setMessage("Choisis d'abord une entreprise.");
+  return;
+}
 
   setIdEntreprise(String(entrepriseActive));
   setShowManager(true);
