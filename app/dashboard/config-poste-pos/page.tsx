@@ -524,13 +524,18 @@ async function ouvrirManager() {
 }
 
 async function enregistrerParametresDocuments() {
-  if (!idEntreprise) {
+  const entrepriseActive =
+    idEntreprise ||
+    localStorage.getItem('ZAIRE_ID_ENTREPRISE') ||
+    '1';
+
+  if (!entrepriseActive) {
     setMessage("Choisis d'abord une entreprise.");
     return;
   }
 
   if (!paramsDocs.nomEntreprise.trim()) {
-    setMessage("Nom entreprise obligatoire.");
+    setMessage('Nom entreprise obligatoire.');
     return;
   }
 
@@ -538,23 +543,36 @@ async function enregistrerParametresDocuments() {
   setMessage('');
 
   try {
+    const payload = {
+      ...paramsDocs,
+      idEntreprise: Number(entrepriseActive),
+    };
+
+    console.log('PARAMS DOCUMENTS ENVOYES =', payload);
+
     const res = await fetch(
       `${API_URL}/config-poste-pos/parametres-documents`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...paramsDocs,
-          idEntreprise: Number(idEntreprise),
-        }),
+        body: JSON.stringify(payload),
       },
     );
 
     const data = await safeJson(res, null);
 
+    console.log('REPONSE PARAMS DOCUMENTS =', data);
+
     if (!res.ok) {
       throw new Error(data?.message || 'Paramètres non enregistrés.');
     }
+
+    setParamsDocs((prev) => ({
+      ...prev,
+      idEntreprise: Number(entrepriseActive),
+    }));
+
+    localStorage.setItem('ZAIRE_ID_ENTREPRISE', String(entrepriseActive));
 
     setMessage('Paramètres documents enregistrés avec succès.');
     setShowManager(false);
