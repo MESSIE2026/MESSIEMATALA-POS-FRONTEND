@@ -62,14 +62,28 @@ export async function getParametresDocuments(
     localStorage.getItem('ZAIRE_ID_ENTREPRISE') ||
     '1';
 
-  const res = await fetch(
-    `${API_URL}/config-poste-pos/parametres-documents?idEntreprise=${id}`,
-    { cache: 'no-store' },
-  );
+  try {
+    const res = await fetch(
+      `${API_URL}/config-poste-pos/parametres-documents?idEntreprise=${id}`,
+      { cache: 'no-store' },
+    );
 
-  if (!res.ok) return null;
+    if (!res.ok) return null;
 
-  return res.json();
+    const text = await res.text();
+
+    if (!text || !text.trim()) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  } catch {
+    return null;
+  }
 }
 
 export function documentImageUrl(url?: string) {
