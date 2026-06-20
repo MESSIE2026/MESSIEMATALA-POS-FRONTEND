@@ -160,6 +160,7 @@ const [paramsDocs, setParamsDocs] = useState<ParametresDocuments>({
 
     setMachineName(machine);
     chargerInitial(machine);
+    console.log('MachineName =', machine);
   }, []);
 
   async function safeJson(res: Response, fallback: any = null) {
@@ -176,48 +177,73 @@ const [paramsDocs, setParamsDocs] = useState<ParametresDocuments>({
   }
 }
 
-  async function chargerInitial(machine: string) {
+  async function fetchJson(url: string, fallback: any = null) {
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    const text = await res.text();
+
+    let data: any = fallback;
     try {
-      setLoading(true);
-
-      const [resEntreprises, resDepots, resPoste] = await Promise.all([
-        fetch(`${API_URL}/config-poste-pos/entreprises`, { cache: 'no-store' }),
-        fetch(`${API_URL}/config-poste-pos/depots`, { cache: 'no-store' }),
-        fetch(
-          `${API_URL}/config-poste-pos/poste?machineName=${encodeURIComponent(
-            machine,
-          )}`,
-          { cache: 'no-store' },
-        ),
-      ]);
-
-      const dataEntreprises = await safeJson(resEntreprises, []);
-const dataDepots = await safeJson(resDepots, []);
-const poste = await safeJson(resPoste, null);
-
-      setEntreprises(Array.isArray(dataEntreprises) ? dataEntreprises : []);
-      setDepots(Array.isArray(dataDepots) ? dataDepots : []);
-
-      if (poste) {
-        setIdEntreprise(String(poste.identreprise ?? ''));
-        setIdMagasin(String(poste.idmagasin ?? ''));
-        setIdDepot(String(poste.iddepot ?? ''));
-        setNomPOS(poste.nompos ?? '');
-
-        if (poste.identreprise) {
-          await chargerMagasins(
-            String(poste.identreprise),
-            String(poste.idmagasin),
-          );
-        }
-      }
-    } catch (error) {
-      console.error(error);
-      setMessage('Erreur chargement configuration POS.');
-    } finally {
-      setLoading(false);
+      data = text ? JSON.parse(text) : fallback;
+    } catch {
+      data = fallback;
     }
+
+    if (!res.ok) {
+      console.error('Erreur API:', url, res.status, data);
+      return fallback;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Failed to fetch:', url, error);
+    return fallback;
   }
+}
+
+async function chargerInitial(machine: string) {
+  try {
+    setLoading(true);
+    setMessage('');
+
+    const dataEntreprises = await fetchJson(
+      `${API_URL}/config-poste-pos/entreprises`,
+      [],
+    );
+
+    const dataDepots = await fetchJson(
+      `${API_URL}/config-poste-pos/depots`,
+      [],
+    );
+
+    const poste = await fetchJson(
+      `${API_URL}/config-poste-pos/poste?machineName=${encodeURIComponent(machine)}`,
+      null,
+    );
+
+    setEntreprises(Array.isArray(dataEntreprises) ? dataEntreprises : []);
+    setDepots(Array.isArray(dataDepots) ? dataDepots : []);
+
+    if (poste) {
+      setIdEntreprise(String(poste.identreprise ?? ''));
+      setIdMagasin(String(poste.idmagasin ?? ''));
+      setIdDepot(String(poste.iddepot ?? ''));
+      setNomPOS(poste.nompos ?? '');
+
+      if (poste.identreprise) {
+        await chargerMagasins(
+          String(poste.identreprise),
+          String(poste.idmagasin ?? ''),
+        );
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    setMessage('Erreur chargement configuration POS.');
+  } finally {
+    setLoading(false);
+  }
+}
 
   async function chargerMagasins(id: string, selectedMagasin?: string) {
     if (!id) {
@@ -228,13 +254,13 @@ const poste = await safeJson(resPoste, null);
       return;
     }
 
-    const res = await fetch(
-      `${API_URL}/config-poste-pos/magasins?idEntreprise=${id}`,
-      { cache: 'no-store' },
-    );
+    const data = await fetchJson(
+  `${API_URL}/config-poste-pos/magasins?idEntreprise=${id}`,
+  [],
+);
 
-    const data = await res.json();
-    const liste = Array.isArray(data) ? data : [];
+const liste = Array.isArray(data) ? data : [];
+
 
     setMagasins(liste);
 
