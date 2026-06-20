@@ -95,7 +95,16 @@ export async function getParametresDocuments(
 
 export function documentImageUrl(url?: string) {
   if (!url) return '';
-  return url.startsWith('http') ? url : `${API_URL}${url}`;
+
+  if (url.startsWith('data:image/')) return url;
+
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+
+  const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+
+  return `${API_URL}${cleanUrl}`;
 }
 
 export function nomEntrepriseDocument(params?: ParametresDocuments | null) {

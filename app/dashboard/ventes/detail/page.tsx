@@ -5,6 +5,13 @@ import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import JsBarcode from 'jsbarcode';
+import {
+  getParametresDocuments,
+  documentImageUrl,
+  nomEntrepriseDocument,
+  couleurPrincipaleDocument,
+  type ParametresDocuments,
+} from '../../../services/documents.service';
 
 const API = 'https://messiematala-pos-backend-production.up.railway.app';
 
@@ -13,6 +20,8 @@ export default function VoirVentePage() {
 
   const [id, setId] = useState<string | null>(null);
   const [vente, setVente] = useState<any>(null);
+  const [paramsDocs, setParamsDocs] =
+  useState<ParametresDocuments | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,6 +33,19 @@ export default function VoirVentePage() {
     if (!id) return;
     chargerVente();
   }, [id]);
+
+  useEffect(() => {
+  chargerParametresDocuments();
+}, []);
+
+async function chargerParametresDocuments() {
+  try {
+    const data = await getParametresDocuments();
+    setParamsDocs(data);
+  } catch (e) {
+    console.error(e);
+  }
+}
 
   function extraireLignes(data: any): any[] {
   const sources = [
@@ -323,123 +345,295 @@ const totalEUR =
   }, [vente, id]);
 
   function construireHtmlA4() {
-    if (!infos) return '';
+  if (!infos) return '';
 
-    const dateVente = infos.dateVente ? new Date(infos.dateVente) : new Date();
-    const dateOnly = dateVente.toLocaleDateString('fr-FR');
-    const heureOnly = dateVente.toLocaleTimeString('fr-FR');
-    const ticketNo = String(vente?.id_vente || id || Date.now()).padStart(6, '0');
-    const logoUrl = `${window.location.origin}/logo.png`;
-    const barcodeUrl = genererCodeBarreBase64(infos.codeFacture);
+  const dateVente = infos.dateVente ? new Date(infos.dateVente) : new Date();
+  const dateOnly = dateVente.toLocaleDateString('fr-FR');
+  const heureOnly = dateVente.toLocaleTimeString('fr-FR');
+  const ticketNo = String(vente?.id_vente || id || Date.now()).padStart(6, '0');
 
-    const lignesHtml =
-      infos.lignes.length > 0
-        ? infos.lignes
-            .map((d: any) => {
-              const devise = normaliserDevise(d.devise);
-              const qte = Math.max(nombreDepuisTexte(d.quantite), 1);
-              const pu = nombreDepuisTexte(d.prixunitaire) || montantLigne(d) / qte;
+  const logoUrl = documentImageUrl(paramsDocs?.logo_url);
+  const filigraneUrl = documentImageUrl(paramsDocs?.filigrane_url);
+  const cachetUrl = documentImageUrl(paramsDocs?.cachet_url);
+  const signatureUrl = documentImageUrl(paramsDocs?.signature_direction_url);
 
-              return `
-                <tr>
-                  <td>${d.refproduit || '-'}</td>
-                  <td>${d.nomproduit || d.designation || '-'}</td>
-                  <td class="center">${qte}</td>
-                  <td class="right">${formatMontant(pu, devise)} ${devise}</td>
-                  <td class="right">${formatMontant(d.remise, devise)} ${devise}</td>
-                  <td class="center bold">${devise}</td>
-                  <td class="right bold">${formatMontant(montantLigne(d), devise)} ${devise}</td>
-                </tr>
-              `;
-            })
-            .join('')
-        : `<tr><td colspan="7" class="center">Détails non chargés</td></tr>`;
+  const couleurPrincipale =
+    paramsDocs?.couleur_principale || '#111827';
 
-    return `
-      <!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>Facture A4 ${infos.codeFacture}</title>
-          <style>
-            @page { size: A4 portrait; margin: 12mm; }
-            * { box-sizing: border-box; }
-            body {
-              font-family: Arial, Helvetica, sans-serif;
-              color: #000;
-              font-size: 12px;
-              margin: 0;
-              background: #fff;
-            }
-            .page { width: 100%; }
-            .top {
-              display: flex;
-              justify-content: space-between;
-              align-items: flex-start;
-              gap: 20px;
-            }
-            .logo { width: 105px; height: 105px; object-fit: contain; }
-            h1 { margin: 0 0 8px 0; font-size: 24px; letter-spacing: .3px; }
-            .company-line { line-height: 1.55; }
-            .line { border-top: 1.4px solid #111; margin: 18px 0; }
-            .grid {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 8px 60px;
-              font-weight: bold;
-            }
-            .box {
-              border: 1px solid #999;
-              padding: 7px 9px;
-              border-radius: 2px;
-            }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th {
-              background: #111827;
-              color: white;
-              padding: 8px;
-              border: 1px solid #777;
-              font-size: 11px;
-            }
-            td { padding: 7px; border: 1px solid #aaa; vertical-align: middle; }
-            .center { text-align: center; }
-            .right { text-align: right; }
-            .bold { font-weight: bold; }
-            .totaux { width: 58%; margin-left: auto; margin-top: 15px; }
-            .totaux td { padding: 8px; }
-            .paiement {
-              margin-top: 12px;
-              border: 1px solid #999;
-              padding: 8px;
-              font-weight: bold;
-            }
-            .footer {
-              text-align: center;
-              margin-top: 22px;
-              font-size: 12px;
-              line-height: 1.55;
-            }
-            .barcode-box {
-              text-align: center;
-              margin-top: 18px;
-              page-break-inside: avoid;
-            }
-            .barcode { width: 86mm; height: 22mm; object-fit: contain; }
-            .small { font-size: 10px; }
-          </style>
-        </head>
-        <body>
-          <div class="page">
+  const barcodeUrl = genererCodeBarreBase64(infos.codeFacture);
+
+  const lignesHtml =
+    infos.lignes.length > 0
+      ? infos.lignes
+          .map((d: any) => {
+            const devise = normaliserDevise(d.devise);
+            const qte = Math.max(nombreDepuisTexte(d.quantite), 1);
+            const pu =
+              nombreDepuisTexte(d.prixunitaire) || montantLigne(d) / qte;
+
+            return `
+              <tr>
+                <td>${d.refproduit || '-'}</td>
+                <td>${d.nomproduit || d.designation || '-'}</td>
+                <td class="center">${qte}</td>
+                <td class="right">${formatMontant(pu, devise)} ${devise}</td>
+                <td class="right">${formatMontant(d.remise, devise)} ${devise}</td>
+                <td class="center bold">${devise}</td>
+                <td class="right bold">${formatMontant(montantLigne(d), devise)} ${devise}</td>
+              </tr>
+            `;
+          })
+          .join('')
+      : `<tr><td colspan="7" class="center">Détails non chargés</td></tr>`;
+
+  return `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Facture A4 ${infos.codeFacture}</title>
+
+        <style>
+          @page { size: A4 portrait; margin: 12mm; }
+
+          * { box-sizing: border-box; }
+
+          body {
+            font-family: Arial, Helvetica, sans-serif;
+            color: #000;
+            font-size: 12px;
+            margin: 0;
+            background: #fff;
+          }
+
+          .page {
+            position: relative;
+            width: 100%;
+            min-height: 270mm;
+            overflow: hidden;
+          }
+
+          .content {
+            position: relative;
+            z-index: 2;
+          }
+
+          .filigrane {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 360px;
+            max-height: 360px;
+            object-fit: contain;
+            opacity: 0.07;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+          }
+
+          .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+          }
+
+          .logo {
+            width: 105px;
+            height: 105px;
+            object-fit: contain;
+          }
+
+          h1 {
+            margin: 0 0 8px 0;
+            font-size: 24px;
+            letter-spacing: .3px;
+            color: ${couleurPrincipale};
+          }
+
+          .company-line {
+            line-height: 1.55;
+          }
+
+          .line {
+            border-top: 1.4px solid ${couleurPrincipale};
+            margin: 18px 0;
+          }
+
+          .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 60px;
+            font-weight: bold;
+          }
+
+          .box {
+            border: 1px solid #999;
+            padding: 7px 9px;
+            border-radius: 2px;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+
+          th {
+            background: ${couleurPrincipale};
+            color: white;
+            padding: 8px;
+            border: 1px solid #777;
+            font-size: 11px;
+          }
+
+          td {
+            padding: 7px;
+            border: 1px solid #aaa;
+            vertical-align: middle;
+          }
+
+          .center { text-align: center; }
+          .right { text-align: right; }
+          .bold { font-weight: bold; }
+
+          .totaux {
+            width: 58%;
+            margin-left: auto;
+            margin-top: 15px;
+          }
+
+          .totaux td {
+            padding: 8px;
+          }
+
+          .paiement {
+            margin-top: 12px;
+            border: 1px solid #999;
+            padding: 8px;
+            font-weight: bold;
+          }
+
+          .signature-zone {
+            margin-top: 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 30px;
+          }
+
+          .cachet-img {
+            height: 95px;
+            max-width: 180px;
+            object-fit: contain;
+          }
+
+          .signature-img {
+            height: 75px;
+            max-width: 180px;
+            object-fit: contain;
+          }
+
+          .footer {
+            text-align: center;
+            margin-top: 22px;
+            font-size: 12px;
+            line-height: 1.55;
+          }
+
+          .barcode-box {
+            text-align: center;
+            margin-top: 18px;
+            page-break-inside: avoid;
+          }
+
+          .barcode {
+            width: 86mm;
+            height: 22mm;
+            object-fit: contain;
+          }
+
+          .small {
+            font-size: 10px;
+          }
+        </style>
+      </head>
+
+      <body>
+        <div class="page">
+          ${
+            paramsDocs?.afficher_filigrane && filigraneUrl
+              ? `<img src="${filigraneUrl}" class="filigrane" />`
+              : ''
+          }
+
+          <div class="content">
             <div class="top">
               <div class="company-line">
-                <h1>ZAIRE MODE SARL</h1>
-                <div>23, Bld Lumumba / Immeuble Masina Plaza</div>
-                <div>+243861507560 / E-MAIL: Zaireshop@hotmail.com</div>
-                <div>PAGE: ZAIRE.CD</div>
-                <div>RCCM: 25-B-01497</div>
-                <div>IDNAT: 01-F4300-N73258E</div>
+                <h1>${nomEntrepriseDocument(paramsDocs)}</h1>
+
+                ${
+                  paramsDocs?.slogan
+                    ? `<div><b>${paramsDocs.slogan}</b></div>`
+                    : ''
+                }
+
+                ${
+                  paramsDocs?.adresse
+                    ? `<div>${paramsDocs.adresse}</div>`
+                    : ''
+                }
+
+                ${
+                  paramsDocs?.ville || paramsDocs?.pays
+                    ? `<div>${paramsDocs?.ville || ''} ${paramsDocs?.pays || ''}</div>`
+                    : ''
+                }
+
+                ${
+                  paramsDocs?.telephone
+                    ? `<div>Tél : ${paramsDocs.telephone}</div>`
+                    : ''
+                }
+
+                ${
+                  paramsDocs?.telephone2
+                    ? `<div>Tél 2 : ${paramsDocs.telephone2}</div>`
+                    : ''
+                }
+
+                ${
+                  paramsDocs?.email
+                    ? `<div>Email : ${paramsDocs.email}</div>`
+                    : ''
+                }
+
+                ${
+                  paramsDocs?.site_web
+                    ? `<div>Site : ${paramsDocs.site_web}</div>`
+                    : ''
+                }
+
+                <div>RCCM : ${paramsDocs?.rccm || '-'}</div>
+                <div>ID NAT : ${paramsDocs?.id_nat || '-'}</div>
+
+                ${
+                  paramsDocs?.numero_impot
+                    ? `<div>N° Impôt : ${paramsDocs.numero_impot}</div>`
+                    : ''
+                }
+
+                ${
+                  paramsDocs?.numero_tva
+                    ? `<div>N° TVA : ${paramsDocs.numero_tva}</div>`
+                    : ''
+                }
               </div>
-              <img class="logo" src="${logoUrl}" />
+
+              ${
+                paramsDocs?.afficher_logo !== false && logoUrl
+                  ? `<img class="logo" src="${logoUrl}" />`
+                  : ''
+              }
             </div>
 
             <div class="line"></div>
@@ -465,23 +659,91 @@ const totalEUR =
                   <th>Total</th>
                 </tr>
               </thead>
-              <tbody>${lignesHtml}</tbody>
+
+              <tbody>
+                ${lignesHtml}
+              </tbody>
             </table>
 
             <table class="totaux">
               <tbody>
-                ${infos.totalUSD > 0 ? `<tr><td class="bold">TOTAL USD</td><td class="right bold">${formatMontant(infos.totalUSD, 'USD')} USD</td></tr>` : ''}
-                ${infos.totalCDF > 0 ? `<tr><td class="bold">TOTAL CDF</td><td class="right bold">${formatMontant(infos.totalCDF, 'CDF')} CDF</td></tr>` : ''}
-                ${infos.totalEUR > 0 ? `<tr><td class="bold">TOTAL EUR</td><td class="right bold">${formatMontant(infos.totalEUR, 'EUR')} EUR</td></tr>` : ''}
+                ${
+                  infos.totalUSD > 0
+                    ? `<tr><td class="bold">TOTAL USD</td><td class="right bold">${formatMontant(infos.totalUSD, 'USD')} USD</td></tr>`
+                    : ''
+                }
+
+                ${
+                  infos.totalCDF > 0
+                    ? `<tr><td class="bold">TOTAL CDF</td><td class="right bold">${formatMontant(infos.totalCDF, 'CDF')} CDF</td></tr>`
+                    : ''
+                }
+
+                ${
+                  infos.totalEUR > 0
+                    ? `<tr><td class="bold">TOTAL EUR</td><td class="right bold">${formatMontant(infos.totalEUR, 'EUR')} EUR</td></tr>`
+                    : ''
+                }
               </tbody>
             </table>
 
-            <div class="paiement">Mode : ${infos.modePaiement} | Totaux séparés par devise</div>
+            <div class="paiement">
+              Mode : ${infos.modePaiement} | Totaux séparés par devise
+            </div>
+
+            <div class="signature-zone">
+              <div>
+                ${
+                  cachetUrl
+                    ? `<img src="${cachetUrl}" class="cachet-img" />`
+                    : ''
+                }
+              </div>
+
+              <div class="center">
+                ${
+                  signatureUrl
+                    ? `<img src="${signatureUrl}" class="signature-img" />`
+                    : ''
+                }
+
+                ${
+                  paramsDocs?.nom_responsable
+                    ? `<div><b>${paramsDocs.nom_responsable}</b></div>`
+                    : ''
+                }
+
+                ${
+                  paramsDocs?.fonction_responsable
+                    ? `<div>${paramsDocs.fonction_responsable}</div>`
+                    : ''
+                }
+              </div>
+            </div>
 
             <div class="footer">
-              <div><b>Merci pour votre fidélité, à la prochaine !</b></div>
-              <div>La Qualité fait la différence.</div>
-              <div>Les marchandises vendues ne peuvent être ni reprises, ni échangées.</div>
+              <div>
+                <b>
+                  ${
+                    paramsDocs?.pied_ligne1 ||
+                    'Merci pour votre fidélité, à la prochaine !'
+                  }
+                </b>
+              </div>
+
+              <div>
+                ${
+                  paramsDocs?.pied_ligne2 ||
+                  'La Qualité fait la différence.'
+                }
+              </div>
+
+              <div>
+                ${
+                  paramsDocs?.mention_legale ||
+                  'Les marchandises vendues ne peuvent être ni reprises, ni échangées.'
+                }
+              </div>
             </div>
 
             <div class="barcode-box">
@@ -489,19 +751,20 @@ const totalEUR =
               <div class="small">Code Facture : ${infos.codeFacture}</div>
             </div>
           </div>
+        </div>
 
-          <script>
-            window.onload = function () {
-              setTimeout(function () {
-                window.focus();
-                window.print();
-              }, 500);
-            };
-          </script>
-        </body>
-      </html>
-    `;
-  }
+        <script>
+          window.onload = function () {
+            setTimeout(function () {
+              window.focus();
+              window.print();
+            }, 500);
+          };
+        </script>
+      </body>
+    </html>
+  `;
+}
 
   function construireHtmlTicket() {
     if (!infos) return '';
