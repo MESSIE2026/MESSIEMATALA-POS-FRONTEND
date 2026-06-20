@@ -3,7 +3,7 @@ const API_URL =
   'https://messiematala-pos-backend-production.up.railway.app';
 
 export type ParametresDocuments = {
-  id?: number;
+  id?: string;
   identreprise?: number;
 
   nom_entreprise?: string;
@@ -27,11 +27,17 @@ export type ParametresDocuments = {
   ville?: string;
   pays?: string;
 
+  nom_responsable?: string;
+  fonction_responsable?: string;
+
   entete_ligne1?: string;
   entete_ligne2?: string;
   pied_ligne1?: string;
   pied_ligne2?: string;
   mention_legale?: string;
+
+  afficher_logo?: boolean;
+  afficher_filigrane?: boolean;
 
   couleur_principale?: string;
   couleur_secondaire?: string;
@@ -50,8 +56,9 @@ export type ParametresDocuments = {
   iban?: string;
   mobile_money?: string;
 
-  afficher_logo?: boolean;
-  afficher_filigrane?: boolean;
+  actif?: boolean;
+  createdat?: string;
+  updatedat?: string;
 };
 
 export async function getParametresDocuments(

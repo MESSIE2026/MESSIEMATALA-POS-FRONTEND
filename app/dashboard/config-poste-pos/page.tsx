@@ -28,6 +28,7 @@ type Depot = {
 
 type ParametresDocuments = {
   idEntreprise: number;
+
   nomEntreprise: string;
   slogan: string;
 
@@ -48,6 +49,9 @@ type ParametresDocuments = {
   adresse: string;
   ville: string;
   pays: string;
+
+  nomResponsable: string;
+  fonctionResponsable: string;
 
   enteteLigne1: string;
   enteteLigne2: string;
@@ -104,6 +108,7 @@ export default function ConfigPostePosPage() {
 
 const [paramsDocs, setParamsDocs] = useState<ParametresDocuments>({
   idEntreprise: 0,
+
   nomEntreprise: '',
   slogan: '',
 
@@ -124,6 +129,9 @@ const [paramsDocs, setParamsDocs] = useState<ParametresDocuments>({
   adresse: '',
   ville: '',
   pays: 'RDC',
+
+  nomResponsable: '',
+  fonctionResponsable: 'Direction',
 
   enteteLigne1: '',
   enteteLigne2: '',
@@ -514,6 +522,9 @@ async function ouvrirManager() {
       ville: data.ville ?? ville ?? '',
       pays: data.pays ?? 'RDC',
 
+      nomResponsable: data.nom_responsable ?? '',
+fonctionResponsable: data.fonction_responsable ?? 'Direction',
+
       enteteLigne1: data.entete_ligne1 ?? nomEntreprise,
       enteteLigne2: data.entete_ligne2 ?? slogan,
       piedLigne1: data.pied_ligne1 ?? adresseDoc,
@@ -550,7 +561,7 @@ async function enregistrerParametresDocuments() {
   const entrepriseActive =
     idEntreprise ||
     localStorage.getItem('ZAIRE_ID_ENTREPRISE') ||
-    '1';
+    '';
 
   if (!entrepriseActive) {
     setMessage("Choisis d'abord une entreprise.");
@@ -569,6 +580,12 @@ async function enregistrerParametresDocuments() {
     const payload = {
       ...paramsDocs,
       idEntreprise: Number(entrepriseActive),
+
+      nomEntreprise: paramsDocs.nomEntreprise.trim(),
+      slogan: paramsDocs.slogan?.trim() || '',
+      nomResponsable: paramsDocs.nomResponsable?.trim() || '',
+      fonctionResponsable:
+        paramsDocs.fonctionResponsable?.trim() || 'Direction',
     };
 
     console.log('PARAMS DOCUMENTS ENVOYES =', payload);
@@ -582,17 +599,34 @@ async function enregistrerParametresDocuments() {
       },
     );
 
-    const data = await safeJson(res, null);
+    const text = await res.text();
+
+    console.log('STATUS PARAMS DOCUMENTS =', res.status);
+    console.log('RAW PARAMS DOCUMENTS =', text);
+
+    let data: any = null;
+
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = { message: text };
+    }
 
     console.log('REPONSE PARAMS DOCUMENTS =', data);
 
     if (!res.ok) {
-      throw new Error(data?.message || 'Paramètres non enregistrés.');
+      throw new Error(
+        data?.message ||
+          text ||
+          'Paramètres documents non enregistrés.',
+      );
     }
 
     setParamsDocs((prev) => ({
       ...prev,
       idEntreprise: Number(entrepriseActive),
+      nomResponsable: payload.nomResponsable,
+      fonctionResponsable: payload.fonctionResponsable,
     }));
 
     localStorage.setItem('ZAIRE_ID_ENTREPRISE', String(entrepriseActive));
@@ -600,7 +634,11 @@ async function enregistrerParametresDocuments() {
     setMessage('Paramètres documents enregistrés avec succès.');
     setShowManager(false);
   } catch (error: any) {
-    setMessage(error.message || 'Erreur enregistrement paramètres documents.');
+    console.error('Erreur enregistrerParametresDocuments:', error);
+    setMessage(
+      error?.message ||
+        'Erreur enregistrement paramètres documents.',
+    );
   } finally {
     setLoading(false);
   }
@@ -1031,86 +1069,149 @@ async function uploadImageDocument(
       )}
 
       {ongletManager === 'documents' && (
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {[
-            ['enteteLigne1', 'Entête ligne 1'],
-            ['enteteLigne2', 'Entête ligne 2'],
-            ['piedLigne1', 'Pied ligne 1'],
-            ['piedLigne2', 'Pied ligne 2'],
-            ['mentionLegale', 'Mention légale'],
-          ].map(([key, label]) => (
+  <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+    {[
+      ['enteteLigne1', 'Entête ligne 1'],
+      ['enteteLigne2', 'Entête ligne 2'],
+      ['piedLigne1', 'Pied ligne 1'],
+      ['piedLigne2', 'Pied ligne 2'],
+      ['mentionLegale', 'Mention légale'],
+      ['nomResponsable', 'Nom du responsable'],
+      ['fonctionResponsable', 'Fonction du responsable'],
+    ].map(([key, label]) => (
+      <div
+        key={key}
+        className={
+          key === 'mentionLegale' ||
+          key === 'nomResponsable' ||
+          key === 'fonctionResponsable'
+            ? 'md:col-span-2'
+            : ''
+        }
+      >
+        <label className="mb-2 block text-sm font-bold text-slate-700">
+          {label}
+        </label>
+
+        <input
+          value={(paramsDocs as any)[key]}
+          onChange={(e) =>
+            setParamsDocs((prev) => ({
+              ...prev,
+              [key]: e.target.value,
+            }))
+          }
+          className="w-full rounded-xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-500"
+        />
+      </div>
+    ))}
+
+    <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5">
+      <h3 className="font-black text-slate-900">Aperçu rapide</h3>
+
+      <div className="mt-4 rounded-xl bg-white p-5 shadow-sm">
+        <div className="flex items-center gap-4 border-b pb-4">
+          {paramsDocs.afficherLogo && paramsDocs.logoUrl && (
+            <img
+              src={
+                paramsDocs.logoUrl.startsWith('http')
+                  ? paramsDocs.logoUrl
+                  : `${API_URL}${paramsDocs.logoUrl}`
+              }
+              alt="Logo"
+              className="h-16 w-16 shrink-0 object-contain"
+            />
+          )}
+
+          <div>
             <div
-              key={key}
-              className={key === 'mentionLegale' ? 'md:col-span-2' : ''}
+              className="text-xl font-black"
+              style={{ color: paramsDocs.couleurPrincipale }}
             >
-              <label className="mb-2 block text-sm font-bold text-slate-700">
-                {label}
-              </label>
-              <input
-                value={(paramsDocs as any)[key]}
-                onChange={(e) =>
-                  setParamsDocs((prev) => ({
-                    ...prev,
-                    [key]: e.target.value,
-                  }))
-                }
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-500"
-              />
+              {paramsDocs.nomEntreprise || 'Nom entreprise'}
             </div>
-          ))}
 
-          <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5">
-            <h3 className="font-black text-slate-900">Aperçu rapide</h3>
-            <div className="mt-4 rounded-xl bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-4 border-b pb-4">
-                {paramsDocs.afficherLogo && paramsDocs.logoUrl && (
-                  <img
-                    src={
-                      paramsDocs.logoUrl.startsWith('http')
-                        ? paramsDocs.logoUrl
-                        : `${API_URL}${paramsDocs.logoUrl}`
-                    }
-                    alt="Logo"
-                    className="h-16 w-16 object-contain"
-                  />
-                )}
+            <div className="text-sm text-slate-500">
+              {paramsDocs.enteteLigne1 || paramsDocs.slogan}
+            </div>
 
-                <div>
-                  <div className="text-xl font-black" style={{ color: paramsDocs.couleurPrincipale }}>
-                    {paramsDocs.nomEntreprise || 'Nom entreprise'}
-                  </div>
-                  <div className="text-sm text-slate-500">
-                    {paramsDocs.enteteLigne1 || paramsDocs.slogan}
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    RCCM: {paramsDocs.rccm || '-'} | ID.NAT: {paramsDocs.idNat || '-'}
-                  </div>
-                </div>
-              </div>
+            <div className="text-xs text-slate-500">
+              RCCM: {paramsDocs.rccm || '-'} | ID.NAT:{' '}
+              {paramsDocs.idNat || '-'}
+            </div>
+          </div>
+        </div>
 
-              <div className="relative min-h-32 py-6 text-sm text-slate-600">
-                {paramsDocs.afficherFiligrane && paramsDocs.filigraneUrl && (
-                  <img
-                    src={
-                      paramsDocs.filigraneUrl.startsWith('http')
-                        ? paramsDocs.filigraneUrl
-                        : `${API_URL}${paramsDocs.filigraneUrl}`
-                    }
-                    alt="Filigrane"
-                    className="absolute left-1/2 top-4 h-28 -translate-x-1/2 object-contain opacity-10"
-                  />
-                )}
-                Exemple contenu document : facture, ticket, rapport ou reçu.
-              </div>
+        <div className="relative min-h-32 py-6 text-sm text-slate-600">
+          {paramsDocs.afficherFiligrane && paramsDocs.filigraneUrl && (
+            <img
+              src={
+                paramsDocs.filigraneUrl.startsWith('http')
+                  ? paramsDocs.filigraneUrl
+                  : `${API_URL}${paramsDocs.filigraneUrl}`
+              }
+              alt="Filigrane"
+              className="pointer-events-none absolute left-1/2 top-4 h-28 -translate-x-1/2 object-contain opacity-10"
+            />
+          )}
 
-              <div className="border-t pt-3 text-center text-xs text-slate-500">
-                {paramsDocs.piedLigne1 || paramsDocs.adresse} <br />
+          Exemple contenu document : facture, ticket, rapport ou reçu.
+        </div>
+
+        <div className="border-t pt-4">
+          <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-3">
+            <div className="text-xs text-slate-500 md:col-span-2">
+              <div>{paramsDocs.piedLigne1 || paramsDocs.adresse}</div>
+              <div>{paramsDocs.piedLigne2}</div>
+
+              <div className="mt-2">
                 {paramsDocs.mentionLegale || 'Merci pour votre confiance.'}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-end rounded-xl bg-slate-50 p-3">
+              <div className="relative flex h-28 w-full items-center justify-center">
+                {paramsDocs.cachetUrl && (
+                  <img
+                    src={
+                      paramsDocs.cachetUrl.startsWith('http')
+                        ? paramsDocs.cachetUrl
+                        : `${API_URL}${paramsDocs.cachetUrl}`
+                    }
+                    alt="Cachet"
+                    className="absolute right-2 top-0 h-20 object-contain opacity-40"
+                  />
+                )}
+
+                {paramsDocs.signatureDirectionUrl && (
+                  <img
+                    src={
+                      paramsDocs.signatureDirectionUrl.startsWith('http')
+                        ? paramsDocs.signatureDirectionUrl
+                        : `${API_URL}${paramsDocs.signatureDirectionUrl}`
+                    }
+                    alt="Signature"
+                    className="relative z-10 mt-8 h-16 object-contain"
+                  />
+                )}
+              </div>
+
+              <div className="mt-2 text-center">
+                <div className="text-sm font-black text-slate-900">
+                  {paramsDocs.nomResponsable || 'Nom du responsable'}
+                </div>
+
+                <div className="text-xs font-semibold text-slate-500">
+                  {paramsDocs.fonctionResponsable || 'Direction'}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
+    </div>
+  </div>
+)}
 
       {ongletManager === 'banque' && (
         <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">

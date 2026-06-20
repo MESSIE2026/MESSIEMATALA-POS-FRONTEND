@@ -579,45 +579,53 @@ async function chargerParametresDocuments() {
         </div>
       </div>
 
-      <div className="mt-5 border-t border-slate-800 pt-6">
-        <div className="flex items-end justify-between gap-6 font-bold">
-          <div>
-            <p>Signature du Caissier :</p>
-            <p className="mt-8">{nomCaissier}</p>
-          </div>
+     <div className="mt-5 border-t border-slate-800 pt-6">
+  <div className="grid grid-cols-2 items-end gap-8 font-bold">
+    <div>
+      <p>Signature du Caissier :</p>
+      <p className="mt-12">{nomCaissier}</p>
+    </div>
 
-          <div className="text-center">
-            {paramsDocs?.cachet_url && (
-              <img
-                src={documentImageUrl(paramsDocs.cachet_url)}
-                alt="Cachet"
-                className="mx-auto h-24 object-contain"
-              />
-            )}
+    <div className="flex flex-col items-center">
+      <div className="relative flex h-32 w-full items-center justify-center">
+        {paramsDocs?.cachet_url && (
+          <img
+            src={documentImageUrl(paramsDocs.cachet_url)}
+            alt="Cachet"
+            className="absolute right-12 top-0 h-24 object-contain opacity-45"
+          />
+        )}
 
-            {paramsDocs?.signature_direction_url && (
-              <img
-                src={documentImageUrl(paramsDocs.signature_direction_url)}
-                alt="Signature Direction"
-                className="mx-auto h-16 object-contain"
-              />
-            )}
-
-            <p>Direction</p>
-          </div>
-        </div>
-
-        <p className="mt-5 text-xs font-semibold text-slate-500">
-          Document généré le{' '}
-          {resume?.date ? dateLongFr(resume.date) : dateLongFr(date)}
-        </p>
-
-        <div className="mt-4 text-center text-xs font-semibold text-slate-500">
-          {paramsDocs?.telephone || ''}
-          {paramsDocs?.email ? ` | ${paramsDocs.email}` : ''}
-          {paramsDocs?.site_web ? ` | ${paramsDocs.site_web}` : ''}
-        </div>
+        {paramsDocs?.signature_direction_url && (
+          <img
+            src={documentImageUrl(paramsDocs.signature_direction_url)}
+            alt="Signature Direction"
+            className="relative z-10 mt-12 h-20 object-contain"
+          />
+        )}
       </div>
+
+      <p className="mt-1 text-center font-black">
+        {paramsDocs?.nom_responsable || 'Nom du responsable'}
+      </p>
+
+      <p className="text-center font-bold">
+        {paramsDocs?.fonction_responsable || 'Direction'}
+      </p>
+    </div>
+  </div>
+
+  <p className="mt-5 text-xs font-semibold text-slate-500">
+    Document généré le{' '}
+    {resume?.date ? dateLongFr(resume.date) : dateLongFr(date)}
+  </p>
+
+  <div className="mt-4 text-center text-xs font-semibold text-slate-500">
+    {paramsDocs?.telephone || ''}
+    {paramsDocs?.email ? ` | ${paramsDocs.email}` : ''}
+    {paramsDocs?.site_web ? ` | ${paramsDocs.site_web}` : ''}
+  </div>
+</div>
     </div>
   </div>
 </section>
