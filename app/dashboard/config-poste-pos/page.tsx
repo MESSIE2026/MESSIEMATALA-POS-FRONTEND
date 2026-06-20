@@ -431,32 +431,36 @@ if (!res.ok || !data?.idmagasin) {
 }
 
 async function ouvrirManager() {
-  if (!idEntreprise) {
-    setMessage("Choisis d'abord une entreprise.");
-    return;
-  }
+  const entrepriseActive =
+    idEntreprise ||
+    localStorage.getItem('ZAIRE_ID_ENTREPRISE') ||
+    '1';
 
+  setIdEntreprise(String(entrepriseActive));
   setShowManager(true);
   setMessage('');
 
   const entreprise = entreprises.find(
-    (e) => String(e.identreprise) === String(idEntreprise),
+    (e) => String(e.identreprise) === String(entrepriseActive),
   );
 
   const res = await fetch(
-    `${API_URL}/config-poste-pos/parametres-documents?idEntreprise=${idEntreprise}`,
+    `${API_URL}/config-poste-pos/parametres-documents?idEntreprise=${entrepriseActive}`,
     { cache: 'no-store' },
   );
 
   const data = await safeJson(res, null);
 
   if (data) {
-    setParamsDocs({
-      idEntreprise: Number(idEntreprise),
+    setParamsDocs((prev) => ({
+      ...prev,
+      idEntreprise: Number(entrepriseActive),
       nomEntreprise: data.nom_entreprise ?? entreprise?.nom ?? '',
       slogan: data.slogan ?? '',
       logoUrl: data.logo_url ?? '',
       filigraneUrl: data.filigrane_url ?? '',
+      cachetUrl: data.cachet_url ?? '',
+      signatureDirectionUrl: data.signature_direction_url ?? '',
       idNat: data.id_nat ?? '',
       rccm: data.rccm ?? '',
       numeroImpot: data.numero_impot ?? '',
@@ -475,34 +479,20 @@ async function ouvrirManager() {
       mentionLegale: data.mention_legale ?? '',
       afficherLogo: Boolean(data.afficher_logo ?? true),
       afficherFiligrane: Boolean(data.afficher_filigrane ?? false),
-      cachetUrl: data.cachet_url ?? '',
-signatureDirectionUrl: data.signature_direction_url ?? '',
-
-couleurPrincipale: data.couleur_principale ?? '#1E40AF',
-couleurSecondaire: data.couleur_secondaire ?? '#F3F4F6',
-couleurTexte: data.couleur_texte ?? '#111827',
-
-facebook: data.facebook ?? '',
-instagram: data.instagram ?? '',
-linkedin: data.linkedin ?? '',
-youtube: data.youtube ?? '',
-tiktok: data.tiktok ?? '',
-whatsapp: data.whatsapp ?? '',
-
-banque: data.banque ?? '',
-numeroCompte: data.numero_compte ?? '',
-swift: data.swift ?? '',
-iban: data.iban ?? '',
-mobileMoney: data.mobile_money ?? '',
-    });
-  } else {
-    setParamsDocs((prev) => ({
-      ...prev,
-      idEntreprise: Number(idEntreprise),
-      nomEntreprise: entreprise?.nom ?? '',
-      adresse,
-      ville,
-      pays: 'RDC',
+      couleurPrincipale: data.couleur_principale ?? '#1E40AF',
+      couleurSecondaire: data.couleur_secondaire ?? '#F3F4F6',
+      couleurTexte: data.couleur_texte ?? '#111827',
+      facebook: data.facebook ?? '',
+      instagram: data.instagram ?? '',
+      linkedin: data.linkedin ?? '',
+      youtube: data.youtube ?? '',
+      tiktok: data.tiktok ?? '',
+      whatsapp: data.whatsapp ?? '',
+      banque: data.banque ?? '',
+      numeroCompte: data.numero_compte ?? '',
+      swift: data.swift ?? '',
+      iban: data.iban ?? '',
+      mobileMoney: data.mobile_money ?? '',
     }));
   }
 }
@@ -744,7 +734,7 @@ async function uploadImageDocument(
             <button
   type="button"
   onClick={ouvrirManager}
-  disabled={loading || !idEntreprise}
+  disabled={loading}
   className="rounded-xl bg-emerald-600 px-6 py-3 font-black text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
 >
   Manager / Paramètres documents
