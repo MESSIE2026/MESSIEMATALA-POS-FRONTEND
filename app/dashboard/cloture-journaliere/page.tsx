@@ -2,6 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { getAuthHeaders } from '@/app/services/compte.service';
+import {
+  getParametresDocuments,
+  documentImageUrl,
+  ParametresDocuments,
+} from '@/app/services/documents.service';
 
 const API =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -97,20 +102,19 @@ export default function Page() {
   const [managerPin, setManagerPin] = useState('');
   const [signatureManager, setSignatureManager] = useState<any>(null);
 
-  const nomEntreprise =
-    typeof window !== 'undefined'
-      ? localStorage.getItem('ZAIRE_NOM_ENTREPRISE') || 'ENTREPRISE'
-      : 'ENTREPRISE';
 
-  const adresseEntreprise =
-    typeof window !== 'undefined'
-      ? localStorage.getItem('ZAIRE_ADRESSE_ENTREPRISE') || ''
-      : '';
+      const [paramsDocs, setParamsDocs] = useState<ParametresDocuments | null>(null);
 
   useEffect(() => {
-    chargerEmploye();
-    charger();
-  }, []);
+  chargerEmploye();
+  charger();
+  chargerParametresDocuments();
+}, []);
+
+async function chargerParametresDocuments() {
+  const data = await getParametresDocuments();
+  setParamsDocs(data);
+}
 
   useEffect(() => {
     charger();
@@ -415,127 +419,197 @@ export default function Page() {
         </section>
 
         <section className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <h2 className="text-xl font-black text-slate-950">
-            Aperçu document
-          </h2>
+  <h2 className="text-xl font-black text-slate-950">
+    Aperçu document
+  </h2>
 
-          <div className="mt-4 rounded-2xl border border-slate-300 bg-white p-5">
-            <div className="text-center">
-              <h3 className="text-2xl font-black">{nomEntreprise}</h3>
-              {adresseEntreprise && (
-                <p className="text-sm font-semibold">{adresseEntreprise}</p>
-              )}
-            </div>
+  <div className="relative mt-4 overflow-hidden rounded-2xl border border-slate-300 bg-white p-5">
+    {paramsDocs?.afficher_filigrane && paramsDocs?.filigrane_url && (
+      <img
+        src={documentImageUrl(paramsDocs.filigrane_url)}
+        className="pointer-events-none absolute left-1/2 top-1/2 h-64 -translate-x-1/2 -translate-y-1/2 object-contain opacity-10"
+        alt="Filigrane"
+      />
+    )}
 
-            <div className="my-4 border-y border-slate-800 py-3 text-center">
-              <h3 className="font-black">
-                MOUVEMENTS DE CAISSE - CLÔTURE JOURNALIÈRE
-              </h3>
-            </div>
+    <div className="relative z-10">
+      <div className="text-center">
+        {paramsDocs?.afficher_logo && paramsDocs?.logo_url && (
+          <img
+            src={documentImageUrl(paramsDocs.logo_url)}
+            alt="Logo"
+            className="mx-auto mb-2 h-20 object-contain"
+          />
+        )}
 
-            <div className="mb-4 flex justify-between text-sm font-bold">
-              <p>Date : {dateLongFr(date)}</p>
-              <p>Caissier : {nomCaissier}</p>
-            </div>
+        <h3
+          className="text-2xl font-black"
+          style={{ color: paramsDocs?.couleur_principale || '#111827' }}
+        >
+          {paramsDocs?.nom_entreprise || 'ENTREPRISE'}
+        </h3>
 
-            <PdfTable
-              title="RÉCAPITULATIF DU JOUR"
-              fc={{
-                entrees: jour?.entreesFC,
-                sorties: jour?.sortiesFC,
-                balance: jour?.balanceFC,
-              }}
-              usd={{
-                entrees: jour?.entreesUSD,
-                sorties: jour?.sortiesUSD,
-                balance: jour?.balanceUSD,
-              }}
-            />
+        {(paramsDocs?.entete_ligne1 || paramsDocs?.slogan) && (
+          <p className="text-sm font-semibold">
+            {paramsDocs?.entete_ligne1 || paramsDocs?.slogan}
+          </p>
+        )}
 
-            <div className="mt-3 border border-slate-800">
-              <h4 className="border-b border-slate-800 p-2 font-black">
-                OBSERVATIONS DU JOUR
-              </h4>
-              <div className="min-h-24 whitespace-pre-wrap p-3 text-sm font-semibold">
-                {observation || resume?.observation || '-'}
-              </div>
-            </div>
+        {paramsDocs?.adresse && (
+          <p className="text-sm font-semibold">{paramsDocs.adresse}</p>
+        )}
 
-            <PdfTable
-              title="RÉCAPITULATIF HEBDOMADAIRE"
-              fc={{
-                entrees: semaine?.entreesFC,
-                sorties: semaine?.sortiesFC,
-                balance: semaine?.balanceFC,
-              }}
-              usd={{
-                entrees: semaine?.entreesUSD,
-                sorties: semaine?.sortiesUSD,
-                balance: semaine?.balanceUSD,
-              }}
-            />
+        <p className="text-xs font-semibold">
+          RCCM: {paramsDocs?.rccm || '-'} | ID NAT: {paramsDocs?.id_nat || '-'}
+        </p>
 
-            <PdfTable
-              title="RÉCAPITULATIF MENSUEL"
-              fc={{
-                entrees: mois?.entreesFC,
-                sorties: mois?.sortiesFC,
-                balance: mois?.balanceFC,
-              }}
-              usd={{
-                entrees: mois?.entreesUSD,
-                sorties: mois?.sortiesUSD,
-                balance: mois?.balanceUSD,
-              }}
-            />
+        {(paramsDocs?.telephone || paramsDocs?.email) && (
+          <p className="text-xs font-semibold">
+            {paramsDocs?.telephone || ''}
+            {paramsDocs?.email ? ` | ${paramsDocs.email}` : ''}
+          </p>
+        )}
+      </div>
 
-            <div className="mt-3 border border-slate-800 p-3 text-sm">
-              <h4 className="mb-2 font-black">DÉTAIL DES RECETTES MENSUELLES</h4>
+      <div className="my-4 border-y border-slate-800 py-3 text-center">
+        <h3 className="font-black">
+          MOUVEMENTS DE CAISSE - CLÔTURE JOURNALIÈRE
+        </h3>
+      </div>
 
-              <p>
-                Argent Photos : FC {money(mois?.photoFC)} | USD{' '}
-                {money(mois?.photoUSD)}
-              </p>
-              <p>
-                Vente : FC {money(mois?.venteFC)} | USD {money(mois?.venteUSD)}
-              </p>
+      <div className="mb-4 flex justify-between text-sm font-bold">
+        <p>Date : {dateLongFr(date)}</p>
+        <p>Caissier : {nomCaissier}</p>
+      </div>
 
-              <div className="mt-3 space-y-1 font-semibold">
-                <p>
-                  TOTAL GÉNÉRAL ESPÈCE : FC {money(modalites?.totalEspeceFC)} |
-                  USD {money(modalites?.totalEspeceUSD)}
-                </p>
-                <p>
-                  VERSEMENT BANK : FC {money(modalites?.stockBankNetFC)} | USD{' '}
-                  {money(modalites?.stockBankNetUSD)}
-                </p>
-                <p>
-                  VERSEMENT SIM : FC {money(modalites?.versementSimNetFC)} | USD{' '}
-                  {money(modalites?.versementSimNetUSD)}
-                </p>
-                <p>
-                  ENVOI PATRONNE : FC {money(modalites?.envoiPatronneFC)} | USD{' '}
-                  {money(modalites?.envoiPatronneUSD)}
-                </p>
-                <p>
-                  LOCATION MENSUELLE : FC {money(modalites?.locationMoisFC)} |
-                  USD {money(modalites?.locationMoisUSD)}
-                </p>
-              </div>
-            </div>
+      <PdfTable
+        title="RÉCAPITULATIF DU JOUR"
+        fc={{
+          entrees: jour?.entreesFC,
+          sorties: jour?.sortiesFC,
+          balance: jour?.balanceFC,
+        }}
+        usd={{
+          entrees: jour?.entreesUSD,
+          sorties: jour?.sortiesUSD,
+          balance: jour?.balanceUSD,
+        }}
+      />
 
-            <div className="mt-5 border-t border-slate-800 pt-6">
-              <div className="flex justify-between font-bold">
-                <p>Signature du Caissier : {nomCaissier}</p>
-                <p>Signature Administration : __________________</p>
-              </div>
-              <p className="mt-5 text-xs font-semibold text-slate-500">
-                Document généré le{' '}
-                {resume?.date ? dateLongFr(resume.date) : dateLongFr(date)}
-              </p>
-            </div>
+      <div className="mt-3 border border-slate-800">
+        <h4 className="border-b border-slate-800 p-2 font-black">
+          OBSERVATIONS DU JOUR
+        </h4>
+        <div className="min-h-24 whitespace-pre-wrap p-3 text-sm font-semibold">
+          {observation || resume?.observation || '-'}
+        </div>
+      </div>
+
+      <PdfTable
+        title="RÉCAPITULATIF HEBDOMADAIRE"
+        fc={{
+          entrees: semaine?.entreesFC,
+          sorties: semaine?.sortiesFC,
+          balance: semaine?.balanceFC,
+        }}
+        usd={{
+          entrees: semaine?.entreesUSD,
+          sorties: semaine?.sortiesUSD,
+          balance: semaine?.balanceUSD,
+        }}
+      />
+
+      <PdfTable
+        title="RÉCAPITULATIF MENSUEL"
+        fc={{
+          entrees: mois?.entreesFC,
+          sorties: mois?.sortiesFC,
+          balance: mois?.balanceFC,
+        }}
+        usd={{
+          entrees: mois?.entreesUSD,
+          sorties: mois?.sortiesUSD,
+          balance: mois?.balanceUSD,
+        }}
+      />
+
+      <div className="mt-3 border border-slate-800 p-3 text-sm">
+        <h4 className="mb-2 font-black">DÉTAIL DES RECETTES MENSUELLES</h4>
+
+        <p>
+          Argent Photos : FC {money(mois?.photoFC)} | USD {money(mois?.photoUSD)}
+        </p>
+        <p>
+          Vente : FC {money(mois?.venteFC)} | USD {money(mois?.venteUSD)}
+        </p>
+
+        <div className="mt-3 space-y-1 font-semibold">
+          <p>
+            TOTAL GÉNÉRAL ESPÈCE : FC {money(modalites?.totalEspeceFC)} | USD{' '}
+            {money(modalites?.totalEspeceUSD)}
+          </p>
+          <p>
+            VERSEMENT BANK : FC {money(modalites?.stockBankNetFC)} | USD{' '}
+            {money(modalites?.stockBankNetUSD)}
+          </p>
+          <p>
+            VERSEMENT SIM : FC {money(modalites?.versementSimNetFC)} | USD{' '}
+            {money(modalites?.versementSimNetUSD)}
+          </p>
+          <p>
+            ENVOI PATRONNE : FC {money(modalites?.envoiPatronneFC)} | USD{' '}
+            {money(modalites?.envoiPatronneUSD)}
+          </p>
+          <p>
+            LOCATION MENSUELLE : FC {money(modalites?.locationMoisFC)} | USD{' '}
+            {money(modalites?.locationMoisUSD)}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 border-t border-slate-800 pt-6">
+        <div className="flex items-end justify-between gap-6 font-bold">
+          <div>
+            <p>Signature du Caissier :</p>
+            <p className="mt-8">{nomCaissier}</p>
           </div>
-        </section>
+
+          <div className="text-center">
+            {paramsDocs?.cachet_url && (
+              <img
+                src={documentImageUrl(paramsDocs.cachet_url)}
+                alt="Cachet"
+                className="mx-auto h-24 object-contain"
+              />
+            )}
+
+            {paramsDocs?.signature_direction_url && (
+              <img
+                src={documentImageUrl(paramsDocs.signature_direction_url)}
+                alt="Signature Direction"
+                className="mx-auto h-16 object-contain"
+              />
+            )}
+
+            <p>Direction</p>
+          </div>
+        </div>
+
+        <p className="mt-5 text-xs font-semibold text-slate-500">
+          Document généré le{' '}
+          {resume?.date ? dateLongFr(resume.date) : dateLongFr(date)}
+        </p>
+
+        <div className="mt-4 text-center text-xs font-semibold text-slate-500">
+          {paramsDocs?.telephone || ''}
+          {paramsDocs?.email ? ` | ${paramsDocs.email}` : ''}
+          {paramsDocs?.site_web ? ` | ${paramsDocs.site_web}` : ''}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+        
 
         <section className="grid gap-5 xl:grid-cols-2">
           <RecapCard
