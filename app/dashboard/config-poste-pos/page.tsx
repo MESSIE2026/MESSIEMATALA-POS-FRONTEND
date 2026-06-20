@@ -458,14 +458,14 @@ if (!res.ok || !data?.idmagasin) {
 
 async function ouvrirManager() {
   const entrepriseActive =
-  idEntreprise ||
-  localStorage.getItem('ZAIRE_ID_ENTREPRISE') ||
-  '';
+    idEntreprise ||
+    localStorage.getItem('ZAIRE_ID_ENTREPRISE') ||
+    '';
 
-if (!entrepriseActive) {
-  setMessage("Choisis d'abord une entreprise.");
-  return;
-}
+  if (!entrepriseActive) {
+    setMessage("Choisis d'abord une entreprise.");
+    return;
+  }
 
   setIdEntreprise(String(entrepriseActive));
   setShowManager(true);
@@ -483,42 +483,60 @@ if (!entrepriseActive) {
   const data = await safeJson(res, null);
 
   if (data) {
+    const nomEntreprise = data.nom_entreprise ?? entreprise?.nom ?? '';
+    const slogan = data.slogan ?? '';
+    const adresseDoc = data.adresse ?? adresse ?? '';
+    const telephoneDoc = data.telephone ?? '';
+    const emailDoc = data.email ?? '';
+
     setParamsDocs((prev) => ({
       ...prev,
       idEntreprise: Number(entrepriseActive),
-      nomEntreprise: data.nom_entreprise ?? entreprise?.nom ?? '',
-      slogan: data.slogan ?? '',
+
+      nomEntreprise,
+      slogan,
+
       logoUrl: data.logo_url ?? '',
       filigraneUrl: data.filigrane_url ?? '',
       cachetUrl: data.cachet_url ?? '',
       signatureDirectionUrl: data.signature_direction_url ?? '',
+
       idNat: data.id_nat ?? '',
       rccm: data.rccm ?? '',
       numeroImpot: data.numero_impot ?? '',
       numeroTva: data.numero_tva ?? '',
-      telephone: data.telephone ?? '',
+
+      telephone: telephoneDoc,
       telephone2: data.telephone2 ?? '',
-      email: data.email ?? '',
+      email: emailDoc,
       siteWeb: data.site_web ?? '',
-      adresse: data.adresse ?? adresse ?? '',
+      adresse: adresseDoc,
       ville: data.ville ?? ville ?? '',
       pays: data.pays ?? 'RDC',
-      enteteLigne1: data.entete_ligne1 ?? '',
-      enteteLigne2: data.entete_ligne2 ?? '',
-      piedLigne1: data.pied_ligne1 ?? '',
-      piedLigne2: data.pied_ligne2 ?? '',
-      mentionLegale: data.mention_legale ?? '',
+
+      enteteLigne1: data.entete_ligne1 ?? nomEntreprise,
+      enteteLigne2: data.entete_ligne2 ?? slogan,
+      piedLigne1: data.pied_ligne1 ?? adresseDoc,
+      piedLigne2:
+        data.pied_ligne2 ??
+        [telephoneDoc, emailDoc].filter(Boolean).join(' | '),
+      mentionLegale:
+        data.mention_legale ?? 'Merci pour votre confiance.',
+
       afficherLogo: Boolean(data.afficher_logo ?? true),
       afficherFiligrane: Boolean(data.afficher_filigrane ?? false),
+
       couleurPrincipale: data.couleur_principale ?? '#1E40AF',
       couleurSecondaire: data.couleur_secondaire ?? '#F3F4F6',
       couleurTexte: data.couleur_texte ?? '#111827',
+
       facebook: data.facebook ?? '',
       instagram: data.instagram ?? '',
       linkedin: data.linkedin ?? '',
       youtube: data.youtube ?? '',
       tiktok: data.tiktok ?? '',
       whatsapp: data.whatsapp ?? '',
+
       banque: data.banque ?? '',
       numeroCompte: data.numero_compte ?? '',
       swift: data.swift ?? '',
