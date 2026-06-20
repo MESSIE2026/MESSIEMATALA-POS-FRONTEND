@@ -112,7 +112,13 @@ export default function Page() {
 }, []);
 
 async function chargerParametresDocuments() {
-  const data = await getParametresDocuments();
+  const idEntreprise =
+    localStorage.getItem('ZAIRE_ID_ENTREPRISE') || '1';
+
+  const data = await getParametresDocuments(idEntreprise);
+
+  console.log('PARAMETRES DOCUMENTS CLOTURE =', data);
+
   setParamsDocs(data);
 }
 
@@ -312,15 +318,21 @@ async function chargerParametresDocuments() {
   }
 
   function ouvrirPdf() {
-    const url = `${API}/cloture-journaliere/pdf-print?date=${encodeURIComponent(date)}`;
-    const win = window.open(url, '_blank');
+  const idEntreprise =
+    localStorage.getItem('ZAIRE_ID_ENTREPRISE') || '1';
 
-    setTimeout(() => {
-      try {
-        win?.print();
-      } catch {}
-    }, 1500);
-  }
+  const url =
+    `${API}/cloture-journaliere/pdf-print?date=${encodeURIComponent(date)}` +
+    `&idEntreprise=${encodeURIComponent(idEntreprise)}`;
+
+  const win = window.open(url, '_blank');
+
+  setTimeout(() => {
+    try {
+      win?.print();
+    } catch {}
+  }, 1500);
+}
 
   async function telechargerPdf() {
     try {
