@@ -253,6 +253,20 @@ async function chargerInitial(machine: string) {
   }
 }
 
+function imageDocument(src?: string | null) {
+  if (!src) return '';
+
+  if (src.startsWith('data:image/')) {
+    return src;
+  }
+
+  if (src.startsWith('http://') || src.startsWith('https://')) {
+    return src;
+  }
+
+  return `${API_URL}${src}`;
+}
+
   async function chargerMagasins(id: string, selectedMagasin?: string) {
     if (!id) {
       setMagasins([]);
@@ -960,11 +974,7 @@ async function uploadImageDocument(
               {(paramsDocs as any)[key] && (
                 <div className="mt-3 rounded-xl bg-white p-3">
                   <img
-                    src={
-                      String((paramsDocs as any)[key]).startsWith('http')
-                        ? (paramsDocs as any)[key]
-                        : `${API_URL}${(paramsDocs as any)[key]}`
-                    }
+                    src={imageDocument((paramsDocs as any)[key])}
                     alt={label}
                     className={`max-h-28 object-contain ${
                       key === 'filigraneUrl' ? 'opacity-40' : ''
@@ -1113,11 +1123,7 @@ async function uploadImageDocument(
         <div className="flex items-center gap-4 border-b pb-4">
           {paramsDocs.afficherLogo && paramsDocs.logoUrl && (
             <img
-              src={
-                paramsDocs.logoUrl.startsWith('http')
-                  ? paramsDocs.logoUrl
-                  : `${API_URL}${paramsDocs.logoUrl}`
-              }
+              src={imageDocument(paramsDocs.logoUrl)}
               alt="Logo"
               className="h-16 w-16 shrink-0 object-contain"
             />
@@ -1145,11 +1151,7 @@ async function uploadImageDocument(
         <div className="relative min-h-32 py-6 text-sm text-slate-600">
           {paramsDocs.afficherFiligrane && paramsDocs.filigraneUrl && (
             <img
-              src={
-                paramsDocs.filigraneUrl.startsWith('http')
-                  ? paramsDocs.filigraneUrl
-                  : `${API_URL}${paramsDocs.filigraneUrl}`
-              }
+              src={imageDocument(paramsDocs.filigraneUrl)}
               alt="Filigrane"
               className="pointer-events-none absolute left-1/2 top-4 h-28 -translate-x-1/2 object-contain opacity-10"
             />
@@ -1173,11 +1175,7 @@ async function uploadImageDocument(
               <div className="relative flex h-28 w-full items-center justify-center">
                 {paramsDocs.cachetUrl && (
                   <img
-                    src={
-                      paramsDocs.cachetUrl.startsWith('http')
-                        ? paramsDocs.cachetUrl
-                        : `${API_URL}${paramsDocs.cachetUrl}`
-                    }
+                    src={imageDocument(paramsDocs.cachetUrl)}
                     alt="Cachet"
                     className="absolute right-2 top-0 h-20 object-contain opacity-40"
                   />
@@ -1185,11 +1183,7 @@ async function uploadImageDocument(
 
                 {paramsDocs.signatureDirectionUrl && (
                   <img
-                    src={
-                      paramsDocs.signatureDirectionUrl.startsWith('http')
-                        ? paramsDocs.signatureDirectionUrl
-                        : `${API_URL}${paramsDocs.signatureDirectionUrl}`
-                    }
+                    src={imageDocument(paramsDocs.signatureDirectionUrl)}
                     alt="Signature"
                     className="relative z-10 mt-8 h-16 object-contain"
                   />
