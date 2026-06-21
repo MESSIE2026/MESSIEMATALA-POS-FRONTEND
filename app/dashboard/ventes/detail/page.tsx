@@ -95,20 +95,9 @@ function extrairePaiements(data: any): any[] {
   try {
     setLoading(true);
 
-    const idEntreprise =
-      localStorage.getItem('ZAIRE_ID_ENTREPRISE') || '1';
-
-    let res = await fetch(
-      `${API}/ventes/${id}?idEntreprise=${idEntreprise}`,
-      { cache: 'no-store' },
-    );
-
-    // fallback si le backend avec paramètres documents plante
-    if (!res.ok) {
-      res = await fetch(`${API}/ventes/${id}`, {
-        cache: 'no-store',
-      });
-    }
+    const res = await fetch(`${API}/ventes/${id}`, {
+      cache: 'no-store',
+    });
 
     const texte = await res.text();
 
@@ -127,10 +116,6 @@ function extrairePaiements(data: any): any[] {
       detailsvente: details,
       paiements,
     });
-
-    if (data?.parametresDocuments) {
-      setParamsDocs(data.parametresDocuments);
-    }
   } catch (error) {
     console.error(error);
     alert(String(error));
@@ -138,7 +123,6 @@ function extrairePaiements(data: any): any[] {
     setLoading(false);
   }
 }
-    
   function normaliserDevise(devise: any): string {
     const d = String(devise ?? 'USD').trim().toUpperCase();
 
