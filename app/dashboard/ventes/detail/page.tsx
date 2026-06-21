@@ -706,18 +706,6 @@ const totalEUR =
                     ? `<img src="${signatureUrl}" class="signature-img" />`
                     : ''
                 }
-
-                ${
-                  paramsDocs?.nom_responsable
-                    ? `<div><b>${paramsDocs.nom_responsable}</b></div>`
-                    : ''
-                }
-
-                ${
-                  paramsDocs?.fonction_responsable
-                    ? `<div>${paramsDocs.fonction_responsable}</div>`
-                    : ''
-                }
               </div>
             </div>
 
@@ -770,7 +758,7 @@ const totalEUR =
     if (!infos) return '';
 
     const dateVente = infos.dateVente ? new Date(infos.dateVente) : new Date();
-    const logoUrl = `${window.location.origin}/logo.png`;
+    const logoUrl = documentImageUrl(paramsDocs?.logo_url);
     const barcodeUrl = genererCodeBarreBase64(infos.codeFacture);
 
     const lignesHtml =
@@ -825,11 +813,19 @@ const totalEUR =
         </head>
         <body>
           <div class="center">
-            <img src="${logoUrl}" class="logo" />
-            <h3>ZAIRE MODE SARL</h3>
-            <div>Masina Plaza</div>
-            <div>+243861507560</div>
-            <div>ZAIRE.CD</div>
+            ${
+  paramsDocs?.afficher_logo !== false && logoUrl
+    ? `<img src="${logoUrl}" class="logo" />`
+    : ''
+}
+<h3>${nomEntrepriseDocument(paramsDocs)}</h3>
+${paramsDocs?.slogan ? `<div><b>${paramsDocs.slogan}</b></div>` : ''}
+${paramsDocs?.adresse ? `<div>${paramsDocs.adresse}</div>` : ''}
+${paramsDocs?.telephone ? `<div>Tél : ${paramsDocs.telephone}</div>` : ''}
+${paramsDocs?.email ? `<div>${paramsDocs.email}</div>` : ''}
+${paramsDocs?.site_web ? `<div>${paramsDocs.site_web}</div>` : ''}
+<div>RCCM : ${paramsDocs?.rccm || '-'}</div>
+<div>ID NAT : ${paramsDocs?.id_nat || '-'}</div>
           </div>
 
           <div class="sep"></div>
@@ -861,9 +857,9 @@ const totalEUR =
           <div class="sep"></div>
 
           <div class="center footer">
-            <b>Merci pour votre fidélité, à la prochaine !</b><br />
-            La Qualité fait la différence.<br />
-            Les marchandises vendues ne peuvent être ni reprises, ni échangées.
+           <b>${paramsDocs?.pied_ligne1 || 'Merci pour votre fidélité, à la prochaine !'}</b><br />
+${paramsDocs?.pied_ligne2 || 'La Qualité fait la différence.'}<br />
+${paramsDocs?.mention_legale || 'Les marchandises vendues ne peuvent être ni reprises, ni échangées.'}
           </div>
 
           <script>
@@ -900,293 +896,403 @@ const totalEUR =
   }
 
   function genererPdfA4() {
-    if (!vente || !infos) return;
+  if (!vente || !infos) return;
 
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
+  const doc = new jsPDF('p', 'mm', 'a4');
 
-    const marginLeft = 14;
-    const marginRight = 14;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginLeft = 12;
+  const marginRight = 12;
 
-    const dateVente = infos.dateVente ? new Date(infos.dateVente) : new Date();
-    const dateOnly = dateVente.toLocaleDateString('fr-FR');
-    const heureOnly = dateVente.toLocaleTimeString('fr-FR');
-    const ticketNo = String(vente.id_vente || id || Date.now()).padStart(6, '0');
+  const dateVente = infos.dateVente ? new Date(infos.dateVente) : new Date();
+  const dateOnly = dateVente.toLocaleDateString('fr-FR');
+  const heureOnly = dateVente.toLocaleTimeString('fr-FR');
+  const ticketNo = String(vente?.id_vente || id || Date.now()).padStart(6, '0');
 
-    const barcodeFacture = genererCodeBarreBase64(infos.codeFacture);
-    const logoUrl = `${window.location.origin}/logo.png`;
+  const logoUrl = documentImageUrl(paramsDocs?.logo_url);
+  const barcodeFacture = genererCodeBarreBase64(infos.codeFacture);
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(17);
-    doc.text('ZAIRE MODE SARL', marginLeft, 18);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(17);
+  doc.text(nomEntrepriseDocument(paramsDocs), marginLeft, 18);
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.text('23, Bld Lumumba / Immeuble Masina Plaza', marginLeft, 25);
-    doc.text('+243861507560 / E-MAIL: Zaireshop@hotmail.com', marginLeft, 30);
-    doc.text('PAGE: ZAIRE.CD', marginLeft, 35);
-    doc.text('RCCM: 25-B-01497', marginLeft, 40);
-    doc.text('IDNAT: 01-F4300-N73258E', marginLeft, 45);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
 
-    try {
+  let yEntete = 25;
+
+  if (paramsDocs?.slogan) {
+    doc.text(paramsDocs.slogan, marginLeft, yEntete);
+    yEntete += 5;
+  }
+
+  if (paramsDocs?.adresse) {
+    doc.text(paramsDocs.adresse, marginLeft, yEntete);
+    yEntete += 5;
+  }
+
+  if (paramsDocs?.telephone) {
+    doc.text(`Tél : ${paramsDocs.telephone}`, marginLeft, yEntete);
+    yEntete += 5;
+  }
+
+  if (paramsDocs?.email) {
+    doc.text(`Email : ${paramsDocs.email}`, marginLeft, yEntete);
+    yEntete += 5;
+  }
+
+  if (paramsDocs?.site_web) {
+    doc.text(`Site : ${paramsDocs.site_web}`, marginLeft, yEntete);
+    yEntete += 5;
+  }
+
+  doc.text(`RCCM : ${paramsDocs?.rccm || '-'}`, marginLeft, yEntete);
+  yEntete += 5;
+  doc.text(`ID NAT : ${paramsDocs?.id_nat || '-'}`, marginLeft, yEntete);
+
+  try {
+    if (paramsDocs?.afficher_logo !== false && logoUrl) {
       doc.addImage(logoUrl, 'PNG', 158, 10, 38, 38);
-    } catch {}
-
-    doc.setDrawColor(60, 60, 60);
-    doc.line(marginLeft, 58, pageWidth - marginRight, 58);
-
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Ticket N°: ${ticketNo}`, marginLeft, 68);
-    doc.text(`Date : ${dateOnly}`, marginLeft, 74);
-    doc.text(`Heure : ${heureOnly}`, marginLeft, 80);
-
-    doc.text(`FACTURE N° : ${infos.codeFacture}`, 108, 68);
-    doc.text(`Caissier : ${infos.nomCaissier}`, 108, 74);
-    doc.text(`Client : ${infos.nomClient}`, 108, 80);
-
-    autoTable(doc, {
-      startY: 100,
-      margin: { left: marginLeft, right: marginRight, bottom: 18 },
-      head: [['Article', 'Qté', 'PU', 'Devise', 'Total']],
-      body:
-        infos.lignes.length > 0
-          ? infos.lignes.map((d: any) => {
-              const devise = normaliserDevise(d.devise);
-              const quantite = Math.max(nombreDepuisTexte(d.quantite), 1);
-              const pu = nombreDepuisTexte(d.prixunitaire) || montantLigne(d) / quantite;
-
-              return [
-                d.nomproduit || d.designation || '-',
-                String(d.quantite || 0),
-                `${formatMontantPdf(pu, devise)} ${devise}`,
-                devise,
-                `${formatMontantPdf(montantLigne(d), devise)} ${devise}`,
-              ];
-            })
-          : [['-', '-', '-', '-', '-']],
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        cellPadding: 2.3,
-        lineColor: [190, 190, 190],
-        lineWidth: 0.2,
-        overflow: 'linebreak',
-        valign: 'middle',
-      },
-      headStyles: {
-        fillColor: [25, 35, 55],
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        halign: 'center',
-      },
-      columnStyles: {
-        0: { cellWidth: 78, halign: 'left' },
-        1: { cellWidth: 14, halign: 'center' },
-        2: { cellWidth: 38, halign: 'right' },
-        3: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
-        4: { cellWidth: 34, halign: 'right' },
-      },
-    });
-
-    let y = ((doc as any).lastAutoTable?.finalY || 120) + 8;
-
-    const devisesActives = [
-      infos.totalUSD > 0 ? 'USD' : null,
-      infos.totalCDF > 0 ? 'CDF' : null,
-      infos.totalEUR > 0 ? 'EUR' : null,
-    ].filter(Boolean) as string[];
-
-    const totalParDevise: Record<string, number> = {
-      USD: infos.totalUSD,
-      CDF: infos.totalCDF,
-      EUR: infos.totalEUR,
-    };
-
-    autoTable(doc, {
-      startY: y,
-      margin: { left: 75, right: marginRight, bottom: 18 },
-      head: [['Devise', 'Total']],
-      body: devisesActives.map((d) => [d, `${formatMontantPdf(totalParDevise[d], d)} ${d}`]),
-      theme: 'grid',
-      styles: {
-        fontSize: 9,
-        cellPadding: 3,
-        halign: 'right',
-      },
-      headStyles: {
-        fillColor: [245, 245, 245],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold',
-      },
-      columnStyles: {
-        0: { fontStyle: 'bold', halign: 'left' },
-        1: { fontStyle: 'bold', halign: 'right' },
-      },
-    });
-
-    y = ((doc as any).lastAutoTable?.finalY || y) + 12;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.text('Merci pour votre fidélité, à la prochaine !', pageWidth / 2, y, { align: 'center' });
-    doc.text('La Qualité fait la différence.', pageWidth / 2, y + 5, { align: 'center' });
-    doc.text('Les marchandises vendues ne peuvent être ni reprises, ni échangées.', pageWidth / 2, y + 12, {
-      align: 'center',
-    });
-
-    y += 18;
-
-    if (y + 45 > pageHeight) {
-      doc.addPage();
-      y = 20;
     }
+  } catch {}
 
-    doc.addImage(barcodeFacture, 'PNG', 62, y, 86, 20);
-    doc.setFontSize(8.5);
-    doc.text(infos.codeFacture, pageWidth / 2, y + 25, { align: 'center' });
-    doc.text(`Code Facture : ${infos.codeFacture}`, pageWidth / 2, y + 31, { align: 'center' });
+  doc.setDrawColor(60, 60, 60);
+  doc.line(marginLeft, 58, pageWidth - marginRight, 58);
 
-    const totalPages = doc.getNumberOfPages();
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Ticket N°: ${ticketNo}`, marginLeft, 68);
+  doc.text(`Date : ${dateOnly}`, marginLeft, 74);
+  doc.text(`Heure : ${heureOnly}`, marginLeft, 80);
 
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.setFontSize(7.5);
-      doc.setTextColor(90, 90, 90);
-      doc.text('ZAIRE.CD - Facture générée par MESSIE MATALA POS', pageWidth / 2, pageHeight - 10, {
-        align: 'center',
-      });
-      doc.text(`Page ${i} / ${totalPages}`, pageWidth - marginRight, pageHeight - 10, {
-        align: 'right',
-      });
-    }
+  doc.text(`FACTURE N° : ${infos.codeFacture}`, 108, 68);
+  doc.text(`Caissier : ${infos.nomCaissier}`, 108, 74);
+  doc.text(`Client : ${infos.nomClient}`, 108, 80);
 
-    doc.save(`facture-a4-${infos.codeFacture}.pdf`);
+  autoTable(doc, {
+    startY: 100,
+    margin: { left: marginLeft, right: marginRight, bottom: 18 },
+    head: [['Article', 'Qté', 'PU', 'Devise', 'Total']],
+    body:
+      infos.lignes.length > 0
+        ? infos.lignes.map((d: any) => {
+            const devise = normaliserDevise(d.devise);
+            const quantite = Math.max(nombreDepuisTexte(d.quantite), 1);
+            const pu =
+              nombreDepuisTexte(d.prixunitaire) || montantLigne(d) / quantite;
+
+            return [
+              d.nomproduit || d.designation || '-',
+              String(d.quantite || 0),
+              `${formatMontantPdf(pu, devise)} ${devise}`,
+              devise,
+              `${formatMontantPdf(montantLigne(d), devise)} ${devise}`,
+            ];
+          })
+        : [['-', '-', '-', '-', '-']],
+    theme: 'grid',
+    styles: {
+      fontSize: 8,
+      cellPadding: 2.3,
+      lineColor: [190, 190, 190],
+      lineWidth: 0.2,
+      overflow: 'linebreak',
+      valign: 'middle',
+    },
+    headStyles: {
+      fillColor: [25, 35, 55],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      halign: 'center',
+    },
+    columnStyles: {
+      0: { cellWidth: 78, halign: 'left' },
+      1: { cellWidth: 14, halign: 'center' },
+      2: { cellWidth: 38, halign: 'right' },
+      3: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
+      4: { cellWidth: 34, halign: 'right' },
+    },
+  });
+
+  let y = ((doc as any).lastAutoTable?.finalY || 120) + 8;
+
+  const devisesActives = [
+    infos.totalUSD > 0 ? 'USD' : null,
+    infos.totalCDF > 0 ? 'CDF' : null,
+    infos.totalEUR > 0 ? 'EUR' : null,
+  ].filter(Boolean) as string[];
+
+  const totalParDevise: Record<string, number> = {
+    USD: infos.totalUSD,
+    CDF: infos.totalCDF,
+    EUR: infos.totalEUR,
+  };
+
+  autoTable(doc, {
+    startY: y,
+    margin: { left: 75, right: marginRight, bottom: 18 },
+    head: [['Devise', 'Total']],
+    body: devisesActives.map((d) => [
+      d,
+      `${formatMontantPdf(totalParDevise[d], d)} ${d}`,
+    ]),
+    theme: 'grid',
+    styles: {
+      fontSize: 9,
+      cellPadding: 3,
+      halign: 'right',
+    },
+    headStyles: {
+      fillColor: [245, 245, 245],
+      textColor: [0, 0, 0],
+      fontStyle: 'bold',
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold', halign: 'left' },
+      1: { fontStyle: 'bold', halign: 'right' },
+    },
+  });
+
+  y = ((doc as any).lastAutoTable?.finalY || y) + 12;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+
+  doc.text(
+    paramsDocs?.pied_ligne1 || 'Merci pour votre fidélité, à la prochaine !',
+    pageWidth / 2,
+    y,
+    { align: 'center' },
+  );
+
+  doc.text(
+    paramsDocs?.pied_ligne2 || 'La Qualité fait la différence.',
+    pageWidth / 2,
+    y + 5,
+    { align: 'center' },
+  );
+
+  doc.text(
+    paramsDocs?.mention_legale ||
+      'Les marchandises vendues ne peuvent être ni reprises, ni échangées.',
+    pageWidth / 2,
+    y + 12,
+    { align: 'center' },
+  );
+
+  y += 18;
+
+  if (y + 45 > pageHeight) {
+    doc.addPage();
+    y = 20;
   }
 
-  function genererPdfTicket() {
-    if (!vente || !infos) return;
+  doc.addImage(barcodeFacture, 'PNG', 62, y, 86, 20);
+  doc.setFontSize(8.5);
+  doc.text(infos.codeFacture, pageWidth / 2, y + 25, { align: 'center' });
+  doc.text(`Code Facture : ${infos.codeFacture}`, pageWidth / 2, y + 31, {
+    align: 'center',
+  });
 
-    const doc = new jsPDF({
-      orientation: 'p',
-      unit: 'mm',
-      format: [80, 220],
+  const totalPages = doc.getNumberOfPages();
+
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7.5);
+    doc.setTextColor(90, 90, 90);
+    doc.text(
+      `${paramsDocs?.site_web || nomEntrepriseDocument(paramsDocs)} - Facture générée par MESSIE MATALA POS`,
+      pageWidth / 2,
+      pageHeight - 10,
+      { align: 'center' },
+    );
+    doc.text(`Page ${i} / ${totalPages}`, pageWidth - marginRight, pageHeight - 10, {
+      align: 'right',
     });
-
-    const barcode = genererCodeBarreBase64(infos.codeFacture);
-    const dateVente = infos.dateVente ? new Date(infos.dateVente) : new Date();
-
-    let y = 8;
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text('ZAIRE MODE SARL', 40, y, { align: 'center' });
-
-    y += 5;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.text('Masina Plaza', 40, y, { align: 'center' });
-    y += 4;
-    doc.text('+243861507560', 40, y, { align: 'center' });
-    y += 4;
-    doc.text('ZAIRE.CD', 40, y, { align: 'center' });
-
-    y += 8;
-    doc.line(4, y, 76, y);
-    y += 5;
-
-    doc.text(`Facture : ${infos.codeFacture}`, 4, y);
-    y += 4;
-    doc.text(`Date : ${dateVente.toLocaleDateString('fr-FR')}`, 4, y);
-    y += 4;
-    doc.text(`Heure : ${dateVente.toLocaleTimeString('fr-FR')}`, 4, y);
-    y += 4;
-    doc.text(`Client : ${infos.nomClient}`, 4, y);
-    y += 4;
-    doc.text(`Caissier : ${infos.nomCaissier}`, 4, y);
-    y += 4;
-    doc.text(`Mode : ${infos.modePaiement}`, 4, y);
-
-    y += 5;
-    doc.line(4, y, 76, y);
-    y += 5;
-
-    autoTable(doc, {
-      startY: y,
-      margin: { left: 4, right: 4 },
-      head: [['Article', 'Qté', 'PU', 'Total']],
-      body:
-        infos.lignes.length > 0
-          ? infos.lignes.map((d: any) => {
-              const devise = normaliserDevise(d.devise);
-              return [
-                d.nomproduit || d.designation || '-',
-                String(d.quantite || 0),
-                formatMontantPdf(d.prixunitaire, devise),
-                formatMontantPdf(montantLigne(d), devise),
-              ];
-            })
-          : [['-', '-', '-', '-']],
-      theme: 'plain',
-      styles: {
-        fontSize: 7,
-        cellPadding: 1,
-        overflow: 'linebreak',
-      },
-      headStyles: {
-        fontStyle: 'bold',
-      },
-      columnStyles: {
-        0: { cellWidth: 28 },
-        1: { cellWidth: 8, halign: 'center' },
-        2: { cellWidth: 16, halign: 'right' },
-        3: { cellWidth: 18, halign: 'right' },
-      },
-    });
-
-    y = ((doc as any).lastAutoTable?.finalY || y) + 5;
-    doc.line(4, y, 76, y);
-    y += 6;
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-
-    if (infos.totalUSD > 0) {
-      doc.text(`TOTAL USD : ${formatMontantPdf(infos.totalUSD, 'USD')}`, 76, y, { align: 'right' });
-      y += 5;
-    }
-
-    if (infos.totalCDF > 0) {
-      doc.text(`TOTAL CDF : ${formatMontantPdf(infos.totalCDF, 'CDF')}`, 76, y, { align: 'right' });
-      y += 5;
-    }
-
-    if (infos.totalEUR > 0) {
-      doc.text(`TOTAL EUR : ${formatMontantPdf(infos.totalEUR, 'EUR')}`, 76, y, { align: 'right' });
-      y += 5;
-    }
-
-    y += 3;
-    doc.line(4, y, 76, y);
-    y += 6;
-
-    doc.addImage(barcode, 'PNG', 12, y, 56, 15);
-    y += 20;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.text(`Code Facture : ${infos.codeFacture}`, 40, y, { align: 'center' });
-
-    y += 8;
-    doc.text('Merci pour votre fidélité, à la prochaine !', 40, y, { align: 'center' });
-    y += 4;
-    doc.text('La Qualité fait la différence.', 40, y, { align: 'center' });
-    y += 4;
-    doc.text('Les marchandises vendues ne peuvent être ni reprises, ni échangées.', 40, y, { align: 'center', maxWidth: 70 });
-
-    doc.save(`ticket-${infos.codeFacture}.pdf`);
   }
+
+  doc.save(`facture-a4-${infos.codeFacture}.pdf`);
+}
+
+function genererPdfTicket() {
+  if (!vente || !infos) return;
+
+  const doc = new jsPDF({
+    orientation: 'p',
+    unit: 'mm',
+    format: [80, 220],
+  });
+
+  const barcode = genererCodeBarreBase64(infos.codeFacture);
+  const dateVente = infos.dateVente ? new Date(infos.dateVente) : new Date();
+  const logoUrl = documentImageUrl(paramsDocs?.logo_url);
+
+  let y = 8;
+
+  try {
+    if (paramsDocs?.afficher_logo !== false && logoUrl) {
+      doc.addImage(logoUrl, 'PNG', 30, y, 20, 20);
+      y += 24;
+    }
+  } catch {}
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text(nomEntrepriseDocument(paramsDocs), 40, y, { align: 'center' });
+
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+
+  if (paramsDocs?.slogan) {
+    doc.text(paramsDocs.slogan, 40, y, { align: 'center' });
+    y += 4;
+  }
+
+  if (paramsDocs?.adresse) {
+    doc.text(paramsDocs.adresse, 40, y, { align: 'center', maxWidth: 70 });
+    y += 5;
+  }
+
+  if (paramsDocs?.telephone) {
+    doc.text(`Tél : ${paramsDocs.telephone}`, 40, y, { align: 'center' });
+    y += 4;
+  }
+
+  if (paramsDocs?.email) {
+    doc.text(paramsDocs.email, 40, y, { align: 'center' });
+    y += 4;
+  }
+
+  if (paramsDocs?.site_web) {
+    doc.text(paramsDocs.site_web, 40, y, { align: 'center' });
+    y += 4;
+  }
+
+  doc.text(`RCCM : ${paramsDocs?.rccm || '-'}`, 40, y, { align: 'center' });
+  y += 4;
+  doc.text(`ID NAT : ${paramsDocs?.id_nat || '-'}`, 40, y, { align: 'center' });
+
+  y += 8;
+  doc.line(4, y, 76, y);
+  y += 5;
+
+  doc.text(`Facture : ${infos.codeFacture}`, 4, y);
+  y += 4;
+  doc.text(`Date : ${dateVente.toLocaleDateString('fr-FR')}`, 4, y);
+  y += 4;
+  doc.text(`Heure : ${dateVente.toLocaleTimeString('fr-FR')}`, 4, y);
+  y += 4;
+  doc.text(`Client : ${infos.nomClient}`, 4, y);
+  y += 4;
+  doc.text(`Caissier : ${infos.nomCaissier}`, 4, y);
+  y += 4;
+  doc.text(`Mode : ${infos.modePaiement}`, 4, y);
+
+  y += 5;
+  doc.line(4, y, 76, y);
+  y += 5;
+
+  autoTable(doc, {
+    startY: y,
+    margin: { left: 4, right: 4 },
+    head: [['Article', 'Qté', 'PU', 'Total']],
+    body:
+      infos.lignes.length > 0
+        ? infos.lignes.map((d: any) => {
+            const devise = normaliserDevise(d.devise);
+            return [
+              d.nomproduit || d.designation || '-',
+              String(d.quantite || 0),
+              formatMontantPdf(d.prixunitaire, devise),
+              formatMontantPdf(montantLigne(d), devise),
+            ];
+          })
+        : [['-', '-', '-', '-']],
+    theme: 'plain',
+    styles: {
+      fontSize: 7,
+      cellPadding: 1,
+      overflow: 'linebreak',
+    },
+    headStyles: {
+      fontStyle: 'bold',
+    },
+    columnStyles: {
+      0: { cellWidth: 28 },
+      1: { cellWidth: 8, halign: 'center' },
+      2: { cellWidth: 16, halign: 'right' },
+      3: { cellWidth: 18, halign: 'right' },
+    },
+  });
+
+  y = ((doc as any).lastAutoTable?.finalY || y) + 5;
+  doc.line(4, y, 76, y);
+  y += 6;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+
+  if (infos.totalUSD > 0) {
+    doc.text(`TOTAL USD : ${formatMontantPdf(infos.totalUSD, 'USD')}`, 76, y, {
+      align: 'right',
+    });
+    y += 5;
+  }
+
+  if (infos.totalCDF > 0) {
+    doc.text(`TOTAL CDF : ${formatMontantPdf(infos.totalCDF, 'CDF')}`, 76, y, {
+      align: 'right',
+    });
+    y += 5;
+  }
+
+  if (infos.totalEUR > 0) {
+    doc.text(`TOTAL EUR : ${formatMontantPdf(infos.totalEUR, 'EUR')}`, 76, y, {
+      align: 'right',
+    });
+    y += 5;
+  }
+
+  y += 3;
+  doc.line(4, y, 76, y);
+  y += 6;
+
+  doc.addImage(barcode, 'PNG', 12, y, 56, 15);
+  y += 20;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.text(`Code Facture : ${infos.codeFacture}`, 40, y, { align: 'center' });
+
+  y += 8;
+  doc.text(
+    paramsDocs?.pied_ligne1 || 'Merci pour votre fidélité, à la prochaine !',
+    40,
+    y,
+    { align: 'center', maxWidth: 70 },
+  );
+
+  y += 4;
+  doc.text(
+    paramsDocs?.pied_ligne2 || 'La Qualité fait la différence.',
+    40,
+    y,
+    { align: 'center', maxWidth: 70 },
+  );
+
+  y += 4;
+  doc.text(
+    paramsDocs?.mention_legale ||
+      'Les marchandises vendues ne peuvent être ni reprises, ni échangées.',
+    40,
+    y,
+    { align: 'center', maxWidth: 70 },
+  );
+
+  doc.save(`ticket-${infos.codeFacture}.pdf`);
+}
 
   if (loading) {
     return <main className="p-6">Chargement...</main>;
