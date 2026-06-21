@@ -241,8 +241,8 @@ export default function Page() {
   }
 
   function ouvrirPdf() {
-    window.open(`${API_URL}/operations-stock/pdf?idEntreprise=1`, '_blank');
-  }
+  window.open(`${API_URL}/operations-stock/pdf?idEntreprise=1`, '_blank');
+}
 
   function dateFr(value?: string) {
     if (!value) return '-';
