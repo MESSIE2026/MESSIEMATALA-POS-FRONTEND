@@ -95,17 +95,27 @@ function extrairePaiements(data: any): any[] {
   try {
     setLoading(true);
 
-    const res = await fetch(`${API}/ventes/${id}`, {
-      cache: 'no-store',
-    });
+    const idEntreprise =
+      localStorage.getItem('ZAIRE_ID_ENTREPRISE') || '1';
+
+    const res = await fetch(
+      `${API}/ventes/${id}?idEntreprise=${idEntreprise}`,
+      {
+        cache: 'no-store',
+      },
+    );
 
     const texte = await res.text();
 
     if (!res.ok) {
-      throw new Error(`Erreur API ${res.status} : ${texte}`);
+      throw new Error(
+        `Erreur API ${res.status} : ${texte}`,
+      );
     }
 
-    const data = texte ? JSON.parse(texte) : null;
+    const data = texte
+      ? JSON.parse(texte)
+      : null;
 
     const details = extraireLignes(data);
     const paiements = extrairePaiements(data);
@@ -116,6 +126,12 @@ function extrairePaiements(data: any): any[] {
       detailsvente: details,
       paiements,
     });
+
+    if (data?.parametresDocuments) {
+      setParamsDocs(
+        data.parametresDocuments,
+      );
+    }
   } catch (error) {
     console.error(error);
     alert(String(error));
@@ -123,6 +139,8 @@ function extrairePaiements(data: any): any[] {
     setLoading(false);
   }
 }
+
+    
   function normaliserDevise(devise: any): string {
     const d = String(devise ?? 'USD').trim().toUpperCase();
 

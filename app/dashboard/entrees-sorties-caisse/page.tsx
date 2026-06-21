@@ -268,10 +268,14 @@ const body = {
       setLoading(false);
     }
   }
+function ouvrirPdfSemaine() {
+  const idEntreprise = localStorage.getItem('ZAIRE_ID_ENTREPRISE') || '1';
 
-  function ouvrirPdfSemaine() {
-    window.open(`${API}/entrees-sorties-caisse/pdf/semaine?date=${date}`, '_blank');
-  }
+  window.open(
+    `${API}/entrees-sorties-caisse/pdf/semaine?date=${date}&idEntreprise=${idEntreprise}`,
+    '_blank',
+  );
+}
 
   async function supprimer(id: number) {
     if (!confirm('Supprimer ce mouvement ?')) return;
