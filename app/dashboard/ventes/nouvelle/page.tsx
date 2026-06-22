@@ -538,67 +538,74 @@ const monnaieEUR = Math.max(0, montantRecuEUR - totaux.EUR);
       }));
 
       const payload = {
-        idClient,
-        id_client: idClient,
-        nomclient: nomclient.trim() || 'CLIENT CASH',
-        telephone: telephone.trim() || null,
-        caissier,
-        devise: devisePrincipale,
-        total: totalPrincipal,
-        montanttotal: totalPrincipal,
+  idClient,
+  id_client: idClient,
+  nomclient: nomclient.trim() || 'CLIENT CASH',
+  telephone: telephone.trim() || null,
+  caissier,
+  devise: devisePrincipale,
+  total: totalPrincipal,
+  montanttotal: totalPrincipal,
 
-        idEmploye,
-        id_employe: idEmploye,
-        idemploye: idEmploye,
+  idEmploye,
+  id_employe: idEmploye,
+  idemploye: idEmploye,
 
-        idSession,
-        idsession: idSession,
-        id_session: idSession,
-        id_session_caisse: idSession,
-        idsessioncaisse: idSession,
+  idSession,
+  idsession: idSession,
+  id_session: idSession,
+  id_session_caisse: idSession,
+  idsessioncaisse: idSession,
 
-        details: articles,
-        produits: articles,
-        lignes: articles,
+  idEntreprise: Number(localStorage.getItem('ZAIRE_ID_ENTREPRISE') || 1),
+  idMagasin: Number(localStorage.getItem('ZAIRE_ID_MAGASIN') || 1),
+  idDepot: Number(localStorage.getItem('ZAIRE_ID_DEPOT') || 0),
+  idPoste: Number(localStorage.getItem('ZAIRE_ID_POSTE') || 1),
 
-        paiements: [
-  ...(montantRecuUSD > 0
-    ? [{
-        modepaiement: modePaiement,
-        modePaiement,
-        montant: montantRecuUSD,
-        devise: 'USD',
-        reference: `WEB-POS-USD-${Date.now()}`,
-      }]
-    : []),
+  details: articles,
+  produits: articles,
+  lignes: articles,
 
-  ...(montantRecuCDF > 0
-    ? [{
-        modepaiement: modePaiement,
-        modePaiement,
-        montant: montantRecuCDF,
-        devise: 'CDF',
-        reference: `WEB-POS-CDF-${Date.now()}`,
-      }]
-    : []),
+  paiements: [
+    ...(montantRecuUSD > 0
+      ? [{
+          modepaiement: modePaiement,
+          modePaiement,
+          montant: montantRecuUSD,
+          devise: 'USD',
+          reference: `WEB-POS-USD-${Date.now()}`,
+        }]
+      : []),
 
-  ...(montantRecuEUR > 0
-    ? [{
-        modepaiement: modePaiement,
-        modePaiement,
-        montant: montantRecuEUR,
-        devise: 'EUR',
-        reference: `WEB-POS-EUR-${Date.now()}`,
-      }]
-    : []),
-],
-      };
+    ...(montantRecuCDF > 0
+      ? [{
+          modepaiement: modePaiement,
+          modePaiement,
+          montant: montantRecuCDF,
+          devise: 'CDF',
+          reference: `WEB-POS-CDF-${Date.now()}`,
+        }]
+      : []),
 
-      const res = await fetch(`${API}/ventes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+    ...(montantRecuEUR > 0
+      ? [{
+          modepaiement: modePaiement,
+          modePaiement,
+          montant: montantRecuEUR,
+          devise: 'EUR',
+          reference: `WEB-POS-EUR-${Date.now()}`,
+        }]
+      : []),
+  ],
+};
+
+console.log('PAYLOAD VENTE', payload);
+
+const res = await fetch(`${API}/ventes`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload),
+});
 
       const data = await lireApi(res);
 
