@@ -315,44 +315,57 @@ export default function AnnulationsPage() {
     setSaving(true);
 
     try {
-      const payload = {
-        nomClient: form.nomClient,
-        numeroCommande: form.numeroCommande,
-        dateAchat: form.dateAchat,
-        nomProduit: form.nomProduit,
-        quantiteAchetee: nombre(form.quantiteAchetee),
-        quantiteRetournee: nombre(form.quantiteRetournee),
-        prixUnitaire: nombre(form.prixUnitaire),
-        devise: form.devise,
-        motifRetour: form.motifRetour,
-        commentaires: form.commentaires,
-        typeRetour,
-        idVente: form.idVente || undefined,
-        idDetailsVente: form.idDetailsVente || undefined,
-        utilisateur: form.utilisateur || 'SYSTEM',
-        remettreStock: true,
-        faireRemboursement: typeRetour === 'REMBOURSEMENT',
-        idProduitRetour: form.idProduitRetour || undefined,
-        idDepotRetour: form.idDepotRetour || undefined,
-        idProduitNouveau:
-          typeRetour === 'ECHANGE' ? form.idProduitNouveau : undefined,
-        idDepotSortieEchange:
-          typeRetour === 'ECHANGE'
-            ? form.idDepotSortieEchange
-            : undefined,
-        qteNouveau: typeRetour === 'ECHANGE' ? nombre(form.qteNouveau) : undefined,
-        prixUnitaireNouveau:
-          typeRetour === 'ECHANGE'
-            ? nombre(form.prixUnitaireNouveau)
-            : undefined,
-        nomProduitNouveau:
-          typeRetour === 'ECHANGE' ? form.nomProduitNouveau : undefined,
-        modePaiementComplement:
-          typeRetour === 'ECHANGE' ? form.modePaiementComplement : undefined,
-        idEntreprise: form.idEntreprise || 1,
-        idMagasin: form.idMagasin || 1,
-        idPoste: form.idPoste || 1,
-      };
+     const payload = {
+  nomClient: form.nomClient,
+  numeroCommande: form.numeroCommande,
+  dateAchat: form.dateAchat,
+  nomProduit: form.nomProduit,
+  quantiteAchetee: nombre(form.quantiteAchetee),
+  quantiteRetournee: nombre(form.quantiteRetournee),
+  prixUnitaire: nombre(form.prixUnitaire),
+  devise: form.devise,
+  motifRetour: form.motifRetour,
+  commentaires: form.commentaires,
+  typeRetour,
+
+  idVente: form.idVente || undefined,
+  idDetailsVente: form.idDetailsVente || undefined,
+  utilisateur: form.utilisateur || 'SYSTEM',
+
+  remettreStock: true,
+  faireRemboursement: typeRetour === 'REMBOURSEMENT',
+
+  idProduitRetour: form.idProduitRetour || undefined,
+
+  idDepot: form.idDepotRetour || undefined,
+  idDepotRetour: form.idDepotRetour || undefined,
+
+  idProduitNouveau:
+    typeRetour === 'ECHANGE' ? form.idProduitNouveau : undefined,
+
+  idDepotSortieEchange:
+    typeRetour === 'ECHANGE'
+      ? form.idDepotSortieEchange
+      : undefined,
+
+  qteNouveau:
+    typeRetour === 'ECHANGE' ? nombre(form.qteNouveau) : undefined,
+
+  prixUnitaireNouveau:
+    typeRetour === 'ECHANGE'
+      ? nombre(form.prixUnitaireNouveau)
+      : undefined,
+
+  nomProduitNouveau:
+    typeRetour === 'ECHANGE' ? form.nomProduitNouveau : undefined,
+
+  modePaiementComplement:
+    typeRetour === 'ECHANGE' ? form.modePaiementComplement : undefined,
+
+  idEntreprise: form.idEntreprise || 1,
+  idMagasin: form.idMagasin || 1,
+  idPoste: form.idPoste || 1,
+};
 
       const res = await fetch(`${API}/annulations`, {
         method: 'POST',
