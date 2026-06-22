@@ -110,22 +110,57 @@ export default function AnnulationsPage() {
   });
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const idDetails = Number(params.get('idDetails') || 0);
-    const idVente = Number(params.get('idVente') || 0);
+  const params = new URLSearchParams(window.location.search);
 
-    chargerAnnulations();
-    chargerProduits();
-    chargerDepots();
+  const idDetails = Number(params.get('idDetails') || 0);
+  const idVente = Number(params.get('idVente') || 0);
 
-    if (idVente > 0) {
-      setForm((f) => ({ ...f, idVente }));
-    }
+  const nomClientUrl = params.get('nomClient') || '';
+  const numeroFactureUrl = params.get('numeroFacture') || '';
+  const nomProduitUrl = params.get('nomProduit') || '';
+  const quantiteUrl = params.get('quantite') || '';
+  const prixUnitaireUrl = params.get('prixUnitaire') || '';
+  const deviseUrl = params.get('devise') || '';
+  const nomCaissierUrl = params.get('nomCaissier') || '';
+  const idProduitUrl = Number(params.get('idProduit') || 0);
+  const idEntrepriseUrl = Number(params.get('idEntreprise') || 1);
+  const idMagasinUrl = Number(params.get('idMagasin') || 1);
+  const idPosteUrl = Number(params.get('idPoste') || 1);
+  const idDepotUrl = Number(params.get('idDepot') || 0);
 
-    if (idDetails > 0) {
-      chargerDepuisDetail(idDetails);
-    }
-  }, []);
+  chargerAnnulations();
+  chargerProduits();
+  chargerDepots();
+
+  setForm((f) => ({
+    ...f,
+    idVente: idVente || f.idVente,
+    idDetailsVente: idDetails || f.idDetailsVente,
+    idProduitRetour: idProduitUrl || f.idProduitRetour,
+
+    nomClient: nomClientUrl.trim() || f.nomClient || 'CLIENT CASH',
+    numeroCommande:
+      numeroFactureUrl.trim() ||
+      String(idVente || f.idVente || Date.now()),
+
+    nomProduit: nomProduitUrl.trim() || f.nomProduit,
+    quantiteAchetee: quantiteUrl ? nombre(quantiteUrl) : f.quantiteAchetee,
+    quantiteRetournee: 1,
+    prixUnitaire: prixUnitaireUrl ? nombre(prixUnitaireUrl) : f.prixUnitaire,
+    devise: deviseUrl || f.devise || 'USD',
+
+    idEntreprise: idEntrepriseUrl || f.idEntreprise || 1,
+    idMagasin: idMagasinUrl || f.idMagasin || 1,
+    idPoste: idPosteUrl || f.idPoste || 1,
+    idDepotRetour: idDepotUrl || f.idDepotRetour || 0,
+
+    utilisateur: nomCaissierUrl || f.utilisateur || 'SYSTEM',
+  }));
+
+  if (idDetails > 0) {
+    chargerDepuisDetail(idDetails);
+  }
+}, []);
 
   async function lireApi(res: Response) {
     const texte = await res.text();
@@ -202,45 +237,61 @@ export default function AnnulationsPage() {
   }
 
   async function chargerDepuisDetail(idDetails: number) {
-    try {
-      const res = await fetch(`${API}/annulations/from-detail/${idDetails}`, {
-        cache: 'no-store',
-      });
+  try {
+    const params = new URLSearchParams(window.location.search);
 
-      const data: DetailSource = await lireApi(res);
+    const res = await fetch(`${API}/annulations/from-detail/${idDetails}`, {
+      cache: 'no-store',
+    });
 
-      if (!res.ok) {
-        alert(`Erreur détail : ${JSON.stringify(data)}`);
-        return;
-      }
+    const data: DetailSource = await lireApi(res);
 
-      setForm((f) => ({
-  ...f,
-  nomClient: data.nomClient || 'CLIENT CASH',
-  numeroCommande: data.numeroFacture || String(data.idVente || f.idVente),
-
-  idDetailsVente: Number(data.idDetailsVente || idDetails),
-  idVente: Number(data.idVente || f.idVente),
-  idProduitRetour: Number(data.idProduit || 0),
-  nomProduit: data.nomProduit || '',
-  quantiteAchetee: nombre(data.quantiteAchetee),
-  quantiteRetournee: 1,
-  prixUnitaire: nombre(data.prixUnitaire),
-  devise: data.devise || 'USD',
-
-  idEntreprise: Number(data.idEntreprise || 1),
-  idMagasin: Number(data.idMagasin || 1),
-  idPoste: Number(data.idPoste || 1),
-
-  idDepotRetour: Number(data.idDepotRetour || 0),
-
-  utilisateur: data.nomCaissier || 'SYSTEM',
-}));
-    } catch (e) {
-      console.error(e);
-      alert('Impossible de charger le détail de vente.');
+    if (!res.ok) {
+      alert(`Erreur détail : ${JSON.stringify(data)}`);
+      return;
     }
+
+    setForm((f) => ({
+      ...f,
+
+      nomClient:
+        String(data.nomClient || '').trim() ||
+        String(params.get('nomClient') || '').trim() ||
+        f.nomClient ||
+        'CLIENT CASH',
+
+      numeroCommande:
+        String(data.numeroFacture || '').trim() ||
+        String(params.get('numeroFacture') || '').trim() ||
+        String(data.idVente || f.idVente || Date.now()),
+
+      idDetailsVente: Number(data.idDetailsVente || idDetails),
+      idVente: Number(data.idVente || f.idVente),
+      idProduitRetour: Number(data.idProduit || f.idProduitRetour || 0),
+
+      nomProduit:
+        String(data.nomProduit || '').trim() ||
+        String(params.get('nomProduit') || '').trim() ||
+        f.nomProduit,
+
+      quantiteAchetee: nombre(data.quantiteAchetee || f.quantiteAchetee),
+      quantiteRetournee: 1,
+      prixUnitaire: nombre(data.prixUnitaire || f.prixUnitaire),
+      devise: data.devise || f.devise || 'USD',
+
+      idEntreprise: Number(data.idEntreprise || f.idEntreprise || 1),
+      idMagasin: Number(data.idMagasin || f.idMagasin || 1),
+      idPoste: Number(data.idPoste || f.idPoste || 1),
+
+      idDepotRetour: Number(data.idDepotRetour || f.idDepotRetour || 0),
+
+      utilisateur: data.nomCaissier || f.utilisateur || 'SYSTEM',
+    }));
+  } catch (e) {
+    console.error(e);
+    alert('Impossible de charger le détail de vente.');
   }
+}
 
   async function chargerProduits() {
     try {
@@ -302,109 +353,115 @@ export default function AnnulationsPage() {
   }
 
   async function enregistrer() {
-    if (!form.nomClient.trim()) return alert('Nom client obligatoire.');
-    if (!form.numeroCommande.trim()) return alert('Numéro commande obligatoire.');
-    if (!form.nomProduit.trim()) return alert('Nom produit obligatoire.');
-    if (nombre(form.quantiteRetournee) <= 0) return alert('Quantité invalide.');
-    if (nombre(form.prixUnitaire) <= 0) return alert('Prix unitaire invalide.');
+  const nomClientFinal = form.nomClient.trim() || 'CLIENT CASH';
+  const numeroCommandeFinal =
+    form.numeroCommande.trim() || String(form.idVente || Date.now());
+  const nomProduitFinal = form.nomProduit.trim();
 
-    if (typeRetour === 'ECHANGE') {
-      if (!form.idProduitNouveau) return alert('Sélectionne le produit échangé.');
-      if (!form.idDepotSortieEchange) {
-        return alert('Sélectionne le dépôt de sortie échange.');
-      }
-      if (nombre(form.qteNouveau) <= 0) return alert('Quantité échangée invalide.');
+  if (!numeroCommandeFinal) return alert('Numéro commande obligatoire.');
+  if (!nomProduitFinal) return alert('Nom produit obligatoire.');
+  if (nombre(form.quantiteRetournee) <= 0) return alert('Quantité invalide.');
+  if (nombre(form.prixUnitaire) <= 0) return alert('Prix unitaire invalide.');
+
+  if (!form.idDepotRetour) {
+    return alert('Sélectionne le dépôt de retour.');
+  }
+
+  if (typeRetour === 'ECHANGE') {
+    if (!form.idProduitNouveau) return alert('Sélectionne le produit échangé.');
+    if (!form.idDepotSortieEchange) {
+      return alert('Sélectionne le dépôt de sortie échange.');
     }
-
-    if (!form.idDepotRetour) {
-      return alert('Sélectionne le dépôt de retour.');
-    }
-
-    const ok = window.confirm(
-      typeRetour === 'ECHANGE'
-        ? 'Confirmer cet échange ?'
-        : 'Confirmer ce remboursement ?',
-    );
-
-    if (!ok) return;
-
-    setSaving(true);
-
-    try {
-     const payload = {
-  nomClient: form.nomClient,
-  numeroCommande: form.numeroCommande,
-  dateAchat: form.dateAchat,
-  nomProduit: form.nomProduit,
-  quantiteAchetee: nombre(form.quantiteAchetee),
-  quantiteRetournee: nombre(form.quantiteRetournee),
-  prixUnitaire: nombre(form.prixUnitaire),
-  devise: form.devise,
-  motifRetour: form.motifRetour,
-  commentaires: form.commentaires,
-  typeRetour,
-
-  idVente: form.idVente || undefined,
-  idDetailsVente: form.idDetailsVente || undefined,
-  utilisateur: form.utilisateur || 'SYSTEM',
-
-  remettreStock: true,
-  faireRemboursement: typeRetour === 'REMBOURSEMENT',
-
-  idProduitRetour: form.idProduitRetour || undefined,
-
-  idDepot: form.idDepotRetour || undefined,
-  idDepotRetour: form.idDepotRetour || undefined,
-
-  idProduitNouveau:
-    typeRetour === 'ECHANGE' ? form.idProduitNouveau : undefined,
-
-  idDepotSortieEchange:
-    typeRetour === 'ECHANGE'
-      ? form.idDepotSortieEchange
-      : undefined,
-
-  qteNouveau:
-    typeRetour === 'ECHANGE' ? nombre(form.qteNouveau) : undefined,
-
-  prixUnitaireNouveau:
-    typeRetour === 'ECHANGE'
-      ? nombre(form.prixUnitaireNouveau)
-      : undefined,
-
-  nomProduitNouveau:
-    typeRetour === 'ECHANGE' ? form.nomProduitNouveau : undefined,
-
-  modePaiementComplement:
-    typeRetour === 'ECHANGE' ? form.modePaiementComplement : undefined,
-
-  idEntreprise: form.idEntreprise || 1,
-  idMagasin: form.idMagasin || 1,
-  idPoste: form.idPoste || 1,
-};
-
-      const res = await fetch(`${API}/annulations`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await lireApi(res);
-
-      if (!res.ok) {
-        alert(`Erreur enregistrement : ${JSON.stringify(data)}`);
-        return;
-      }
-
-      alert(data?.message || 'Opération enregistrée.');
-      chargerAnnulations();
-    } catch (e) {
-      console.error(e);
-      alert('Erreur pendant l’enregistrement.');
-    } finally {
-      setSaving(false);
+    if (nombre(form.qteNouveau) <= 0) {
+      return alert('Quantité échangée invalide.');
     }
   }
+
+  const messageDifference =
+    typeRetour === 'ECHANGE'
+      ? differenceEchange > 0
+        ? `Le client doit ajouter ${formatMontant(differenceEchange, form.devise)} ${form.devise}.`
+        : differenceEchange < 0
+          ? `Tu dois à MESSIE ${formatMontant(Math.abs(differenceEchange), form.devise)} ${form.devise}.`
+          : 'Échange pur : aucune différence à payer.'
+      : `Tu dois à MESSIE ${formatMontant(prixTotal, form.devise)} ${form.devise}.`;
+
+  const ok = window.confirm(
+    typeRetour === 'ECHANGE'
+      ? `CONFIRMATION ÉCHANGE\n\nProduit retourné : ${form.nomProduit}\nTotal retour : ${formatMontant(prixTotal, form.devise)} ${form.devise}\n\nProduit échangé : ${form.nomProduitNouveau}\nTotal nouveau : ${formatMontant(totalNouveau, form.devise)} ${form.devise}\n\n${messageDifference}\n\nVoulez-vous continuer ?`
+      : `CONFIRMATION REMBOURSEMENT\n\nClient : ${nomClientFinal}\nProduit : ${form.nomProduit}\nQuantité : ${form.quantiteRetournee}\nMontant : ${formatMontant(prixTotal, form.devise)} ${form.devise}\n\n${messageDifference}\n\nVoulez-vous continuer ?`,
+  );
+
+  if (!ok) return;
+
+  setSaving(true);
+
+  try {
+    const payload = {
+      nomClient: nomClientFinal,
+      numeroCommande: numeroCommandeFinal,
+      dateAchat: form.dateAchat,
+      nomProduit: nomProduitFinal,
+      quantiteAchetee: nombre(form.quantiteAchetee),
+      quantiteRetournee: nombre(form.quantiteRetournee),
+      prixUnitaire: nombre(form.prixUnitaire),
+      devise: form.devise,
+      motifRetour: form.motifRetour,
+      commentaires: form.commentaires,
+      typeRetour,
+
+      idVente: form.idVente || undefined,
+      idDetailsVente: form.idDetailsVente || undefined,
+      utilisateur: form.utilisateur || 'SYSTEM',
+
+      remettreStock: true,
+      faireRemboursement: typeRetour === 'REMBOURSEMENT',
+
+      idProduitRetour: form.idProduitRetour || undefined,
+      idDepot: form.idDepotRetour || undefined,
+      idDepotRetour: form.idDepotRetour || undefined,
+
+      idProduitNouveau:
+        typeRetour === 'ECHANGE' ? form.idProduitNouveau : undefined,
+      idDepotSortieEchange:
+        typeRetour === 'ECHANGE' ? form.idDepotSortieEchange : undefined,
+      qteNouveau: typeRetour === 'ECHANGE' ? nombre(form.qteNouveau) : undefined,
+      prixUnitaireNouveau:
+        typeRetour === 'ECHANGE'
+          ? nombre(form.prixUnitaireNouveau)
+          : undefined,
+      nomProduitNouveau:
+        typeRetour === 'ECHANGE' ? form.nomProduitNouveau : undefined,
+      modePaiementComplement:
+        typeRetour === 'ECHANGE' ? form.modePaiementComplement : undefined,
+
+      idEntreprise: form.idEntreprise || 1,
+      idMagasin: form.idMagasin || 1,
+      idPoste: form.idPoste || 1,
+    };
+
+    const res = await fetch(`${API}/annulations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await lireApi(res);
+
+    if (!res.ok) {
+      alert(`Erreur enregistrement : ${JSON.stringify(data)}`);
+      return;
+    }
+
+    alert(data?.message || 'Opération enregistrée.');
+    chargerAnnulations();
+  } catch (e) {
+    console.error(e);
+    alert('Erreur pendant l’enregistrement.');
+  } finally {
+    setSaving(false);
+  }
+}
 
   function reinitialiser() {
     setTypeRetour('REMBOURSEMENT');
@@ -613,13 +670,17 @@ export default function AnnulationsPage() {
                   />
 
                   <Input
-                    label="Qté produit échangé"
-                    type="number"
-                    value={form.qteNouveau}
-                    onChange={(v) =>
-                      setForm({ ...form, qteNouveau: nombre(v) })
-                    }
-                  />
+  label="Qté produit échangé"
+  type="number"
+  value={form.qteNouveau === 0 ? '' : form.qteNouveau}
+  onChange={(v) =>
+    setForm({
+      ...form,
+      qteNouveau: v === '' ? 0 : nombre(v),
+    })
+  }
+/>
+              
 
                   <Input
                     label="Prix produit échangé"
