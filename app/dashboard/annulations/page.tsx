@@ -253,16 +253,32 @@ export default function AnnulationsPage() {
     } catch {}
   }
 
-  async function chargerDepots() {
-    try {
-     const res = await fetch(`${API}/depot`, { cache: 'no-store' });
-      const data = await lireApi(res);
+ async function chargerDepots() {
+  try {
+    const idEntreprise = Number(
+      localStorage.getItem('ZAIRE_ID_ENTREPRISE') || 1,
+    );
 
-      if (res.ok && Array.isArray(data)) {
-        setDepots(data);
-      }
-    } catch {}
+    const idMagasin = Number(
+      localStorage.getItem('ZAIRE_ID_MAGASIN') || 1,
+    );
+
+    const res = await fetch(
+      `${API}/config-poste-pos/depots?idEntreprise=${idEntreprise}&idMagasin=${idMagasin}`,
+      {
+        cache: 'no-store',
+      },
+    );
+
+    const data = await lireApi(res);
+
+    if (res.ok && Array.isArray(data)) {
+      setDepots(data);
+    }
+  } catch (e) {
+    console.error(e);
   }
+}
 
   const prixTotal = useMemo(() => {
     return nombre(form.quantiteRetournee) * nombre(form.prixUnitaire);
