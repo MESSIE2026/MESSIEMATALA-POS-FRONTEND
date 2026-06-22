@@ -13,6 +13,7 @@ type DetailVente = {
   idProduit: number;
   quantite: number;
   prixUnitaire: number;
+
   refProduit?: string;
   nomProduit?: string;
   remise?: number;
@@ -20,9 +21,17 @@ type DetailVente = {
   montant?: number;
   devise?: string;
   nomCaissier?: string;
+
+  nomClient?: string;
+  numeroFacture?: string;
+
   idEntreprise?: number;
   idMagasin?: number;
   idPoste?: number;
+
+  idDepot?: number;
+  nomDepot?: string;
+
   quantiteRetournee?: number;
 };
 
@@ -149,12 +158,28 @@ export default function DetailsVentePage() {
     }
   }
 
-  function ouvrirAnnulation(d: DetailVente) {
-    router.push(
-      `/dashboard/annulations?idVente=${d.idVente}&idDetails=${d.idDetails}`,
-    );
-  }
+ function ouvrirAnnulation(d: DetailVente) {
+  const params = new URLSearchParams({
+    idVente: String(d.idVente),
+    idDetails: String(d.idDetails),
+    idProduit: String(d.idProduit),
+    nomProduit: d.nomProduit || '',
+    refProduit: d.refProduit || '',
+    quantite: String(d.quantite || 0),
+    prixUnitaire: String(d.prixUnitaire || 0),
+    devise: d.devise || 'USD',
+    nomCaissier: d.nomCaissier || '',
+    idEntreprise: String(d.idEntreprise || 1),
+    idMagasin: String(d.idMagasin || 1),
+    idPoste: String(d.idPoste || 1),
+    idDepot: String(d.idDepot || ''),
+    nomDepot: d.nomDepot || '',
+    nomClient: d.nomClient || '',
+    numeroFacture: d.numeroFacture || String(d.idVente),
+  });
 
+  router.push(`/dashboard/annulations?${params.toString()}`);
+}
   function ouvrirVente(d: DetailVente) {
     router.push(`/dashboard/ventes/detail?id=${d.idVente}`);
   }
