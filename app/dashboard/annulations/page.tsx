@@ -40,6 +40,11 @@ type DetailSource = {
   idMagasin?: number;
   idPoste?: number;
   nomCaissier?: string;
+
+  nomClient?: string;
+  numeroFacture?: string;
+  idDepotRetour?: number;
+  nomDepotRetour?: string;
 };
 
 type Produit = {
@@ -210,20 +215,27 @@ export default function AnnulationsPage() {
       }
 
       setForm((f) => ({
-        ...f,
-        idDetailsVente: Number(data.idDetailsVente || idDetails),
-        idVente: Number(data.idVente || f.idVente),
-        idProduitRetour: Number(data.idProduit || 0),
-        nomProduit: data.nomProduit || '',
-        quantiteAchetee: nombre(data.quantiteAchetee),
-        quantiteRetournee: 1,
-        prixUnitaire: nombre(data.prixUnitaire),
-        devise: data.devise || 'USD',
-        idEntreprise: Number(data.idEntreprise || 1),
-        idMagasin: Number(data.idMagasin || 1),
-        idPoste: Number(data.idPoste || 1),
-        utilisateur: data.nomCaissier || 'SYSTEM',
-      }));
+  ...f,
+  nomClient: data.nomClient || 'CLIENT CASH',
+  numeroCommande: data.numeroFacture || String(data.idVente || f.idVente),
+
+  idDetailsVente: Number(data.idDetailsVente || idDetails),
+  idVente: Number(data.idVente || f.idVente),
+  idProduitRetour: Number(data.idProduit || 0),
+  nomProduit: data.nomProduit || '',
+  quantiteAchetee: nombre(data.quantiteAchetee),
+  quantiteRetournee: 1,
+  prixUnitaire: nombre(data.prixUnitaire),
+  devise: data.devise || 'USD',
+
+  idEntreprise: Number(data.idEntreprise || 1),
+  idMagasin: Number(data.idMagasin || 1),
+  idPoste: Number(data.idPoste || 1),
+
+  idDepotRetour: Number(data.idDepotRetour || 0),
+
+  utilisateur: data.nomCaissier || 'SYSTEM',
+}));
     } catch (e) {
       console.error(e);
       alert('Impossible de charger le détail de vente.');
