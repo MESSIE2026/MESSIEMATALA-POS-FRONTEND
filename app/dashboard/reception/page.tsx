@@ -544,32 +544,54 @@ export default function Page() {
               />
 
               <Select
-                label="Fournisseur"
-                value={formReception.idFournisseur}
-                onChange={(v) =>
-                  setFormReception({ ...formReception, idFournisseur: v })
-                }
-              >
-                {fournisseurs.map((f) => (
-                  <option key={f.idFournisseur} value={f.idFournisseur}>
-                    {f.nom}
-                  </option>
-                ))}
-              </Select>
+  label="Fournisseur *"
+  value={formReception.idFournisseur}
+  onChange={(v) =>
+    setFormReception({ ...formReception, idFournisseur: v })
+  }
+>
+  <option value="">-- Sélectionner un fournisseur --</option>
 
-              <Select
-                label="Dépôt"
-                value={formReception.idDepot}
-                onChange={(v) =>
-                  setFormReception({ ...formReception, idDepot: v })
-                }
-              >
-                {depots.map((d) => (
-                  <option key={d.idDepot} value={d.idDepot}>
-                    {d.nomDepot}
-                  </option>
-                ))}
-              </Select>
+  {fournisseurs.map((f) => (
+    <option
+      key={f.idFournisseur}
+      value={String(f.idFournisseur)}
+    >
+      {f.nom}
+    </option>
+  ))}
+</Select>
+
+<div className="rounded-xl bg-slate-50 p-3 text-xs">
+  Fournisseur : {formReception.idFournisseur || 'Aucun'}
+  <br />
+  Dépôt : {formReception.idDepot || 'Aucun'}
+</div>
+
+             <Select
+  label="Dépôt *"
+  value={formReception.idDepot}
+  onChange={(v) =>
+    setFormReception({ ...formReception, idDepot: v })
+  }
+>
+  <option value="">-- Sélectionner un dépôt --</option>
+
+  {depots.map((d) => (
+    <option
+      key={d.idDepot}
+      value={String(d.idDepot)}
+    >
+      {d.nomDepot}
+    </option>
+  ))}
+</Select>
+
+<div className="rounded-xl bg-slate-50 p-3 text-xs">
+  Fournisseur : {formReception.idFournisseur || 'Aucun'}
+  <br />
+  Dépôt : {formReception.idDepot || 'Aucun'}
+</div>
 
               <Select
                 label="Bon de Commande"
@@ -587,13 +609,18 @@ export default function Page() {
               </Select>
 
               <button
-                onClick={creerReception}
-                disabled={loadingAction}
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-green-700 px-4 py-3 font-semibold text-white disabled:opacity-60"
-              >
-                <Plus size={18} />
-                Créer réception
-              </button>
+  onClick={creerReception}
+  disabled={
+    loadingAction ||
+    !formReception.idFournisseur ||
+    !formReception.idDepot
+  }
+  className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-green-700 px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+>
+  <Plus size={18} />
+  Créer réception
+</button>
+          
             </div>
           </section>
 
