@@ -81,24 +81,31 @@ const poles: Pole[] = [
       { titre: 'Gestion Imprimantes', desc: 'Tickets, reçus et imprimantes POS', url: '/dashboard/gestion-imprimantes' },
     ],
   },
-  {
-    id: 'stock',
-    titre: 'Stock',
-    desc: 'Dépôts, inventaire, fournisseurs',
-    icon: '📦',
-    modules: [
-      { titre: 'Stock', desc: 'Mouvements et inventaires', url: '/dashboard/stock' },
-      { titre: 'Inventaire', desc: 'Inventaire manuel et scanner', url: '/dashboard/inventaire' },
-      { titre: 'Inventaire Scanner', desc: 'Inventaire par scanner', url: '/dashboard/inventaire-scanner' },
-      { titre: 'Opérations Stock', desc: 'Entrées, sorties et journal stock', url: '/dashboard/operations-stock' },
-      { titre: 'Réception', desc: 'Réception fournisseur et dépôt', url: '/dashboard/reception' },
-      { titre: 'Alertes Stock', desc: 'Stock faible et expiration', url: '/dashboard/alertes-stock' },
-      { titre: 'Stock Avancé', desc: 'Contrôle avancé des dépôts', url: '/dashboard/stock-avance' },
-      { titre: 'Fournisseurs', desc: 'Fournisseurs, achats et commandes', url: '/dashboard/fournisseurs' },
-      { titre: 'Bon Commande', desc: 'Bons de commande', url: '/dashboard/bon-commande' },
-      { titre: 'Facture Fournisseur', desc: 'Factures fournisseurs', url: '/dashboard/facture-fournisseur' },
-    ],
-  },
+ {
+  id: 'stock',
+  titre: 'Stock',
+  desc: 'Dépôts, inventaire, fournisseurs',
+  icon: '📦',
+  modules: [
+    { titre: 'Stock', desc: 'Mouvements et inventaires', url: '/dashboard/stock' },
+    { titre: 'Inventaire', desc: 'Inventaire manuel et scanner', url: '/dashboard/inventaire' },
+    { titre: 'Inventaire Scanner', desc: 'Inventaire par scanner', url: '/dashboard/inventaire-scanner' },
+    { titre: 'Opérations Stock', desc: 'Entrées, sorties et journal stock', url: '/dashboard/operations-stock' },
+    { titre: 'Réception', desc: 'Réception fournisseur et dépôt', url: '/dashboard/reception' },
+    { titre: 'Alertes Stock', desc: 'Stock faible et expiration', url: '/dashboard/alertes-stock' },
+    { titre: 'Stock Avancé', desc: 'Contrôle avancé des dépôts', url: '/dashboard/stock-avance' },
+    { titre: 'Fournisseurs', desc: 'Fournisseurs, achats et commandes', url: '/dashboard/fournisseurs' },
+
+    { 
+      titre: 'Catalogue Fournisseur', 
+      desc: 'Prix d’achat, produits liés aux fournisseurs et délais', 
+      url: '/dashboard/catalogue-fournisseur' 
+    },
+
+    { titre: 'Bon Commande', desc: 'Bons de commande', url: '/dashboard/bon-commande' },
+    { titre: 'Facture Fournisseur', desc: 'Factures fournisseurs', url: '/dashboard/facture-fournisseur' },
+  ],
+},
   {
     id: 'finance',
     titre: 'Finance',
