@@ -373,38 +373,55 @@ export default function Page() {
     }
   }
 
-  async function validerReception() {
-    try {
-      if (!detail?.entete?.idReception) {
-        notifierErreur('Sélectionne une réception.');
-        return;
-      }
+ async function validerReception() {
+  let idReceptionValidee: number | null = null;
 
-      const ok = window.confirm(
-        'Valider cette réception ?\n\nLe stock sera augmenté, les lots seront créés et la facture fournisseur sera générée.',
-      );
-
-      if (!ok) return;
-
-      setLoadingAction(true);
-
-      await apiFetch(
-        `${API_URL}/reception/${detail.entete.idReception}/valider`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ utilisateur }),
-        },
-      );
-
-      notifierSucces('Réception validée. Stock mis à jour.');
-      await ouvrirDetails(detail.entete.idReception);
-      await charger();
-    } catch (e: any) {
-      notifierErreur(e.message);
-    } finally {
-      setLoadingAction(false);
+  try {
+    if (!detail?.entete?.idReception) {
+      notifierErreur('Sélectionne une réception.');
+      return;
     }
+
+    idReceptionValidee = detail.entete.idReception;
+
+    const ok = window.confirm(
+      'Valider cette réception ?\n\nLe stock sera augmenté, les lots seront créés et la facture fournisseur sera générée.',
+    );
+
+    if (!ok) return;
+
+    setLoadingAction(true);
+
+    await apiFetch(`${API_URL}/reception/${idReceptionValidee}/valider`, {
+      method: 'POST',
+      body: JSON.stringify({ utilisateur }),
+    });
+
+    setDetail((old) =>
+      old
+        ? {
+            ...old,
+            entete: {
+              ...old.entete,
+              statut: 'VALIDEE',
+              validePar: utilisateur,
+            },
+          }
+        : old,
+    );
+
+    notifierSucces('Réception validée. Stock mis à jour.');
+  } catch (e: any) {
+    notifierErreur(e.message);
+  } finally {
+    setLoadingAction(false);
   }
+
+  if (idReceptionValidee) {
+    ouvrirDetails(idReceptionValidee);
+    charger();
+  }
+}
 
   function ouvrirPdf(idReception: number) {
     window.open(`${API_URL}/reception/${idReception}/pdf`, '_blank');
@@ -608,7 +625,7 @@ export default function Page() {
                 ))}
               </Select>
 
-              <button
+             <button
   onClick={creerReception}
   disabled={
     loadingAction ||
@@ -727,32 +744,43 @@ export default function Page() {
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                onClick={ajouterLigne}
-                disabled={loadingAction || !detail?.entete || receptionValidee}
-                className="flex items-center gap-2 rounded-xl bg-green-700 px-4 py-3 font-semibold text-white disabled:opacity-50"
-              >
-                <Plus size={18} />
-                Ajouter ligne
-              </button>
+             <button
+  onClick={ajouterLigne}
+  disabled={
+    loadingAction ||
+    !detail?.entete ||
+    receptionValidee ||
+    !ligne.idProduit ||
+    Number(ligne.qteRecueBase) <= 0
+  }
+  className="flex items-center gap-2 rounded-xl bg-green-700 px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+>
+  <Plus size={18} />
+  Ajouter ligne
+</button>
 
-              <button
-                onClick={importerBC}
-                disabled={loadingAction || !detail?.entete || receptionValidee}
-                className="flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-3 font-semibold text-white disabled:opacity-50"
-              >
-                <UploadCloud size={18} />
-                Importer lignes BC
-              </button>
+<button
+  onClick={importerBC}
+  disabled={
+    loadingAction ||
+    !detail?.entete ||
+    receptionValidee ||
+    !detail.entete.idBc
+  }
+  className="flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+>
+  <UploadCloud size={18} />
+  Importer lignes BC
+</button>
 
-              <button
-                onClick={validerReception}
-                disabled={loadingAction || !detail?.entete || receptionValidee}
-                className="flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 font-semibold text-white disabled:opacity-50"
-              >
-                <Check size={18} />
-                Valider réception
-              </button>
+<button
+  onClick={validerReception}
+  disabled={loadingAction || !detail?.entete || receptionValidee}
+  className="flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+>
+  <Check size={18} />
+  Valider réception
+</button>
 
               {detail?.entete && (
                 <button
