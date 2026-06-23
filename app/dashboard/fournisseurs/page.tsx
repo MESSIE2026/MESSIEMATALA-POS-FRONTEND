@@ -146,34 +146,48 @@ export default function Page() {
     }
   }
 
-  async function desactiver() {
-    if (!selectedId) {
-      setMessage('Sélectionnez un fournisseur.');
-      return;
-    }
-
-    const ok = window.confirm('Voulez-vous désactiver ce fournisseur ?');
-    if (!ok) return;
-
-    setLoading(true);
-    setMessage('');
-
-    try {
-      const res = await fetch(`${API_URL}/fournisseurs/${selectedId}`, {
-        method: 'DELETE',
-      });
-
-      if (!res.ok) throw new Error(await res.text());
-
-      setMessage('Fournisseur désactivé avec succès.');
-      await chargerFournisseurs();
-      nouveau();
-    } catch (e: any) {
-      setMessage(`Erreur désactivation : ${e.message}`);
-    } finally {
-      setLoading(false);
-    }
+  async function changerStatut() {
+  if (!selectedId || !selected) {
+    setMessage('Sélectionnez un fournisseur.');
+    return;
   }
+
+  const nouveauStatut = !selected.actif;
+
+  const ok = window.confirm(
+    nouveauStatut
+      ? `Voulez-vous réactiver le fournisseur "${selected.nom}" ?`
+      : `Voulez-vous désactiver le fournisseur "${selected.nom}" ?`,
+  );
+
+  if (!ok) return;
+
+  setLoading(true);
+  setMessage('');
+
+  try {
+    const res = await fetch(`${API_URL}/fournisseurs/${selectedId}/statut`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actif: nouveauStatut }),
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+
+    setMessage(
+      nouveauStatut
+        ? 'Fournisseur activé avec succès.'
+        : 'Fournisseur désactivé avec succès.',
+    );
+
+    await chargerFournisseurs();
+    nouveau();
+  } catch (e: any) {
+    setMessage(`Erreur changement statut : ${e.message}`);
+  } finally {
+    setLoading(false);
+  }
+}
 
   return (
     <main className="min-h-screen bg-slate-100 p-6">
@@ -309,12 +323,16 @@ export default function Page() {
             </button>
 
             <button
-              onClick={desactiver}
-              disabled={!selectedId || loading}
-              className="col-span-2 rounded-xl bg-red-600 px-4 py-3 font-bold text-white disabled:opacity-50"
-            >
-              Désactiver
-            </button>
+  onClick={changerStatut}
+  disabled={!selectedId || loading}
+  className={`col-span-2 rounded-xl px-4 py-3 font-bold text-white shadow-sm transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50 ${
+    selected?.actif
+      ? 'bg-red-600 hover:bg-red-700'
+      : 'bg-green-700 hover:bg-green-800'
+  }`}
+>
+  {selected?.actif ? 'Désactiver' : 'Activer'}
+</button>
           </div>
         </section>
 
