@@ -154,44 +154,69 @@ export default function Page() {
   }
 
   async function creerBc() {
-    if (!form.idFournisseur) {
-      alert('Choisis un fournisseur.');
-      return;
-    }
-
-    const payload = {
-      ...form,
-      idFournisseur: Number(form.idFournisseur),
-      idMagasin: form.idMagasin ? Number(form.idMagasin) : undefined,
-      idEntreprise: Number(localStorage.getItem('ZAIRE_ID_ENTREPRISE') || 1),
-      tva: Number(form.tva || 0),
-      montantDeduit: Number(form.montantDeduit || 0),
-      fraisLivraison: Number(form.fraisLivraison || 0),
-      autres: Number(form.autres || 0),
-      creePar:
-        localStorage.getItem('ZAIRE_NOM_UTILISATEUR') ||
-        localStorage.getItem('ZAIRE_USER_NAME') ||
-        'SYSTEME',
-    };
-
-    const res = await fetch(`${API_URL}/bon-commande`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.message || 'Erreur création BC.');
-      return;
-    }
-
-    setIdBcActif(data.idBc);
-    setForm((old) => ({ ...old, numeroBc: data.numeroBc }));
-    await chargerBons();
-    alert('Bon de commande créé avec succès.');
+  if (!form.idFournisseur || Number(form.idFournisseur) <= 0) {
+    alert('Choisis un fournisseur.');
+    return;
   }
+
+  const payload = {
+    idFournisseur: Number(form.idFournisseur),
+    id_fournisseur: Number(form.idFournisseur), // sécurité
+
+    idMagasin: form.idMagasin ? Number(form.idMagasin) : null,
+    idmagasin: form.idMagasin ? Number(form.idMagasin) : null,
+
+    numeroBc: form.numeroBc || undefined,
+    dateBc: form.dateBc,
+
+    idEntreprise: Number(localStorage.getItem('ZAIRE_ID_ENTREPRISE') || 1),
+    identreprise: Number(localStorage.getItem('ZAIRE_ID_ENTREPRISE') || 1),
+
+    receveur: form.receveur,
+    transit: form.transit,
+    pointFob: form.pointFob,
+    pointfob: form.pointFob,
+    modalites: form.modalites,
+
+    tva: Number(form.tva || 0),
+    montantDeduit: Number(form.montantDeduit || 0),
+    montantdeduit: Number(form.montantDeduit || 0),
+    fraisLivraison: Number(form.fraisLivraison || 0),
+    fraislivraison: Number(form.fraisLivraison || 0),
+    deviseFraisLivraison: form.deviseFraisLivraison || 'CDF',
+    devisefraislivraison: form.deviseFraisLivraison || 'CDF',
+    autres: Number(form.autres || 0),
+
+    creePar:
+      localStorage.getItem('ZAIRE_NOM_UTILISATEUR') ||
+      localStorage.getItem('ZAIRE_USER_NAME') ||
+      'SYSTEME',
+    creepar:
+      localStorage.getItem('ZAIRE_NOM_UTILISATEUR') ||
+      localStorage.getItem('ZAIRE_USER_NAME') ||
+      'SYSTEME',
+  };
+
+  console.log('PAYLOAD BC envoyé:', payload);
+
+  const res = await fetch(`${API_URL}/bon-commande`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.message || 'Erreur création BC.');
+    return;
+  }
+
+  setIdBcActif(data.idBc);
+  setForm((old) => ({ ...old, numeroBc: data.numeroBc }));
+  await chargerBons();
+  alert('Bon de commande créé avec succès.');
+}
 
   async function ajouterLigne() {
     if (!idBcActif) {
