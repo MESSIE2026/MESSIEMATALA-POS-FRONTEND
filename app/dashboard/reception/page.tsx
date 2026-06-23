@@ -374,41 +374,26 @@ export default function Page() {
   }
 
  async function validerReception() {
-  let idReceptionValidee: number | null = null;
+  if (!detail?.entete?.idReception) {
+    notifierErreur('Sélectionne une réception.');
+    return;
+  }
+
+  const idReceptionValidee = detail.entete.idReception;
+
+  const ok = window.confirm(
+    'Valider cette réception ?\n\nLe stock sera augmenté, les lots seront créés et la facture fournisseur sera générée.',
+  );
+
+  if (!ok) return;
 
   try {
-    if (!detail?.entete?.idReception) {
-      notifierErreur('Sélectionne une réception.');
-      return;
-    }
-
-    idReceptionValidee = detail.entete.idReception;
-
-    const ok = window.confirm(
-      'Valider cette réception ?\n\nLe stock sera augmenté, les lots seront créés et la facture fournisseur sera générée.',
-    );
-
-    if (!ok) return;
-
     setLoadingAction(true);
 
     await apiFetch(`${API_URL}/reception/${idReceptionValidee}/valider`, {
       method: 'POST',
       body: JSON.stringify({ utilisateur }),
     });
-
-    setDetail((old) =>
-      old
-        ? {
-            ...old,
-            entete: {
-              ...old.entete,
-              statut: 'VALIDEE',
-              validePar: utilisateur,
-            },
-          }
-        : old,
-    );
 
     notifierSucces('Réception validée. Stock mis à jour.');
   } catch (e: any) {
@@ -417,12 +402,9 @@ export default function Page() {
     setLoadingAction(false);
   }
 
-  if (idReceptionValidee) {
-    ouvrirDetails(idReceptionValidee);
-    charger();
-  }
+  await ouvrirDetails(idReceptionValidee);
+  await charger();
 }
-
   function ouvrirPdf(idReception: number) {
     window.open(`${API_URL}/reception/${idReception}/pdf`, '_blank');
   }
@@ -779,7 +761,7 @@ export default function Page() {
   className="flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
 >
   <Check size={18} />
-  Valider réception
+  {loadingAction ? 'Validation...' : 'Valider réception'}
 </button>
 
               {detail?.entete && (
