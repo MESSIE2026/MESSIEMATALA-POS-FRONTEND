@@ -216,25 +216,35 @@ export default function Page() {
   alert('Bon de commande créé avec succès.');
 }
 
+const [loadingLigne, setLoadingLigne] = useState(false);
+const [loadingEnvoyer, setLoadingEnvoyer] = useState(false);
+
   async function ajouterLigne() {
-    if (!idBcActif) {
-      alert("Crée d'abord le bon de commande.");
-      return;
-    }
+  if (loadingLigne) return;
 
-    if (!ligne.idProduit) {
-      alert('Choisis un produit.');
-      return;
-    }
+  if (!idBcActif) {
+    alert("Crée d'abord le bon de commande.");
+    return;
+  }
 
+  const idProduit = Number(ligne.idProduit || 0);
+
+  if (!idProduit) {
+    alert('Choisis un produit.');
+    return;
+  }
+
+  setLoadingLigne(true);
+
+  try {
     const payload = {
-      idProduit: Number(ligne.idProduit),
+      idProduit,
       qteCommandeeBase: Number(ligne.qteCommandeeBase || 1),
       prixAchat: Number(ligne.prixAchat || 0),
-      devise: ligne.devise,
-      unite: ligne.unite,
+      devise: ligne.devise || 'CDF',
+      unite: ligne.unite || 'PCS',
       idEntreprise: Number(localStorage.getItem('ZAIRE_ID_ENTREPRISE') || 1),
-      idMagasin: form.idMagasin ? Number(form.idMagasin) : undefined,
+      idMagasin: form.idMagasin ? Number(form.idMagasin) : null,
     };
 
     const res = await fetch(`${API_URL}/bon-commande/${idBcActif}/lignes`, {
@@ -250,16 +260,34 @@ export default function Page() {
       return;
     }
 
+    setLigne({
+      idProduit: '',
+      qteCommandeeBase: '1',
+      prixAchat: '0',
+      devise: 'CDF',
+      unite: 'PCS',
+    });
+
     await chargerDetails(idBcActif);
     await chargerBons();
+
+    alert(data.message || 'Ligne ajoutée avec succès.');
+  } finally {
+    setLoadingLigne(false);
+  }
+}
+
+async function envoyerBc() {
+  if (loadingEnvoyer) return;
+
+  if (!idBcActif) {
+    alert('Sélectionne un BC.');
+    return;
   }
 
-  async function envoyerBc() {
-    if (!idBcActif) {
-      alert('Sélectionne un BC.');
-      return;
-    }
+  setLoadingEnvoyer(true);
 
+  try {
     const res = await fetch(`${API_URL}/bon-commande/${idBcActif}/envoyer`, {
       method: 'PATCH',
     });
@@ -272,8 +300,12 @@ export default function Page() {
     }
 
     await chargerBons();
-    alert('BC passé à ENVOYÉ.');
+
+    alert(data.message || 'Bon de commande envoyé.');
+  } finally {
+    setLoadingEnvoyer(false);
   }
+}
 
   async function supprimerBc(idBc: number) {
     if (!confirm('Voulez-vous vraiment supprimer ce bon de commande ?')) return;
@@ -478,9 +510,13 @@ export default function Page() {
             <BarChart3 size={16} /> PDF Mensuel
           </button>
 
-          <button className={buttons.envoyer} onClick={envoyerBc}>
-            <Send size={16} /> Envoyer
-          </button>
+          <button
+  className={buttons.envoyer}
+  onClick={envoyerBc}
+  disabled={loadingEnvoyer}
+>
+  <Send size={16} /> {loadingEnvoyer ? 'Envoi...' : 'Envoyer'}
+</button>
         </div>
       </section>
 
@@ -553,9 +589,13 @@ export default function Page() {
           </label>
         </div>
 
-        <button className={`${buttons.ajouter} mt-4`} onClick={ajouterLigne}>
-          <Plus size={16} /> Ajouter ligne
-        </button>
+       <button
+  className={`${buttons.ajouter} mt-4`}
+  onClick={ajouterLigne}
+  disabled={loadingLigne}
+>
+  <Plus size={16} /> {loadingLigne ? 'Ajout...' : 'Ajouter ligne'}
+</button>
       </section>
 
       <section className="mt-6 grid gap-6 xl:grid-cols-2">
