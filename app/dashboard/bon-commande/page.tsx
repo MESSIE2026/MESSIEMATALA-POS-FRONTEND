@@ -34,10 +34,26 @@ type Produit = {
 
 type BonCommande = {
   idBc: number;
+  idFournisseur?: number;
+  idMagasin?: number;
+
   numeroBc: string;
   dateBc: string;
+
   fournisseur: string;
   magasin: string;
+
+  receveur?: string;
+  transit?: string;
+  pointFob?: string;
+  modalites?: string;
+
+  tva?: number;
+  montantDeduit?: number;
+  fraisLivraison?: number;
+  deviseFraisLivraison?: string;
+  autres?: number;
+
   statut: string;
   nbLignes: number;
   totalCdf: number;
@@ -145,13 +161,41 @@ export default function Page() {
     setBons(Array.isArray(data) ? data : []);
   }
 
-  async function chargerDetails(idBc: number) {
-    setIdBcActif(idBc);
-    const data = await fetch(`${API_URL}/bon-commande/details/${idBc}`).then(
-      (r) => r.json(),
-    );
-    setLignes(Array.isArray(data) ? data : []);
+  async function chargerDetails(bc: BonCommande | number) {
+  const idBc = typeof bc === 'number' ? bc : bc.idBc;
+
+  setIdBcActif(idBc);
+
+  if (typeof bc !== 'number') {
+    setForm((old) => ({
+      ...old,
+      idFournisseur: bc.idFournisseur ? String(bc.idFournisseur) : '',
+      idMagasin: bc.idMagasin ? String(bc.idMagasin) : '',
+
+      numeroBc: bc.numeroBc || '',
+      dateBc: bc.dateBc
+        ? new Date(bc.dateBc).toISOString().slice(0, 10)
+        : old.dateBc,
+
+      receveur: bc.receveur || '',
+      transit: bc.transit || 'TRANSPORT ROUTIER',
+      pointFob: bc.pointFob || 'KINSHASA',
+      modalites: bc.modalites || 'Paiement à la livraison',
+
+      tva: String(bc.tva || 0),
+      montantDeduit: String(bc.montantDeduit || 0),
+      fraisLivraison: String(bc.fraisLivraison || 0),
+      deviseFraisLivraison: bc.deviseFraisLivraison || 'CDF',
+      autres: String(bc.autres || 0),
+    }));
   }
+
+  const data = await fetch(`${API_URL}/bon-commande/details/${idBc}`).then(
+    (r) => r.json(),
+  );
+
+  setLignes(Array.isArray(data) ? data : []);
+}
 
   async function creerBc() {
   if (!form.idFournisseur || Number(form.idFournisseur) <= 0) {
@@ -637,7 +681,7 @@ async function envoyerBc() {
                       <div className="flex justify-end gap-2">
                         <button
                           className={buttons.details}
-                          onClick={() => chargerDetails(b.idBc)}
+                          onClick={() => chargerDetails(b)}
                         >
                           <Eye size={14} />
                         </button>
