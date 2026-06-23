@@ -197,8 +197,6 @@ export default function Page() {
       'SYSTEME',
   };
 
-  console.log('PAYLOAD BC envoyé:', payload);
-
   const res = await fetch(`${API_URL}/bon-commande`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -366,35 +364,45 @@ export default function Page() {
           <label className="text-sm">
             Fournisseur
             <select
-              className="mt-1 w-full rounded-xl border p-2"
-              value={form.idFournisseur}
-              onChange={(e) =>
-                setForm({ ...form, idFournisseur: e.target.value })
-              }
-            >
-              <option value="">Choisir...</option>
-              {fournisseurs.map((f) => (
-                <option key={f.idFournisseur} value={f.idFournisseur}>
-                  {f.nom}
-                </option>
-              ))}
-            </select>
+  className="mt-1 w-full rounded-xl border p-2"
+  value={form.idFournisseur}
+  onChange={(e) => {
+    const value = e.target.value;
+    setForm((old) => ({
+      ...old,
+      idFournisseur: value,
+    }));
+  }}
+>
+  <option value="">Choisir...</option>
+  {fournisseurs.map((f) => (
+    <option key={f.idFournisseur} value={String(f.idFournisseur)}>
+      {f.nom}
+    </option>
+  ))}
+</select>
           </label>
 
           <label className="text-sm">
             Magasin
             <select
-              className="mt-1 w-full rounded-xl border p-2"
-              value={form.idMagasin}
-              onChange={(e) => setForm({ ...form, idMagasin: e.target.value })}
-            >
-              <option value="">Choisir...</option>
-              {magasins.map((m) => (
-                <option key={m.idMagasin} value={m.idMagasin}>
-                  {m.nomMagasin}
-                </option>
-              ))}
-            </select>
+  className="mt-1 w-full rounded-xl border p-2"
+  value={form.idMagasin}
+  onChange={(e) => {
+    const value = e.target.value;
+    setForm((old) => ({
+      ...old,
+      idMagasin: value,
+    }));
+  }}
+>
+  <option value="">Choisir...</option>
+  {magasins.map((m) => (
+    <option key={m.idMagasin} value={String(m.idMagasin)}>
+      {m.nomMagasin}
+    </option>
+  ))}
+</select>
           </label>
 
           <label className="text-sm">
