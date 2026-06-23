@@ -282,13 +282,24 @@ export default function Page() {
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-3">
-            <button
-              onClick={enregistrer}
-              disabled={loading}
-              className="rounded-xl bg-green-700 px-4 py-3 font-bold text-white disabled:opacity-50"
-            >
-              {selected ? 'Modifier' : 'Ajouter'}
-            </button>
+  <button
+    onClick={() => {
+      setSelectedId(null);
+      enregistrer();
+    }}
+    disabled={loading}
+    className="rounded-xl bg-green-700 px-4 py-3 font-bold text-white disabled:opacity-50"
+  >
+    Ajouter
+  </button>
+
+  <button
+    onClick={enregistrer}
+    disabled={!selectedId || loading}
+    className="rounded-xl bg-blue-600 px-4 py-3 font-bold text-white disabled:opacity-50"
+  >
+    Modifier
+  </button>
 
             <button
               onClick={nouveau}
