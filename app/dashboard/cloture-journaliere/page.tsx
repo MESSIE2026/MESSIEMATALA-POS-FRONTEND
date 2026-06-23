@@ -7,6 +7,17 @@ import {
   documentImageUrl,
   ParametresDocuments,
 } from '@/app/services/documents.service';
+import {
+  RefreshCw,
+  Printer,
+  ShieldCheck,
+  CheckCircle,
+  FileText,
+  Trash2,
+  XCircle,
+  Lock,
+  X,
+} from 'lucide-react';
 
 const API =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -397,26 +408,29 @@ const res = await fetch(
               />
 
               <button
-                onClick={charger}
-                disabled={loading}
-                className="rounded-2xl bg-slate-950 px-5 py-3 font-black text-white disabled:opacity-50"
-              >
-                Actualiser
-              </button>
+  onClick={charger}
+  disabled={loading}
+  className="flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 font-black text-white hover:bg-slate-800 disabled:opacity-50"
+>
+  <RefreshCw size={18} />
+  Actualiser
+</button>
 
-              <button
-                onClick={ouvrirPdf}
-                className="rounded-2xl bg-slate-700 px-5 py-3 font-black text-white"
-              >
-                Impression Directe
-              </button>
+<button
+  onClick={ouvrirPdf}
+  className="flex items-center gap-2 rounded-2xl bg-amber-500 px-5 py-3 font-black text-white hover:bg-amber-600"
+>
+  <Printer size={18} />
+  Impression Directe
+</button>
 
-              <button
-                onClick={ouvrirManagerAvecSignature}
-                className="rounded-2xl bg-emerald-700 px-5 py-3 font-black text-white"
-              >
-                Manager 🔒
-              </button>
+<button
+  onClick={ouvrirManagerAvecSignature}
+  className="flex items-center gap-2 rounded-2xl bg-emerald-700 px-5 py-3 font-black text-white hover:bg-emerald-800"
+>
+  <ShieldCheck size={18} />
+  Manager
+</button>
             </div>
           </div>
         </section>
@@ -729,30 +743,33 @@ const res = await fetch(
             <h2 className="text-xl font-black text-slate-950">Actions</h2>
 
             <div className="mt-4 space-y-3">
-              <button
-                onClick={valider}
-                disabled={loading}
-                className="w-full rounded-2xl bg-emerald-600 px-5 py-4 font-black text-white disabled:opacity-50"
-              >
-                Valider clôture
-              </button>
+             <button
+  onClick={valider}
+  disabled={loading}
+  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-green-700 px-5 py-4 font-black text-white hover:bg-green-800 disabled:opacity-50"
+>
+  <CheckCircle size={20} />
+  Valider clôture
+</button>
 
-              <button
-                onClick={() => {
-                  setObservation('');
-                  localStorage.removeItem(`CLOTURE_OBSERVATION_${date}`);
-                }}
-                className="w-full rounded-2xl bg-slate-100 px-5 py-4 font-black text-slate-800"
-              >
-                Annuler / Vider
-              </button>
+<button
+  onClick={() => {
+    setObservation('');
+    localStorage.removeItem(`CLOTURE_OBSERVATION_${date}`);
+  }}
+  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-600 px-5 py-4 font-black text-white hover:bg-slate-700"
+>
+  <Trash2 size={20} />
+  Vider observation
+</button>
 
-              <button
-                onClick={telechargerPdf}
-                className="w-full rounded-2xl bg-blue-700 px-5 py-4 font-black text-white"
-              >
-                Exporter PDF
-              </button>
+<button
+  onClick={telechargerPdf}
+  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-700 px-5 py-4 font-black text-white hover:bg-blue-800"
+>
+  <FileText size={20} />
+  Exporter PDF
+</button>
             </div>
 
             <div className="mt-5 rounded-2xl bg-slate-50 p-4 font-bold text-slate-700">
@@ -791,19 +808,21 @@ const res = await fetch(
 
             <div className="mt-5 flex gap-2">
               <button
-                onClick={validerOuvertureManager}
-                disabled={loading}
-                className="flex-1 rounded-2xl bg-emerald-700 px-5 py-3 font-black text-white disabled:opacity-50"
-              >
-                Valider
-              </button>
+  onClick={validerOuvertureManager}
+  disabled={loading}
+  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-5 py-3 font-black text-white hover:bg-emerald-800 disabled:opacity-50"
+>
+  <Lock size={18} />
+  Valider
+</button>
 
               <button
-                onClick={() => setSignatureModal(false)}
-                className="rounded-2xl bg-slate-200 px-5 py-3 font-black text-slate-800"
-              >
-                Annuler
-              </button>
+  onClick={() => setSignatureModal(false)}
+  className="flex items-center gap-2 rounded-2xl bg-slate-200 px-5 py-3 font-black text-slate-800 hover:bg-slate-300"
+>
+  <X size={18} />
+  Annuler
+</button>
             </div>
           </div>
         </div>
@@ -825,18 +844,20 @@ const res = await fetch(
 
               <div className="flex gap-2">
                 <button
-                  onClick={charger}
-                  className="rounded-2xl bg-slate-950 px-5 py-3 font-black text-white"
-                >
-                  Actualiser
-                </button>
+  onClick={charger}
+  className="flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 font-black text-white hover:bg-slate-800"
+>
+  <RefreshCw size={18} />
+  Actualiser
+</button>
 
                 <button
-                  onClick={() => setManagerOuvert(false)}
-                  className="rounded-2xl bg-slate-200 px-5 py-3 font-black text-slate-800"
-                >
-                  Fermer
-                </button>
+  onClick={() => setManagerOuvert(false)}
+  className="flex items-center gap-2 rounded-2xl bg-slate-200 px-5 py-3 font-black text-slate-800 hover:bg-slate-300"
+>
+  <X size={18} />
+  Fermer
+</button>
               </div>
             </div>
 
@@ -873,11 +894,12 @@ const res = await fetch(
                       <td className="p-3">{c.observation || '-'}</td>
                       <td className="p-3">
                         <button
-                          onClick={() => supprimer(c.id)}
-                          className="rounded-xl bg-red-600 px-4 py-2 text-xs font-black text-white"
-                        >
-                          Supprimer
-                        </button>
+  onClick={() => supprimer(c.id)}
+  className="flex items-center gap-2 rounded-xl bg-red-700 px-4 py-2 text-xs font-black text-white hover:bg-red-800"
+>
+  <Trash2 size={14} />
+  Supprimer
+</button>
                       </td>
                     </tr>
                   ))}

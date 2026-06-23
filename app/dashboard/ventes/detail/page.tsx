@@ -6,6 +6,12 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import JsBarcode from 'jsbarcode';
 import {
+  Printer,
+  FileText,
+  Ticket,
+  ArrowLeft,
+} from 'lucide-react';
+import {
   getParametresDocuments,
   documentImageUrl,
   nomEntrepriseDocument,
@@ -1319,46 +1325,51 @@ function genererPdfTicket() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={imprimerA4}
-                className="rounded-xl bg-red-600 px-4 py-3 text-sm font-black text-white hover:bg-red-500"
-              >
-                Imprimer A4
-              </button>
+  <button
+    type="button"
+    onClick={imprimerA4}
+    className="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-black text-white hover:bg-red-700"
+  >
+    <Printer size={18} />
+    Imprimer A4
+  </button>
 
-              <button
-                type="button"
-                onClick={imprimerTicket}
-                className="rounded-xl bg-slate-800 px-4 py-3 text-sm font-black text-white hover:bg-slate-700"
-              >
-                Imprimer Ticket
-              </button>
+  <button
+    type="button"
+    onClick={imprimerTicket}
+    className="flex items-center gap-2 rounded-xl bg-slate-700 px-4 py-3 text-sm font-black text-white hover:bg-slate-800"
+  >
+    <Ticket size={18} />
+    Imprimer Ticket
+  </button>
 
-              <button
-                type="button"
-                onClick={genererPdfA4}
-                className="rounded-xl bg-amber-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-amber-300"
-              >
-                PDF A4
-              </button>
+  <button
+    type="button"
+    onClick={genererPdfA4}
+    className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-3 text-sm font-black text-white hover:bg-amber-600"
+  >
+    <FileText size={18} />
+    PDF A4
+  </button>
 
-              <button
-                type="button"
-                onClick={genererPdfTicket}
-                className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-500"
-              >
-                PDF Ticket
-              </button>
+  <button
+    type="button"
+    onClick={genererPdfTicket}
+    className="flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-3 text-sm font-black text-white hover:bg-blue-800"
+  >
+    <Ticket size={18} />
+    PDF Ticket
+  </button>
 
-              <button
-                type="button"
-                onClick={() => router.push('/dashboard/ventes')}
-                className="rounded-xl bg-white px-4 py-3 text-sm font-black text-emerald-950 hover:bg-emerald-50"
-              >
-                Retour
-              </button>
-            </div>
+  <button
+    type="button"
+    onClick={() => router.push('/dashboard/ventes')}
+    className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-black text-emerald-950 hover:bg-emerald-50"
+  >
+    <ArrowLeft size={18} />
+    Retour
+  </button>
+</div>
           </div>
         </div>
 

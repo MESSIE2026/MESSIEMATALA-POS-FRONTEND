@@ -1,6 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import {
+  RefreshCw,
+  FileText,
+  Save,
+  Trash2,
+} from 'lucide-react';
 
 const API =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -314,18 +320,21 @@ function ouvrirPdfSemaine() {
               />
 
               <button
-                onClick={charger}
-                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white"
-              >
-                Actualiser
-              </button>
+  onClick={charger}
+  disabled={loading}
+  className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-50"
+>
+  <RefreshCw size={17} />
+  Actualiser
+</button>
 
-              <button
-                onClick={ouvrirPdfSemaine}
-                className="rounded-xl bg-blue-900 px-4 py-2 text-sm font-bold text-white"
-              >
-                PDF semaine
-              </button>
+<button
+  onClick={ouvrirPdfSemaine}
+  className="flex items-center gap-2 rounded-xl bg-blue-800 px-4 py-2 text-sm font-bold text-white hover:bg-blue-900"
+>
+  <FileText size={17} />
+  PDF semaine
+</button>
             </div>
           </div>
         </section>
@@ -444,12 +453,13 @@ function ouvrirPdfSemaine() {
               )}
 
               <button
-                onClick={enregistrer}
-                disabled={loading}
-                className="w-full rounded-2xl bg-blue-950 px-5 py-4 font-black text-white disabled:opacity-50"
-              >
-                {loading ? 'Traitement...' : 'Enregistrer'}
-              </button>
+  onClick={enregistrer}
+  disabled={loading}
+  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-green-700 px-5 py-4 font-black text-white hover:bg-green-800 disabled:opacity-50"
+>
+  <Save size={20} />
+  {loading ? 'Traitement...' : 'Enregistrer'}
+</button>
             </div>
           </div>
 
@@ -485,11 +495,12 @@ function ouvrirPdfSemaine() {
                       <td>{m.nomcaissier || '-'}</td>
                       <td>
                         <button
-                          onClick={() => supprimer(m.idmouvement)}
-                          className="rounded-lg bg-red-50 px-3 py-1 text-xs font-black text-red-700"
-                        >
-                          Suppr.
-                        </button>
+  onClick={() => supprimer(m.idmouvement)}
+  className="flex items-center gap-1 rounded-lg bg-red-700 px-3 py-2 text-xs font-black text-white hover:bg-red-800"
+>
+  <Trash2 size={14} />
+  Suppr.
+</button>
                       </td>
                     </tr>
                   ))}
@@ -526,11 +537,12 @@ function ouvrirPdfSemaine() {
                   </p>
 
                   <button
-                    onClick={() => supprimer(m.idmouvement)}
-                    className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-xs font-black text-red-700"
-                  >
-                    Supprimer
-                  </button>
+  onClick={() => supprimer(m.idmouvement)}
+  className="mt-3 flex items-center gap-2 rounded-xl bg-red-700 px-3 py-2 text-xs font-black text-white hover:bg-red-800"
+>
+  <Trash2 size={14} />
+  Supprimer
+</button>
                 </div>
               ))}
             </div>

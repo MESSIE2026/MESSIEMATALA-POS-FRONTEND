@@ -2,6 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  RefreshCw,
+  ShoppingCart,
+  Settings,
+  FileBarChart,
+  Eye,
+} from 'lucide-react';
 
 const API = 'https://messiematala-pos-backend-production.up.railway.app';
 
@@ -321,37 +328,41 @@ function montantParDevise(v: any, devise: 'USD' | 'CDF' | 'EUR') {
 
             <div className="flex flex-wrap gap-2">
               <button
-                type="button"
-                onClick={chargerVentes}
-                disabled={loading}
-                className="rounded-xl bg-white px-5 py-3 text-sm font-black text-emerald-950 hover:bg-emerald-50 disabled:opacity-60"
-              >
-                {loading ? 'Chargement...' : 'Actualiser'}
-              </button>
+  type="button"
+  onClick={chargerVentes}
+  disabled={loading}
+  className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-black text-emerald-950 hover:bg-emerald-50 disabled:opacity-60"
+>
+  <RefreshCw size={18} />
+  {loading ? 'Chargement...' : 'Actualiser'}
+</button>
 
-              <button
-                type="button"
-                onClick={nouvelleVente}
-                className="rounded-xl bg-emerald-500 px-5 py-3 text-sm font-black text-white hover:bg-emerald-400"
-              >
-                Nouvelle vente
-              </button>
+<button
+  type="button"
+  onClick={nouvelleVente}
+  className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white hover:bg-emerald-700"
+>
+  <ShoppingCart size={18} />
+  Nouvelle vente
+</button>
 
-              <button
-                type="button"
-                onClick={ouvrirManager}
-                className="rounded-xl bg-slate-800 px-5 py-3 text-sm font-black text-white hover:bg-slate-700"
-              >
-                Manager
-              </button>
+<button
+  type="button"
+  onClick={ouvrirManager}
+  className="flex items-center gap-2 rounded-xl bg-slate-700 px-5 py-3 text-sm font-black text-white hover:bg-slate-800"
+>
+  <Settings size={18} />
+  Manager
+</button>
 
-              <button
-                type="button"
-                onClick={ouvrirRapports}
-                className="rounded-xl bg-amber-400 px-5 py-3 text-sm font-black text-slate-950 hover:bg-amber-300"
-              >
-                Rapports
-              </button>
+<button
+  type="button"
+  onClick={ouvrirRapports}
+  className="flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-3 text-sm font-black text-white hover:bg-amber-600"
+>
+  <FileBarChart size={18} />
+  Rapports
+</button>
             </div>
           </div>
         </div>
@@ -439,12 +450,13 @@ function montantParDevise(v: any, devise: 'USD' | 'CDF' | 'EUR') {
 
                     <td className="p-3">
                       <button
-                        type="button"
-                        onClick={() => voirVente(v)}
-                        className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-black text-white hover:bg-slate-700"
-                      >
-                        Voir détail
-                      </button>
+  type="button"
+  onClick={() => voirVente(v)}
+  className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-black text-white hover:bg-slate-700"
+>
+  <Eye size={14} />
+  Voir détail
+</button>
                     </td>
                   </tr>
                 );

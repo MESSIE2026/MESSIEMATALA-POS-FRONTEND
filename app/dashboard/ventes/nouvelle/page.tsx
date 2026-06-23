@@ -2,6 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  ScanLine,
+  Plus,
+  Star,
+  CheckCircle,
+  XCircle,
+  Printer,
+  Trash2,
+  ArrowLeft,
+  UserCog,
+} from 'lucide-react';
 
 const API = 'https://messiematala-pos-backend-production.up.railway.app';
 
@@ -655,12 +666,13 @@ const res = await fetch(`${API}/ventes`, {
           </div>
 
           <button
-            type="button"
-            onClick={() => router.push('/dashboard/session-caisse')}
-            className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-black text-white"
-          >
-            Session
-          </button>
+  type="button"
+  onClick={() => router.push('/dashboard/session-caisse')}
+  className="flex items-center gap-2 rounded-lg bg-slate-800 px-3 py-2 text-xs font-black text-white hover:bg-slate-900"
+>
+  <UserCog size={16} />
+  Session
+</button>
         </div>
 
         <div className="mt-2 rounded-lg bg-red-50 px-3 py-1 text-xs font-black text-red-700">
@@ -700,12 +712,13 @@ const res = await fetch(`${API}/ventes`, {
           />
 
           <button
-            type="button"
-            onClick={() => ajouterProduit()}
-            className="rounded-xl bg-blue-600 px-4 py-3 font-black text-white"
-          >
-            Ajouter
-          </button>
+  type="button"
+  onClick={() => ajouterProduit()}
+  className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-black text-white hover:bg-blue-700"
+>
+  <Plus size={18} />
+  Ajouter
+</button>
         </div>
 
         <section className="mb-3 rounded-2xl border bg-white p-3 shadow-sm">
@@ -910,9 +923,9 @@ const res = await fetch(`${API}/ventes`, {
                         <button
                           type="button"
                           onClick={() => supprimerArticle(i)}
-                          className="rounded bg-red-600 px-3 py-1 font-bold text-white"
+                          className="flex items-center justify-center rounded-lg bg-red-600 px-3 py-2 text-white hover:bg-red-700"
                         >
-                          X
+                         <Trash2 size={16} />
                         </button>
                       </td>
                     </tr>
@@ -1046,60 +1059,68 @@ const res = await fetch(`${API}/ventes`, {
           })}
         </section>
 
-        <section className="sticky bottom-0 mt-3 grid grid-cols-2 gap-2 rounded-t-2xl bg-slate-100 pb-2 pt-2 sm:grid-cols-3 lg:grid-cols-6">
-          <button
-            type="button"
-            onClick={retraitFidelite}
-            className="rounded-xl bg-slate-300 py-3 text-sm font-black text-slate-700"
-          >
-            Retrait Fidélité
-          </button>
+       <section className="sticky bottom-0 mt-3 grid grid-cols-2 gap-2 rounded-t-2xl bg-slate-100 pb-2 pt-2 sm:grid-cols-3 lg:grid-cols-6">
 
-          <button
-            type="button"
-            onClick={finaliserVente}
-            disabled={loading || lignes.length === 0}
-            className={`rounded-xl py-3 text-sm font-black text-white ${
-              loading || lignes.length === 0
-                ? 'bg-green-300'
-                : 'bg-green-600 hover:bg-green-700'
-            }`}
-          >
-            {loading ? 'Validation...' : 'Finaliser'}
-          </button>
+  <button
+    type="button"
+    onClick={retraitFidelite}
+    className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-black text-white hover:bg-indigo-700"
+  >
+    <Star size={18} />
+    Fidélité
+  </button>
 
-          <button
-            type="button"
-            onClick={annulerVente}
-            className="rounded-xl bg-red-600 py-3 text-sm font-black text-white"
-          >
-            Annuler
-          </button>
+  <button
+    type="button"
+    onClick={finaliserVente}
+    disabled={loading || lignes.length === 0}
+    className={`flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-black text-white ${
+      loading || lignes.length === 0
+        ? 'bg-green-300'
+        : 'bg-green-600 hover:bg-green-700'
+    }`}
+  >
+    <CheckCircle size={18} />
+    {loading ? 'Validation...' : 'Finaliser'}
+  </button>
 
-          <button
-            type="button"
-            onClick={imprimerTicket}
-            className="rounded-xl bg-slate-300 py-3 text-sm font-black text-slate-700"
-          >
-            Imprimer Ticket
-          </button>
+  <button
+    type="button"
+    onClick={annulerVente}
+    className="flex items-center justify-center gap-2 rounded-xl bg-red-600 py-3 text-sm font-black text-white hover:bg-red-700"
+  >
+    <XCircle size={18} />
+    Annuler
+  </button>
 
-          <button
-            type="button"
-            onClick={supprimerDernierArticle}
-            className="rounded-xl bg-slate-300 py-3 text-sm font-black text-slate-700"
-          >
-            Supprimer article
-          </button>
+  <button
+    type="button"
+    onClick={imprimerTicket}
+    className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-sm font-black text-white hover:bg-amber-600"
+  >
+    <Printer size={18} />
+    Ticket
+  </button>
 
-          <button
-            type="button"
-            onClick={() => router.push('/dashboard/ventes')}
-            className="rounded-xl bg-slate-800 py-3 text-sm font-black text-white"
-          >
-            Retour
-          </button>
-        </section>
+  <button
+    type="button"
+    onClick={supprimerDernierArticle}
+    className="flex items-center justify-center gap-2 rounded-xl bg-slate-600 py-3 text-sm font-black text-white hover:bg-slate-700"
+  >
+    <Trash2 size={18} />
+    Dernier article
+  </button>
+
+  <button
+    type="button"
+    onClick={() => router.push('/dashboard/ventes')}
+    className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 py-3 text-sm font-black text-white hover:bg-black"
+  >
+    <ArrowLeft size={18} />
+    Retour
+  </button>
+
+</section>
       </section>
     </main>
   );
