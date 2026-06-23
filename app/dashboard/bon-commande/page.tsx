@@ -255,7 +255,8 @@ export default function Page() {
   }
 
   setIdBcActif(data.idBc);
-  setForm((old) => ({ ...old, numeroBc: data.numeroBc }));
+setLignes([]);
+setForm((old) => ({ ...old, numeroBc: data.numeroBc }));
   await chargerBons();
   alert('Bon de commande créé avec succès.');
 }
@@ -304,13 +305,11 @@ const [loadingEnvoyer, setLoadingEnvoyer] = useState(false);
       return;
     }
 
-    setLigne({
-      idProduit: '',
-      qteCommandeeBase: '1',
-      prixAchat: '0',
-      devise: 'CDF',
-      unite: 'PCS',
-    });
+    setLigne((old) => ({
+  ...old,
+  qteCommandeeBase: '1',
+  prixAchat: '0',
+}));
 
     await chargerDetails(idBcActif);
     await chargerBons();
@@ -569,6 +568,18 @@ async function envoyerBc() {
           Ajouter une ligne
         </h2>
 
+        {!idBcActif && (
+  <p className="mb-4 rounded-xl bg-amber-50 p-3 text-sm font-medium text-amber-800 ring-1 ring-amber-200">
+    Sélectionne d’abord un bon de commande dans la liste, ou crée un nouveau BC.
+  </p>
+)}
+
+{idBcActif && (
+  <p className="mb-4 rounded-xl bg-green-50 p-3 text-sm font-medium text-green-800 ring-1 ring-green-200">
+    Bon de commande actif : #{idBcActif}
+  </p>
+)}
+
         <div className="grid gap-4 md:grid-cols-5">
           <label className="text-sm md:col-span-2">
             Produit
@@ -636,9 +647,15 @@ async function envoyerBc() {
        <button
   className={`${buttons.ajouter} mt-4`}
   onClick={ajouterLigne}
-  disabled={loadingLigne}
+  disabled={
+    loadingLigne ||
+    !idBcActif ||
+    !ligne.idProduit ||
+    Number(ligne.qteCommandeeBase) <= 0
+  }
 >
-  <Plus size={16} /> {loadingLigne ? 'Ajout...' : 'Ajouter ligne'}
+  <Plus size={16} />
+  {loadingLigne ? 'Ajout...' : 'Ajouter ligne'}
 </button>
       </section>
 
