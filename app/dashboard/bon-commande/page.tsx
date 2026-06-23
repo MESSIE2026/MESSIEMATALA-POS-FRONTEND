@@ -299,14 +299,26 @@ export default function Page() {
     await chargerBons();
   }
 
-  function ouvrirPdf() {
-    if (!idBcActif) {
-      alert('Sélectionne un BC.');
-      return;
-    }
-
-    window.open(`${API_URL}/bon-commande/${idBcActif}/pdf`, '_blank');
+ async function telechargerPdf() {
+  if (!idBcActif) {
+    alert('Sélectionne un BC.');
+    return;
   }
+
+  const res = await fetch(`${API_URL}/bon-commande/${idBcActif}/pdf`);
+  const blob = await res.blob();
+
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+
+  a.href = url;
+  a.download = `BC_${idBcActif}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
 
   function ouvrirPdfMensuel() {
     const mois = new Date().toISOString().slice(0, 7);
@@ -450,7 +462,7 @@ export default function Page() {
             <RefreshCw size={16} /> Actualiser
           </button>
 
-          <button className={buttons.pdf} onClick={ouvrirPdf}>
+          <button className={buttons.pdf} onClick={telechargerPdf}>
             <FileText size={16} /> PDF BC
           </button>
 
