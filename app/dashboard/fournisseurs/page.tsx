@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { Plus, Pencil, RotateCcw, Power, Trash2 } from 'lucide-react';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -145,6 +146,41 @@ export default function Page() {
       setLoading(false);
     }
   }
+
+  async function supprimerDefinitivement() {
+  if (!selectedId || !selected) {
+    setMessage('Sélectionnez un fournisseur.');
+    return;
+  }
+
+  const confirmation = window.prompt(
+    `Tapez exactement "${selected.nom}" pour confirmer la suppression définitive.`,
+  );
+
+  if (confirmation !== selected.nom) {
+    setMessage('Suppression annulée.');
+    return;
+  }
+
+  setLoading(true);
+  setMessage('');
+
+  try {
+    const res = await fetch(`${API_URL}/fournisseurs/${selectedId}/definitif`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+
+    setMessage('Fournisseur supprimé définitivement avec succès.');
+    await chargerFournisseurs();
+    nouveau();
+  } catch (e: any) {
+    setMessage(`Erreur suppression définitive : ${e.message}`);
+  } finally {
+    setLoading(false);
+  }
+}
 
   async function changerStatut() {
   if (!selectedId || !selected) {
@@ -295,45 +331,63 @@ export default function Page() {
             </label>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-3">
-  <button
-    onClick={() => {
-      setSelectedId(null);
-      enregistrer();
-    }}
-    disabled={loading}
-    className="rounded-xl bg-green-700 px-4 py-3 font-bold text-white disabled:opacity-50"
-  >
-    Ajouter
-  </button>
+        <div className="mt-6 space-y-4">
+  <div className="grid grid-cols-2 gap-4">
+    <button
+      onClick={() => {
+        setSelectedId(null);
+        enregistrer();
+      }}
+      disabled={loading}
+      className="flex items-center justify-center gap-2 rounded-2xl bg-green-700 px-4 py-4 text-lg font-bold text-white shadow-sm hover:bg-green-800 disabled:opacity-50"
+    >
+      <Plus size={20} />
+      Ajouter
+    </button>
+
+    <button
+      onClick={enregistrer}
+      disabled={!selectedId || loading}
+      className="flex items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 py-4 text-lg font-bold text-white shadow-sm hover:bg-blue-800 disabled:opacity-50"
+    >
+      <Pencil size={20} />
+      Modifier
+    </button>
+
+    <button
+      onClick={nouveau}
+      disabled={loading}
+      className="flex items-center justify-center gap-2 rounded-2xl bg-slate-600 px-4 py-4 text-lg font-bold text-white shadow-sm hover:bg-slate-700 disabled:opacity-50"
+    >
+      <RotateCcw size={20} />
+      Nouveau
+    </button>
+
+    <button
+      onClick={changerStatut}
+      disabled={!selectedId || loading}
+      className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-4 text-lg font-bold text-white shadow-sm disabled:opacity-50 ${
+        selected?.actif
+          ? 'bg-amber-600 hover:bg-amber-700'
+          : 'bg-emerald-700 hover:bg-emerald-800'
+      }`}
+    >
+      <Power size={20} />
+      {selected?.actif ? 'Désactiver' : 'Activer'}
+    </button>
+  </div>
+
+  <hr className="border-slate-200" />
 
   <button
-    onClick={enregistrer}
+    onClick={supprimerDefinitivement}
     disabled={!selectedId || loading}
-    className="rounded-xl bg-blue-600 px-4 py-3 font-bold text-white disabled:opacity-50"
+    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-800 px-4 py-4 text-lg font-bold text-white shadow-sm hover:bg-red-900 disabled:opacity-50"
   >
-    Modifier
+    <Trash2 size={20} />
+    Supprimer définitivement
   </button>
-
-            <button
-              onClick={nouveau}
-              className="rounded-xl bg-amber-500 px-4 py-3 font-bold text-white"
-            >
-              Nouveau
-            </button>
-
-            <button
-  onClick={changerStatut}
-  disabled={!selectedId || loading}
-  className={`col-span-2 rounded-xl px-4 py-3 font-bold text-white shadow-sm transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50 ${
-    selected?.actif
-      ? 'bg-red-600 hover:bg-red-700'
-      : 'bg-green-700 hover:bg-green-800'
-  }`}
->
-  {selected?.actif ? 'Désactiver' : 'Activer'}
-</button>
-          </div>
+</div>
         </section>
 
         <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
