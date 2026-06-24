@@ -257,18 +257,51 @@ export default function Page() {
     }
   }
 
-  function ouvrirPdfFacture(idFacture: number) {
-    window.open(`${API_URL}/facture-fournisseur/${idFacture}/pdf`, '_blank');
+  async function ouvrirPdfFacture(idFacture: number) {
+  const response = await fetch(
+    `${API_URL}/facture-fournisseur/${idFacture}/pdf`,
+  );
+
+  const blob = await response.blob();
+
+  const url = window.URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Facture-Fournisseur-${idFacture}.pdf`;
+
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  window.URL.revokeObjectURL(url);
+}
+
+  async function ouvrirPdfDettes() {
+  const response = await fetch(
+    `${API_URL}/facture-fournisseur/pdf/dettes?idEntreprise=${idEntreprise}&idMagasin=${idMagasin}&search=${encodeURIComponent(search)}`
+  );
+
+  if (!response.ok) {
+    throw new Error('Erreur génération PDF dettes');
   }
 
-  function ouvrirPdfDettes() {
-    window.open(
-      `${API_URL}/facture-fournisseur/pdf/dettes?idEntreprise=${idEntreprise}&idMagasin=${idMagasin}&search=${encodeURIComponent(
-        search,
-      )}`,
-      '_blank',
-    );
-  }
+  const blob = await response.blob();
+
+  const url = window.URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Dettes-Fournisseurs-${new Date()
+    .toISOString()
+    .slice(0, 10)}.pdf`;
+
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  window.URL.revokeObjectURL(url);
+}
 
   useEffect(() => {
     charger();
