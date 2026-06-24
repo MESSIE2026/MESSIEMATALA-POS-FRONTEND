@@ -305,13 +305,22 @@ async function postJson(url: string, body: any) {
 
   try {
     const payload = {
-      idDepot: depot,
-      creePar: utilisateur || 'Utilisateur POS',
-      idEntreprise: Number(idEntreprise || 1),
-      idMagasin: Number(idMagasin || 0),
-    };
+  idDepot: depot,
+  id_depot: depot,
 
-    console.log('PAYLOAD SESSION INVENTAIRE', payload);
+  creePar: utilisateur || 'Utilisateur POS',
+  creepar: utilisateur || 'Utilisateur POS',
+  utilisateur: utilisateur || 'Utilisateur POS',
+  nomUtilisateur: utilisateur || 'Utilisateur POS',
+
+  idUtilisateur: Number(localStorage.getItem('ZAIRE_ID_UTILISATEUR') || 0),
+  idEmploye: Number(localStorage.getItem('ZAIRE_ID_EMPLOYE') || 0),
+
+  idEntreprise: Number(idEntreprise || 1),
+  idMagasin: Number(idMagasin || 0),
+};
+
+console.log('PAYLOAD SESSION INVENTAIRE', payload);
 
     const s = await postJson(`${API_URL}/inventaire-scanner/sessions`, payload);
 
