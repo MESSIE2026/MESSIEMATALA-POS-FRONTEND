@@ -164,15 +164,27 @@ export default function Page() {
 }
 
 async function getJson(url: string) {
-  const response = await fetch(url, {
-    cache: 'no-store',
-  });
+  try {
+    const response = await fetch(url, {
+      cache: 'no-store',
+    });
 
-  if (!response.ok) {
-    throw new Error(await response.text());
+    const text = await response.text();
+
+    if (!response.ok) {
+      throw new Error(text || `Erreur HTTP ${response.status}`);
+    }
+
+    if (!text.trim()) return null;
+
+    return JSON.parse(text);
+  } catch (e: any) {
+    throw new Error(
+      e?.message === 'Failed to fetch'
+        ? `Impossible de joindre le serveur : ${url}`
+        : e?.message || 'Erreur réseau',
+    );
   }
-
-  return parseJsonResponse(response);
 }
 
 async function postJson(url: string, body: any) {
@@ -446,10 +458,20 @@ console.log('PAYLOAD SESSION INVENTAIRE', payload);
         idMagasin: Number(idMagasin),
       });
 
-      notify(data?.message || 'Inventaire validé.');
-      setSessionActive(null);
-      setLignes([]);
-      await chargerSessions(Number(idDepot));
+     notify(data?.message || 'Inventaire validé.');
+setSessionActive(null);
+setLignes([]);
+
+try {
+  const depot = Number(idDepot || 0);
+
+  if (depot > 0) {
+    await chargerSessions(depot);
+    await chargerSessionOuverte(depot);
+  }
+} catch (e) {
+  console.warn('Session validée, mais rechargement sessions échoué', e);
+}
     } catch (e) {
       fail(e, 'Erreur validation inventaire.');
     } finally {
