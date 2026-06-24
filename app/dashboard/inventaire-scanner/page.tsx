@@ -204,31 +204,49 @@ async function postJson(url: string, body: any) {
   }
 
   async function chargerInitial() {
-    setLoading(true);
+  setLoading(true);
+
+  try {
+    let depotsData = await getJson(
+      `${API_URL}/inventaire-scanner/depots?idEntreprise=${Number(idEntreprise || 1)}&idMagasin=${Number(idMagasin || 0)}`,
+    );
+
+    if (!Array.isArray(depotsData) || depotsData.length === 0) {
+      depotsData = await getJson(
+        `${API_URL}/inventaire-scanner/depots?idEntreprise=${Number(idEntreprise || 1)}&idMagasin=0`,
+      );
+    }
+
+    const depotsValides = Array.isArray(depotsData)
+      ? depotsData.filter((d) => Number(d.idDepot || 0) > 0)
+      : [];
+
+    setDepots(depotsValides);
+
+    if (depotsValides.length > 0) {
+      const depotActuel = Number(idDepot || 0);
+      const existe = depotsValides.some((d) => Number(d.idDepot) === depotActuel);
+
+      if (!existe) {
+        setIdDepot(String(depotsValides[0].idDepot));
+      }
+    } else {
+      setIdDepot('');
+      setErreur('Aucun dépôt valide trouvé pour cette entreprise.');
+    }
 
     try {
-      const depotsData = await getJson(
-        `${API_URL}/inventaire-scanner/depots?idEntreprise=${idEntreprise}&idMagasin=${idMagasin}`,
-      );
-
-      setDepots(Array.isArray(depotsData) ? depotsData : []);
-
-      if (Array.isArray(depotsData) && depotsData.length > 0 && !idDepot) {
-        setIdDepot(String(depotsData[0].idDepot));
-      }
-
-     try {
-  const p = await getParametresDocuments(Number(idEntreprise));
-  setParamsDocs(p || {});
-} catch {
-  setParamsDocs({});
-}
-    } catch (e) {
-      fail(e, 'Erreur chargement dépôts inventaire.');
-    } finally {
-      setLoading(false);
+      const p = await getParametresDocuments(Number(idEntreprise || 1));
+      setParamsDocs(p || {});
+    } catch {
+      setParamsDocs({});
     }
+  } catch (e) {
+    fail(e, 'Erreur chargement dépôts inventaire.');
+  } finally {
+    setLoading(false);
   }
+}
 
   async function chargerSessions(dep = Number(idDepot || 0)) {
     if (!dep) return;
@@ -272,19 +290,30 @@ async function postJson(url: string, body: any) {
   const depot = Number(idDepot || 0);
 
   if (depot <= 0) {
-    alert('Sélectionne un dépôt valide.');
+    setErreur('Sélectionne un dépôt valide avant de créer une session.');
+    return;
+  }
+
+  const depotExiste = depots.some((d) => Number(d.idDepot) === depot);
+
+  if (!depotExiste) {
+    setErreur('Le dépôt sélectionné est invalide. Clique sur Actualiser.');
     return;
   }
 
   setLoading(true);
 
   try {
-    const s = await postJson(`${API_URL}/inventaire-scanner/sessions`, {
+    const payload = {
       idDepot: depot,
-      creePar: utilisateur,
+      creePar: utilisateur || 'Utilisateur POS',
       idEntreprise: Number(idEntreprise || 1),
       idMagasin: Number(idMagasin || 0),
-    });
+    };
+
+    console.log('PAYLOAD SESSION INVENTAIRE', payload);
+
+    const s = await postJson(`${API_URL}/inventaire-scanner/sessions`, payload);
 
     if (!s?.idSession) {
       throw new Error('Session créée mais réponse invalide.');
@@ -574,13 +603,13 @@ async function postJson(url: string, body: any) {
 </button>
 
             <button
-              onClick={() => idDepot && chargerSessionOuverte(Number(idDepot))}
-              disabled={loading || !idDepot}
-              className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
-            >
-              <Warehouse size={16} />
-              Récupérer session
-            </button>
+  onClick={() => Number(idDepot || 0) > 0 && chargerSessionOuverte(Number(idDepot))}
+  disabled={loading || Number(idDepot || 0) <= 0}
+  className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+>
+  <Warehouse size={16} />
+  Récupérer session
+</button>
           </div>
         </section>
 
