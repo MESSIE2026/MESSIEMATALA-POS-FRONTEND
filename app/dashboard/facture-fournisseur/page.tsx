@@ -160,78 +160,76 @@ export default function Page() {
     }
   }
 
-  async function ouvrirDetails(idFacture: number) {
-    try {
-      setLoadingAction(true);
+  async function ouvrirDetails(idFacture: number, bloquerBouton = true) {
+  try {
+    if (bloquerBouton) setLoadingAction(true);
 
-      const data = await apiFetch(
-        `${API_URL}/facture-fournisseur/${idFacture}/details`,
-      );
+    const data = await apiFetch(
+      `${API_URL}/facture-fournisseur/${idFacture}/details`,
+    );
 
-      setDetail(data);
+    setDetail(data);
 
-      setPaiement((old) => ({
-        ...old,
-        montant: String(Number(data?.entete?.reste || 0)),
-        devise: data?.entete?.devise || 'CDF',
-      }));
-    } catch (e: any) {
-      notifierErreur(e.message);
-    } finally {
-      setLoadingAction(false);
-    }
+    setPaiement((old) => ({
+      ...old,
+      montant: String(Number(data?.entete?.reste || 0)),
+      devise: data?.entete?.devise || 'CDF',
+    }));
+  } catch (e: any) {
+    notifierErreur(e.message);
+  } finally {
+    if (bloquerBouton) setLoadingAction(false);
   }
+}
 
   async function enregistrerPaiement() {
-    try {
-      if (!detail?.entete?.idFacture) {
-        notifierErreur('Sélectionne une facture.');
-        return;
-      }
-
-      const montant = Number(paiement.montant || 0);
-
-      if (montant <= 0) {
-        notifierErreur('Montant paiement invalide.');
-        return;
-      }
-
-      setLoadingAction(true);
-
-      await apiFetch(
-        `${API_URL}/facture-fournisseur/${detail.entete.idFacture}/paiements`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            montant,
-            devise: paiement.devise,
-            modePaiement: paiement.modePaiement,
-            reference: paiement.reference || null,
-            observation: paiement.observation || null,
-            datePaiement: paiement.datePaiement,
-            creePar: utilisateur,
-          }),
-        },
-      );
-
-      notifierSucces('Paiement fournisseur enregistré.');
-
-      await ouvrirDetails(detail.entete.idFacture);
-      await charger();
-
-      setPaiement((old) => ({
-        ...old,
-        montant: '',
-        reference: '',
-        observation: '',
-      }));
-    } catch (e: any) {
-      notifierErreur(e.message);
-    } finally {
-      setLoadingAction(false);
+  try {
+    if (!detail?.entete?.idFacture) {
+      notifierErreur('Sélectionne une facture.');
+      return;
     }
-  }
 
+    const idFacture = detail.entete.idFacture;
+    const montant = Number(paiement.montant || 0);
+
+    if (montant <= 0) {
+      notifierErreur('Montant paiement invalide.');
+      return;
+    }
+
+    setLoadingAction(true);
+
+    await apiFetch(`${API_URL}/facture-fournisseur/${idFacture}/paiements`, {
+      method: 'POST',
+      body: JSON.stringify({
+        montant,
+        devise: paiement.devise,
+        modePaiement: paiement.modePaiement,
+        reference: paiement.reference || null,
+        observation: paiement.observation || null,
+        datePaiement: paiement.datePaiement,
+        creePar: utilisateur,
+      }),
+    });
+
+    notifierSucces('Paiement fournisseur enregistré.');
+
+    setPaiement((old) => ({
+      ...old,
+      montant: '',
+      reference: '',
+      observation: '',
+    }));
+
+    setLoadingAction(false);
+
+    ouvrirDetails(idFacture, false);
+    charger();
+  } catch (e: any) {
+    notifierErreur(e.message);
+    setLoadingAction(false);
+  }
+}
   async function supprimerPaiement(idPaiement: number) {
     try {
       const ok = window.confirm('Supprimer ce paiement fournisseur ?');
