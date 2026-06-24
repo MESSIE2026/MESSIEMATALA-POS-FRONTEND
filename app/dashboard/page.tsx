@@ -94,16 +94,32 @@ const poles: Pole[] = [
     { titre: 'Réception', desc: 'Réception fournisseur et dépôt', url: '/dashboard/reception' },
     { titre: 'Alertes Stock', desc: 'Stock faible et expiration', url: '/dashboard/alertes-stock' },
     { titre: 'Stock Avancé', desc: 'Contrôle avancé des dépôts', url: '/dashboard/stock-avance' },
+
     { titre: 'Fournisseurs', desc: 'Fournisseurs, achats et commandes', url: '/dashboard/fournisseurs' },
 
-    { 
-      titre: 'Catalogue Fournisseur', 
-      desc: 'Prix d’achat, produits liés aux fournisseurs et délais', 
-      url: '/dashboard/catalogue-fournisseur' 
+    {
+      titre: 'Catalogue Fournisseur',
+      desc: 'Prix d’achat, produits liés aux fournisseurs et délais',
+      url: '/dashboard/catalogue-fournisseur',
     },
 
-    { titre: 'Bon Commande', desc: 'Bons de commande', url: '/dashboard/bon-commande' },
-    { titre: 'Facture Fournisseur', desc: 'Factures fournisseurs', url: '/dashboard/facture-fournisseur' },
+    {
+      titre: 'Bon Commande',
+      desc: 'Bons de commande fournisseurs',
+      url: '/dashboard/bon-commande',
+    },
+
+    {
+      titre: 'Facture Fournisseur',
+      desc: 'Factures fournisseurs et dettes',
+      url: '/dashboard/facture-fournisseur',
+    },
+
+    {
+      titre: 'Paiements Fournisseur',
+      desc: 'Paiements fournisseurs, règlements et soldes',
+      url: '/dashboard/paiements-fournisseur',
+    },
   ],
 },
   {
