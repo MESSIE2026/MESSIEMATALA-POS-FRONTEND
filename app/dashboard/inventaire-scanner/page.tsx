@@ -17,6 +17,8 @@ import {
   X,
 } from 'lucide-react';
 
+import { getParametresDocuments } from '@/app/services/documents.service';
+
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   'https://messiematala-pos-backend-production.up.railway.app';
@@ -194,12 +196,12 @@ export default function Page() {
         setIdDepot(String(depotsData[0].idDepot));
       }
 
-      try {
-        const p = await getJson(`${API_URL}/config-poste-pos/parametres-documents`);
-        setParamsDocs(p || {});
-      } catch {
-        setParamsDocs({});
-      }
+     try {
+  const p = await getParametresDocuments(Number(idEntreprise));
+  setParamsDocs(p || {});
+} catch {
+  setParamsDocs({});
+}
     } catch (e) {
       fail(e, 'Erreur chargement dépôts inventaire.');
     } finally {
