@@ -269,31 +269,37 @@ async function postJson(url: string, body: any) {
   }
 
   async function creerSession() {
-    if (!idDepot) {
-      alert('Sélectionne un dépôt.');
-      return;
-    }
+  const depot = Number(idDepot || 0);
 
-    setLoading(true);
-
-    try {
-      const s = await postJson(`${API_URL}/inventaire-scanner/sessions`, {
-        idDepot: Number(idDepot),
-        creePar: utilisateur,
-        idEntreprise: Number(idEntreprise),
-        idMagasin: Number(idMagasin),
-      });
-
-      setSessionActive(s);
-      await chargerSessions(Number(idDepot));
-      notify(`Session inventaire #${s.idSession} créée.`);
-      setTimeout(() => document.getElementById('scan-input')?.focus(), 150);
-    } catch (e) {
-      fail(e, 'Erreur création session inventaire.');
-    } finally {
-      setLoading(false);
-    }
+  if (depot <= 0) {
+    alert('Sélectionne un dépôt valide.');
+    return;
   }
+
+  setLoading(true);
+
+  try {
+    const s = await postJson(`${API_URL}/inventaire-scanner/sessions`, {
+      idDepot: depot,
+      creePar: utilisateur,
+      idEntreprise: Number(idEntreprise || 1),
+      idMagasin: Number(idMagasin || 0),
+    });
+
+    if (!s?.idSession) {
+      throw new Error('Session créée mais réponse invalide.');
+    }
+
+    setSessionActive(s);
+    await chargerSessions(depot);
+    notify(`Session inventaire #${s.idSession} créée.`);
+    setTimeout(() => document.getElementById('scan-input')?.focus(), 150);
+  } catch (e) {
+    fail(e, 'Erreur création session inventaire.');
+  } finally {
+    setLoading(false);
+  }
+}
 
   async function appliquerScan(codeForce?: string) {
     const codeFinal = String(codeForce || code || '').trim();
@@ -559,13 +565,13 @@ async function postJson(url: string, body: any) {
             </div>
 
             <button
-              onClick={creerSession}
-              disabled={loading || !idDepot}
-              className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-green-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
-            >
-              <Play size={16} />
-              Nouvelle session
-            </button>
+  onClick={creerSession}
+  disabled={loading || Number(idDepot || 0) <= 0}
+  className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-green-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+>
+  <Play size={16} />
+  Nouvelle session
+</button>
 
             <button
               onClick={() => idDepot && chargerSessionOuverte(Number(idDepot))}
