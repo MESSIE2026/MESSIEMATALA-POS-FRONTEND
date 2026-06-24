@@ -393,14 +393,48 @@ async function envoyerBc() {
   window.URL.revokeObjectURL(url);
 }
 
-  function ouvrirPdfMensuel() {
-    const mois = new Date().toISOString().slice(0, 7);
-    const idEntreprise = localStorage.getItem('ZAIRE_ID_ENTREPRISE') || '1';
-    window.open(
-      `${API_URL}/bon-commande/pdf-mensuel?mois=${mois}&idEntreprise=${idEntreprise}`,
-      '_blank',
-    );
+  async function ouvrirPdfMensuel() {
+  const mois = new Date().toISOString().slice(0, 7);
+  const idEntreprise = localStorage.getItem('ZAIRE_ID_ENTREPRISE') || '1';
+
+  const res = await fetch(
+    `${API_URL}/bon-commande/pdf-mensuel?mois=${mois}&idEntreprise=${idEntreprise}`,
+  );
+
+  if (!res.ok) {
+    alert('Erreur génération PDF mensuel.');
+    return;
   }
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+
+  a.href = url;
+  a.download = `BC_MENSUEL_${mois}.pdf`;
+
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  window.URL.revokeObjectURL(url);
+}
+
+const boutonAjouterDesactive =
+  loadingLigne ||
+  !idBcActif ||
+  !ligne.idProduit ||
+  Number(ligne.qteCommandeeBase) <= 0;
+
+const texteBoutonAjouter = loadingLigne
+  ? 'Ajout...'
+  : !idBcActif
+    ? 'Sélectionne un BC'
+    : !ligne.idProduit
+      ? 'Choisis un produit'
+      : Number(ligne.qteCommandeeBase) <= 0
+        ? 'Quantité invalide'
+        : 'Ajouter ligne';
 
   return (
     <main className="min-h-screen bg-slate-100 p-4 md:p-8">
@@ -590,7 +624,7 @@ async function envoyerBc() {
             >
               <option value="">Choisir...</option>
               {produits.map((p) => (
-                <option key={p.idProduit} value={p.idProduit}>
+                <option key={p.idProduit} value={String(p.idProduit)}>
                   {p.nomProduit}
                 </option>
               ))}
@@ -647,15 +681,10 @@ async function envoyerBc() {
        <button
   className={`${buttons.ajouter} mt-4`}
   onClick={ajouterLigne}
-  disabled={
-    loadingLigne ||
-    !idBcActif ||
-    !ligne.idProduit ||
-    Number(ligne.qteCommandeeBase) <= 0
-  }
+  disabled={boutonAjouterDesactive}
 >
   <Plus size={16} />
-  {loadingLigne ? 'Ajout...' : 'Ajouter ligne'}
+  {texteBoutonAjouter}
 </button>
       </section>
 
