@@ -381,6 +381,49 @@ console.log('PAYLOAD SESSION INVENTAIRE', payload);
     }
   }
 
+  async function modifierQuantiteLigne(ligne: LigneInventaire) {
+  const valeur = window.prompt(
+    `Modifier quantité comptée pour ${ligne.produit}\nStock système : ${ligne.stockSystemeDepot}`,
+    String(ligne.qteComptee || 0),
+  );
+
+  if (valeur === null) return;
+
+  const qteFinale = Number(valeur);
+
+  if (!Number.isFinite(qteFinale) || qteFinale < 0) {
+    alert('Quantité invalide.');
+    return;
+  }
+
+  try {
+    const data = await fetch(
+      `${API_URL}/inventaire-scanner/lignes/${ligne.idLigne}/quantite`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idLigne: ligne.idLigne,
+          qteCompteeBase: qteFinale,
+          utilisateur,
+        }),
+      },
+    );
+
+    if (!data.ok) {
+      throw new Error(await data.text());
+    }
+
+    if (sessionActive?.idSession) {
+      await chargerLignes(sessionActive.idSession);
+    }
+
+    notify('Quantité comptée modifiée.');
+  } catch (e) {
+    fail(e, 'Erreur modification quantité comptée.');
+  }
+}
+
   async function validerInventaire() {
     if (!sessionActive?.idSession) {
       alert('Aucune session ouverte.');
@@ -745,43 +788,52 @@ console.log('PAYLOAD SESSION INVENTAIRE', payload);
           </div>
 
           <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-slate-50 text-left text-slate-600">
-                <tr>
-                  <Th>Réf.</Th>
-                  <Th>Produit</Th>
-                  <Th>Variante</Th>
-                  <Th>Stock</Th>
-                  <Th>Comptée</Th>
-                  <Th>Écart</Th>
-                  <Th>Action</Th>
-                  <Th>Dernier scan</Th>
-                </tr>
-              </thead>
+           <table className="min-w-full text-sm">
+  <thead className="bg-slate-50 text-left text-slate-600">
+    <tr>
+      <Th>Réf.</Th>
+      <Th>Produit</Th>
+      <Th>Variante</Th>
+      <Th>Stock</Th>
+      <Th>Comptée</Th>
+      <Th>Écart</Th>
+      <Th>Action</Th>
+      <Th>Dernier scan</Th>
+      <Th>Modifier</Th>
+    </tr>
+  </thead>
 
-              <tbody>
-                {lignesFiltrees.map((l) => (
-                  <tr key={l.idLigne} className="border-t">
-                    <Td>{l.reference || '-'}</Td>
-                    <Td>{l.produit || '-'}</Td>
-                    <Td>{l.variante || '-'}</Td>
-                    <Td>{Number(l.stockSystemeDepot || 0).toLocaleString('fr-FR')}</Td>
-                    <Td>{Number(l.qteComptee || 0).toLocaleString('fr-FR')}</Td>
-                    <Td>
-                      <BadgeEcart value={Number(l.ecart || 0)} />
-                    </Td>
-                    <Td>
-                      <BadgeAction action={l.actionStock} />
-                    </Td>
-                    <Td>
-                      {l.dernierScan
-                        ? new Date(l.dernierScan).toLocaleString('fr-FR')
-                        : '-'}
-                    </Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+  <tbody>
+    {lignesFiltrees.map((l) => (
+      <tr key={l.idLigne} className="border-t">
+        <Td>{l.reference || '-'}</Td>
+        <Td>{l.produit || '-'}</Td>
+        <Td>{l.variante || '-'}</Td>
+        <Td>{Number(l.stockSystemeDepot || 0).toLocaleString('fr-FR')}</Td>
+        <Td>{Number(l.qteComptee || 0).toLocaleString('fr-FR')}</Td>
+        <Td>
+          <BadgeEcart value={Number(l.ecart || 0)} />
+        </Td>
+        <Td>
+          <BadgeAction action={l.actionStock} />
+        </Td>
+        <Td>
+          {l.dernierScan
+            ? new Date(l.dernierScan).toLocaleString('fr-FR')
+            : '-'}
+        </Td>
+        <Td>
+          <button
+            onClick={() => modifierQuantiteLigne(l)}
+            className="rounded-xl bg-blue-700 px-3 py-1 text-xs font-bold text-white"
+          >
+            Modifier quantité
+          </button>
+        </Td>
+      </tr>
+    ))}
+  </tbody>
+</table>
 
             {!loading && lignesFiltrees.length === 0 && (
               <div className="p-8 text-center text-sm text-slate-500">
