@@ -182,7 +182,9 @@ export default function Page() {
   }
 }
 
-  async function enregistrerPaiement() {
+ async function enregistrerPaiement() {
+  if (loadingAction) return;
+
   try {
     if (!detail?.entete?.idFacture) {
       notifierErreur('Sélectionne une facture.');
@@ -199,20 +201,24 @@ export default function Page() {
 
     setLoadingAction(true);
 
-    await apiFetch(`${API_URL}/facture-fournisseur/${idFacture}/paiements`, {
-      method: 'POST',
-      body: JSON.stringify({
-        montant,
-        devise: paiement.devise,
-        modePaiement: paiement.modePaiement,
-        reference: paiement.reference || null,
-        observation: paiement.observation || null,
-        datePaiement: paiement.datePaiement,
-        creePar: utilisateur,
-      }),
-    });
+    const data = await apiFetch(
+      `${API_URL}/facture-fournisseur/${idFacture}/paiements`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          montant,
+          devise: paiement.devise,
+          modePaiement: paiement.modePaiement,
+          observation: paiement.observation || null,
+          datePaiement: paiement.datePaiement,
+          creePar: utilisateur,
+        }),
+      },
+    );
 
-    notifierSucces('Paiement fournisseur enregistré.');
+    notifierSucces(
+      `Paiement enregistré. Référence : ${data?.reference || 'automatique'}`,
+    );
 
     setPaiement((old) => ({
       ...old,
@@ -223,8 +229,10 @@ export default function Page() {
 
     setLoadingAction(false);
 
-    ouvrirDetails(idFacture, false);
-    charger();
+    Promise.allSettled([
+      ouvrirDetails(idFacture, false),
+      charger(),
+    ]);
   } catch (e: any) {
     notifierErreur(e.message);
     setLoadingAction(false);
@@ -603,12 +611,6 @@ export default function Page() {
                   <option value="Chèque">Chèque</option>
                   <option value="Autre">Autre</option>
                 </Select>
-
-                <Input
-                  label="Référence"
-                  value={paiement.reference}
-                  onChange={(v) => setPaiement({ ...paiement, reference: v })}
-                />
 
                 <Input
                   label="Date paiement"
