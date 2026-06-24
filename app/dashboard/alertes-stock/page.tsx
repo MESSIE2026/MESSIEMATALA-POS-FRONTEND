@@ -53,15 +53,13 @@ export default function Page() {
   const [niveau, setNiveau] = useState('TOUS');
   const [loading, setLoading] = useState(false);
 
-  const idEntreprise =
-    typeof window !== 'undefined'
-      ? localStorage.getItem('ZAIRE_ID_ENTREPRISE') || '1'
-      : '1';
+  const [idEntreprise, setIdEntreprise] = useState('1');
+const [idMagasin, setIdMagasin] = useState('0');
 
-  const idMagasin =
-    typeof window !== 'undefined'
-      ? localStorage.getItem('ZAIRE_ID_MAGASIN') || '0'
-      : '0';
+useEffect(() => {
+  setIdEntreprise(localStorage.getItem('ZAIRE_ID_ENTREPRISE') || '1');
+  setIdMagasin(localStorage.getItem('ZAIRE_ID_MAGASIN') || '0');
+}, []);
 
   const query = useMemo(() => {
     const p = new URLSearchParams();
@@ -78,12 +76,10 @@ export default function Page() {
     setLoading(true);
 
     try {
-      const [s, n] = await Promise.all([
-        fetch(`${API_URL}/alertes-stock/stats?${query}`).then((r) => r.json()),
-        fetch(`${API_URL}/alertes-stock/notifications?${query}`).then((r) =>
-          r.json(),
-        ),
-      ]);
+     const [s, n] = await Promise.all([
+  getJson(`${API_URL}/alertes-stock/stats?${query}`),
+  getJson(`${API_URL}/alertes-stock/notifications?${query}`),
+]);
 
       setStats({
         ruptures: Number(s?.ruptures || 0),
@@ -102,14 +98,23 @@ export default function Page() {
     }
   }
 
-  useEffect(() => {
-    charger();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+ useEffect(() => {
+  charger();
+}, [idEntreprise, idMagasin, maxJours, niveau]);
 
   function ouvrirPdf() {
     window.open(`${API_URL}/alertes-stock/pdf?${query}`, '_blank');
   }
+
+  async function getJson(url: string) {
+  const r = await fetch(url);
+
+  if (!r.ok) {
+    throw new Error(await r.text());
+  }
+
+  return r.json();
+}
 
   const lignesFiltrees =
     niveau === 'TOUS'

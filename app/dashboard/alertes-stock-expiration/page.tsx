@@ -34,10 +34,11 @@ export default function Page() {
   const [search, setSearch] = useState('');
   const [inclureExpires, setInclureExpires] = useState(false);
 
-  const idEntreprise =
-    typeof window !== 'undefined'
-      ? localStorage.getItem('ZAIRE_ID_ENTREPRISE') || '1'
-      : '1';
+  const [idEntreprise, setIdEntreprise] = useState('1');
+
+useEffect(() => {
+  setIdEntreprise(localStorage.getItem('ZAIRE_ID_ENTREPRISE') || '1');
+}, []);
 
   const query = useMemo(() => {
     const p = new URLSearchParams();
@@ -52,22 +53,24 @@ export default function Page() {
     return p.toString();
   }, [idEntreprise, idMagasin, idDepot, maxJours, search, inclureExpires]);
 
-  async function charger() {
+  async function getJson(url: string) {
+  const r = await fetch(url);
+
+  if (!r.ok) {
+    throw new Error(await r.text());
+  }
+
+  return r.json();
+}
+
+async function charger() {
   setLoading(true);
 
   try {
     const [s, e, st] = await Promise.all([
-      fetch(
-        `${API_URL}/alertes-stock-expiration/stock?${query}`,
-      ).then((r) => r.json()),
-
-      fetch(
-        `${API_URL}/alertes-stock-expiration/expiration?${query}`,
-      ).then((r) => r.json()),
-
-      fetch(
-        `${API_URL}/alertes-stock-expiration/stats?${query}`,
-      ).then((r) => r.json()),
+      getJson(`${API_URL}/alertes-stock-expiration/stock?${query}`),
+      getJson(`${API_URL}/alertes-stock-expiration/expiration?${query}`),
+      getJson(`${API_URL}/alertes-stock-expiration/stats?${query}`),
     ]);
 
     setStock(Array.isArray(s) ? s : []);
@@ -81,11 +84,11 @@ export default function Page() {
   }
 }
 
-  async function chargerLookups() {
+async function chargerLookups() {
   try {
-    const l = await fetch(
+    const l = await getJson(
       `${API_URL}/alertes-stock-expiration/lookups?idEntreprise=${idEntreprise}&idMagasin=${idMagasin}`,
-    ).then((r) => r.json());
+    );
 
     setLookups({
       magasins: Array.isArray(l?.magasins) ? l.magasins : [],
@@ -96,18 +99,13 @@ export default function Page() {
   }
 }
 
+useEffect(() => {
+  charger();
+}, [idEntreprise, idMagasin, idDepot, maxJours, inclureExpires, search]);
+
   useEffect(() => {
   chargerLookups();
 }, [idEntreprise, idMagasin]);
-
-useEffect(() => {
-  charger();
-}, [
-  idMagasin,
-  idDepot,
-  maxJours,
-  inclureExpires,
-]);
 
   function ouvrirPdf() {
     const url =
