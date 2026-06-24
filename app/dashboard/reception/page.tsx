@@ -286,6 +286,11 @@ export default function Page() {
         return;
       }
 
+if (ligne.avecExpiration && !ligne.dateExpiration) {
+  notifierErreur('Date expiration obligatoire.');
+  return;
+}
+
       setLoadingAction(true);
 
       await apiFetch(
