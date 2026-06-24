@@ -148,27 +148,48 @@ export default function Page() {
     }
   }, [sessionActive?.idSession]);
 
-  async function getJson(url: string) {
-    const r = await fetch(url);
-    if (!r.ok) {
-      throw new Error(await r.text());
-    }
-    return r.json();
+ async function parseJsonResponse(response: Response) {
+  const text = await response.text();
+
+  if (!text || !text.trim()) {
+    return null;
   }
 
-  async function postJson(url: string, body: any) {
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-
-    if (!r.ok) {
-      throw new Error(await r.text());
-    }
-
-    return r.json();
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    console.error('JSON invalide :', text);
+    return null;
   }
+}
+
+async function getJson(url: string) {
+  const response = await fetch(url, {
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return parseJsonResponse(response);
+}
+
+async function postJson(url: string, body: any) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return parseJsonResponse(response);
+}
 
   function notify(msg: string) {
     setMessage(msg);
