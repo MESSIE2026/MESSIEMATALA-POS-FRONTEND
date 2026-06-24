@@ -53,47 +53,61 @@ export default function Page() {
   }, [idEntreprise, idMagasin, idDepot, maxJours, search, inclureExpires]);
 
   async function charger() {
-    setLoading(true);
+  setLoading(true);
 
-    try {
-      const [l, s, e, st] = await Promise.all([
-        fetch(
-          `${API_URL}/alertes-stock-expiration/lookups?idEntreprise=${idEntreprise}`,
-        ).then((r) => r.json()),
+  try {
+    const [s, e, st] = await Promise.all([
+      fetch(
+        `${API_URL}/alertes-stock-expiration/stock?${query}`,
+      ).then((r) => r.json()),
 
-        fetch(`${API_URL}/alertes-stock-expiration/stock?${query}`).then((r) =>
-          r.json(),
-        ),
+      fetch(
+        `${API_URL}/alertes-stock-expiration/expiration?${query}`,
+      ).then((r) => r.json()),
 
-        fetch(
-          `${API_URL}/alertes-stock-expiration/expiration?${query}`,
-        ).then((r) => r.json()),
+      fetch(
+        `${API_URL}/alertes-stock-expiration/stats?${query}`,
+      ).then((r) => r.json()),
+    ]);
 
-        fetch(`${API_URL}/alertes-stock-expiration/stats?${query}`).then((r) =>
-          r.json(),
-        ),
-      ]);
-
-      setLookups({
-        magasins: Array.isArray(l?.magasins) ? l.magasins : [],
-        depots: Array.isArray(l?.depots) ? l.depots : [],
-      });
-
-      setStock(Array.isArray(s) ? s : []);
-      setExpiration(Array.isArray(e) ? e : []);
-      setStats(st || {});
-    } catch (error) {
-      console.error('Erreur chargement alertes stock expiration:', error);
-      alert('Erreur chargement alertes stock expiration.');
-    } finally {
-      setLoading(false);
-    }
+    setStock(Array.isArray(s) ? s : []);
+    setExpiration(Array.isArray(e) ? e : []);
+    setStats(st || {});
+  } catch (error) {
+    console.error('Erreur chargement alertes stock expiration:', error);
+    alert('Erreur chargement alertes stock expiration.');
+  } finally {
+    setLoading(false);
   }
+}
+
+  async function chargerLookups() {
+  try {
+    const l = await fetch(
+      `${API_URL}/alertes-stock-expiration/lookups?idEntreprise=${idEntreprise}&idMagasin=${idMagasin}`,
+    ).then((r) => r.json());
+
+    setLookups({
+      magasins: Array.isArray(l?.magasins) ? l.magasins : [],
+      depots: Array.isArray(l?.depots) ? l.depots : [],
+    });
+  } catch (e) {
+    console.error(e);
+  }
+}
 
   useEffect(() => {
-    charger();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  chargerLookups();
+}, [idEntreprise, idMagasin]);
+
+useEffect(() => {
+  charger();
+}, [
+  idMagasin,
+  idDepot,
+  maxJours,
+  inclureExpires,
+]);
 
   function ouvrirPdf() {
     const url =
@@ -175,10 +189,13 @@ export default function Page() {
         <section className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
           <div className="grid gap-3 md:grid-cols-5">
             <select
-              value={idMagasin}
-              onChange={(e) => setIdMagasin(e.target.value)}
-              className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
-            >
+  value={idMagasin}
+  onChange={(e) => {
+    setIdMagasin(e.target.value);
+    setIdDepot('0');
+  }}
+  className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+>
               <option value="0">Tous magasins</option>
               {lookups.magasins.map((m) => (
                 <option key={m.idMagasin} value={m.idMagasin}>
