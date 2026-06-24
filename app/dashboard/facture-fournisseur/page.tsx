@@ -230,6 +230,7 @@ export default function Page() {
     setLoadingAction(false);
   }
 }
+
   async function supprimerPaiement(idPaiement: number) {
     try {
       const ok = window.confirm('Supprimer ce paiement fournisseur ?');
