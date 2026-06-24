@@ -92,7 +92,13 @@ const poles: Pole[] = [
     { titre: 'Inventaire Scanner', desc: 'Inventaire par scanner', url: '/dashboard/inventaire-scanner' },
     { titre: 'Opérations Stock', desc: 'Entrées, sorties et journal stock', url: '/dashboard/operations-stock' },
     { titre: 'Réception', desc: 'Réception fournisseur et dépôt', url: '/dashboard/reception' },
-    { titre: 'Alertes Stock', desc: 'Stock faible et expiration', url: '/dashboard/alertes-stock' },
+    { titre: 'Alertes Stock', desc: 'Centre notifications stock', url: '/dashboard/alertes-stock' },
+
+{
+  titre: 'Alertes Stock & Expiration',
+  desc: 'Lots, dates expiration, produits expirés et alertes 30/60/90 jours',
+  url: '/dashboard/alertes-stock-expiration',
+},
     { titre: 'Stock Avancé', desc: 'Contrôle avancé des dépôts', url: '/dashboard/stock-avance' },
 
     { titre: 'Fournisseurs', desc: 'Fournisseurs, achats et commandes', url: '/dashboard/fournisseurs' },
