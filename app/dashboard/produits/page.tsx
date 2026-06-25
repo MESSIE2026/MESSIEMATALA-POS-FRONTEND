@@ -1,12 +1,28 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
+import {
+  Barcode,
+  Boxes,
+  CheckCircle2,
+  Edit,
+  ImageIcon,
+  Package,
+  Plus,
+  Printer,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  Trash2,
+  XCircle,
+} from 'lucide-react';
 
 type Produit = {
   id_produit: number;
   nomproduit: string;
   refproduit?: string;
   codebarre?: string;
+  codebarretrim?: string;
   prix: number;
   quantite?: number;
   stockinitial?: number;
@@ -20,10 +36,13 @@ type Produit = {
   description?: string;
   imagepath?: string;
   isreglemente?: boolean;
+  ordonnanceobligatoire?: boolean;
   signaturemanagerrequired?: boolean;
   permissioncode?: string;
   agemin?: number;
   niveaurestriction?: number;
+  isactif?: boolean;
+  identreprise?: number;
 };
 
 type FormProduit = {
@@ -39,7 +58,6 @@ type FormProduit = {
   codebarre: string;
   description: string;
   imagepath: string;
-  depotStockInitial: string;
   isreglemente: boolean;
   signaturemanagerrequired: boolean;
   permissioncode: string;
@@ -47,7 +65,9 @@ type FormProduit = {
   niveaurestriction: number;
 };
 
-const API = 'https://messiematala-pos-backend-production.up.railway.app';
+const API =
+  process.env.NEXT_PUBLIC_API_URL ||
+  'https://messiematala-pos-backend-production.up.railway.app';
 
 const emptyForm: FormProduit = {
   nomproduit: '',
@@ -61,7 +81,6 @@ const emptyForm: FormProduit = {
   codebarre: '',
   description: '',
   imagepath: '',
-  depotStockInitial: '',
   isreglemente: false,
   signaturemanagerrequired: false,
   permissioncode: '',
@@ -71,34 +90,45 @@ const emptyForm: FormProduit = {
 
 export default function Page() {
   const [produits, setProduits] = useState<Produit[]>([]);
-  const [equivalences, setEquivalences] = useState<any[]>([]);
   const [form, setForm] = useState<FormProduit>(emptyForm);
   const [search, setSearch] = useState('');
   const [scanCode, setScanCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [modeInfos, setModeInfos] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const categories = ['Vêtements', 'Chaussures', 'Accessoires', 'Beauté', 'Pharmacie', 'Autres'];
-  const tailles = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44'];
+  const tailles = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44'];
   const devises = ['USD', 'CDF', 'EUR'];
   const permissions = ['VENTE_PRODUIT_REGLEMENTE', 'VENTE_REGLEMENTE_N1', 'VENTE_REGLEMENTE_N2', 'VENTE_REGLEMENTE_N3'];
-  const formatsEtiquettes = ['A4 - 3 x 8', 'A4 - 4 x 10', 'Petit format', 'Grand format'];
 
   useEffect(() => {
     chargerProduits();
   }, []);
 
+  const stats = useMemo(() => {
+    const total = produits.length;
+    const stock = produits.reduce((s, p) => s + Number(p.stockactuel ?? p.quantite ?? 0), 0);
+    const reglementes = produits.filter((p) => p.isreglemente || p.signaturemanagerrequired).length;
+    const rupture = produits.filter((p) => Number(p.stockactuel ?? p.quantite ?? 0) <= 0).length;
+
+    return { total, stock, reglementes, rupture };
+  }, [produits]);
+
   async function chargerProduits(q = '') {
     try {
       setLoading(true);
-      const url = q ? `${API}/produits?q=${encodeURIComponent(q)}` : `${API}/produits`;
+      const url = q.trim()
+        ? `${API}/produits?q=${encodeURIComponent(q.trim())}`
+        : `${API}/produits`;
+
       const res = await fetch(url, { cache: 'no-store' });
       if (!res.ok) throw new Error(await res.text());
+
       const data = await res.json();
       setProduits(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
-      alert('Impossible de charger les produits');
+      alert('Impossible de charger les produits.');
     } finally {
       setLoading(false);
     }
@@ -112,32 +142,82 @@ export default function Page() {
       categorie: p.categorie || '',
       taille: p.taille || '',
       couleur: p.couleur || '',
-      quantite: Number(p.quantite ?? p.stockinitial ?? 1),
+      quantite: Number(p.quantite ?? p.stockactuel ?? p.stockinitial ?? 1),
       prix: Number(p.prix ?? 0),
       devise: p.devise || 'USD',
-      codebarre: p.codebarre || '',
+      codebarre: p.codebarre || p.codebarretrim || '',
       description: p.description || '',
       imagepath: p.imagepath || '',
-      depotStockInitial: '',
       isreglemente: Boolean(p.isreglemente),
       signaturemanagerrequired: Boolean(p.signaturemanagerrequired),
       permissioncode: p.permissioncode || '',
       agemin: Number(p.agemin ?? 0),
       niveaurestriction: Number(p.niveaurestriction ?? 0),
     });
-    setModeInfos(true);
   }
 
-  function effacer() {
+  function nouveau() {
     setForm(emptyForm);
-    setEquivalences([]);
     setScanCode('');
   }
 
   async function enregistrer() {
+    if (!form.nomproduit.trim()) return alert('Nom produit obligatoire.');
+    if (Number(form.prix) < 0) return alert('Prix invalide.');
+
     try {
+      setSaving(true);
+
+      const payload = {
+        nomproduit: form.nomproduit,
+        refproduit: form.refproduit,
+        categorie: form.categorie,
+        taille: form.taille,
+        couleur: form.couleur,
+        quantite: Number(form.quantite || 0),
+        stockinitial: Number(form.quantite || 0),
+        stockactuel: Number(form.quantite || 0),
+        prix: Number(form.prix || 0),
+        devise: form.devise,
+        codebarre: form.codebarre,
+        codebarretrim: form.codebarre?.trim(),
+        description: form.description,
+        imagepath: form.imagepath,
+        isreglemente: form.isreglemente,
+        signaturemanagerrequired: form.signaturemanagerrequired,
+        permissioncode: form.permissioncode,
+        agemin: Number(form.agemin || 0),
+        niveaurestriction: Number(form.niveaurestriction || 0),
+        isactif: true,
+      };
+
       const res = await fetch(`${API}/produits`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+
+      await chargerProduits(search);
+      alert('Produit enregistré.');
+      nouveau();
+    } catch (e) {
+      console.error(e);
+      alert('Erreur enregistrement produit.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function modifier() {
+    if (!form.id_produit) return alert('Sélectionne d’abord un produit.');
+
+    try {
+      setSaving(true);
+
+      const res = await fetch(`${API}/produits/${form.id_produit}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nomproduit: form.nomproduit,
@@ -145,9 +225,9 @@ export default function Page() {
           categorie: form.categorie,
           taille: form.taille,
           couleur: form.couleur,
-          quantite: form.quantite,
-          stockinitial: form.quantite,
-          prix: form.prix,
+          quantite: Number(form.quantite || 0),
+          stockactuel: Number(form.quantite || 0),
+          prix: Number(form.prix || 0),
           devise: form.devise,
           codebarre: form.codebarre,
           codebarretrim: form.codebarre?.trim(),
@@ -156,38 +236,20 @@ export default function Page() {
           isreglemente: form.isreglemente,
           signaturemanagerrequired: form.signaturemanagerrequired,
           permissioncode: form.permissioncode,
-          agemin: form.agemin,
-          niveaurestriction: form.niveaurestriction,
-          isactif: true,
+          agemin: Number(form.agemin || 0),
+          niveaurestriction: Number(form.niveaurestriction || 0),
         }),
       });
 
       if (!res.ok) throw new Error(await res.text());
-      await chargerProduits();
-      alert('Produit enregistré');
-      effacer();
+
+      await chargerProduits(search);
+      alert('Produit modifié.');
     } catch (e) {
       console.error(e);
-      alert('Erreur enregistrement produit');
-    }
-  }
-
-  async function modifier() {
-    if (!form.id_produit) return alert('Sélectionne d’abord un produit');
-
-    try {
-      const res = await fetch(`${API}/produits/${form.id_produit}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-
-      if (!res.ok) throw new Error(await res.text());
-      await chargerProduits();
-      alert('Produit modifié');
-    } catch (e) {
-      console.error(e);
-      alert('Erreur modification produit');
+      alert('Erreur modification produit.');
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -210,410 +272,564 @@ export default function Page() {
 
   function genererCodeBarre() {
     const ref = form.refproduit || `PRD-${Date.now()}`;
-    setForm((f) => ({ ...f, codebarre: ref }));
-  }
-
-  function supprimerSoft() {
-    alert('Pour supprimer, il faut ajouter DELETE ou PATCH isactif=false côté backend.');
-  }
-
-  function imprimerEtiquettes() {
-    alert('Impression étiquettes : à connecter avec génération PDF/print navigateur.');
+    setForm((f) => ({ ...f, codebarre: ref, refproduit: f.refproduit || ref }));
   }
 
   function signatureManager() {
     setForm((f) => ({
       ...f,
       signaturemanagerrequired: true,
+      isreglemente: true,
       permissioncode: f.permissioncode || 'VENTE_PRODUIT_REGLEMENTE',
     }));
+  }
+
+  function supprimerSoft() {
+    alert('Suppression à connecter côté backend : PATCH isactif=false ou DELETE.');
+  }
+
+  function imprimerEtiquettes() {
+    alert('Impression étiquettes à connecter avec PDF/print navigateur.');
   }
 
   function formatPrix(v: any, devise?: string) {
     return `${Number(v || 0).toLocaleString('fr-FR')} ${devise || ''}`;
   }
 
-  const stockActuelPreview = useMemo(() => {
-    return Number(form.quantite || 0);
-  }, [form.quantite]);
+  function stockOf(p: Produit) {
+    return Number(p.stockactuel ?? p.quantite ?? 0);
+  }
 
   return (
-    <main className="min-h-screen bg-slate-100 p-4">
-      <div className="mb-4 rounded-xl bg-blue-600 p-2 text-center">
-        <button
-          onClick={() => setModeInfos(!modeInfos)}
-          className="rounded-lg px-8 py-2 font-bold text-white hover:bg-blue-700"
-        >
-          {modeInfos ? 'Informations Produits ▼' : 'Informations Produits ▲'}
-        </button>
-      </div>
+    <main className="min-h-screen bg-slate-100 p-3 text-slate-900 md:p-6">
+      <section className="mb-5 rounded-3xl bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 p-5 text-white shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-blue-200">
+              Stock / Produits
+            </p>
+            <h1 className="mt-2 text-2xl font-black md:text-3xl">Catalogue Produits</h1>
+            <p className="mt-1 text-sm text-slate-300">
+              Fiches produits avec image, prix, stock, réglementation et code-barres.
+            </p>
+          </div>
 
-      {modeInfos ? (
-        <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
-          <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <h2 className="mb-4 text-lg font-bold text-slate-800">Informations produit</h2>
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+            <StatCard label="Produits" value={stats.total} />
+            <StatCard label="Stock total" value={stats.stock} />
+            <StatCard label="Réglementés" value={stats.reglementes} />
+            <StatCard label="Rupture" value={stats.rupture} danger />
+          </div>
+        </div>
+      </section>
+
+      <section className="mb-5 grid gap-4 xl:grid-cols-[440px_1fr]">
+        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-black">
+                {form.id_produit ? `Modifier produit #${form.id_produit}` : 'Nouveau produit'}
+              </h2>
+              <p className="text-sm font-medium text-slate-500">
+                Remplis les informations puis enregistre.
+              </p>
+            </div>
+
+            <button
+              onClick={nouveau}
+              className="rounded-2xl bg-slate-800 px-4 py-2 text-sm font-black text-white hover:bg-slate-950"
+            >
+              Nouveau
+            </button>
+          </div>
+
+          <div className="grid gap-3">
+            <Field label="Nom produit">
+              <input
+                value={form.nomproduit}
+                onChange={(e) => setForm({ ...form, nomproduit: e.target.value })}
+                className="input"
+                placeholder="Ex: ROBE SOIREE"
+              />
+            </Field>
 
             <div className="grid gap-3 md:grid-cols-2">
-              <Field label="Nom">
-                <input value={form.nomproduit} onChange={(e) => setForm({ ...form, nomproduit: e.target.value })} className="input" />
-              </Field>
-
               <Field label="Référence">
-                <input value={form.refproduit} onChange={(e) => setForm({ ...form, refproduit: e.target.value })} className="input" />
+                <input
+                  value={form.refproduit}
+                  onChange={(e) => setForm({ ...form, refproduit: e.target.value })}
+                  className="input"
+                  placeholder="PRD-001044"
+                />
               </Field>
 
+              <Field label="Code-barres">
+                <input
+                  value={form.codebarre}
+                  onChange={(e) => setForm({ ...form, codebarre: e.target.value })}
+                  className="input"
+                  placeholder="ZAIRE2026"
+                />
+              </Field>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
+              <Field label="Prix">
+                <input
+                  type="number"
+                  value={form.prix}
+                  onChange={(e) => setForm({ ...form, prix: Number(e.target.value) })}
+                  className="input"
+                />
+              </Field>
+
+              <Field label="Devise">
+                <select
+                  value={form.devise}
+                  onChange={(e) => setForm({ ...form, devise: e.target.value })}
+                  className="input"
+                >
+                  {devises.map((d) => (
+                    <option key={d}>{d}</option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Quantité">
+                <input
+                  type="number"
+                  value={form.quantite}
+                  onChange={(e) => setForm({ ...form, quantite: Number(e.target.value) })}
+                  className="input"
+                />
+              </Field>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
               <Field label="Catégorie">
-                <select value={form.categorie} onChange={(e) => setForm({ ...form, categorie: e.target.value })} className="input">
+                <select
+                  value={form.categorie}
+                  onChange={(e) => setForm({ ...form, categorie: e.target.value })}
+                  className="input"
+                >
                   <option value="">Choisir</option>
-                  {categories.map((x) => <option key={x}>{x}</option>)}
+                  {categories.map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
                 </select>
               </Field>
 
               <Field label="Taille">
-                <select value={form.taille} onChange={(e) => setForm({ ...form, taille: e.target.value })} className="input">
+                <select
+                  value={form.taille}
+                  onChange={(e) => setForm({ ...form, taille: e.target.value })}
+                  className="input"
+                >
                   <option value="">Choisir</option>
-                  {tailles.map((x) => <option key={x}>{x}</option>)}
+                  {tailles.map((t) => (
+                    <option key={t}>{t}</option>
+                  ))}
                 </select>
               </Field>
 
               <Field label="Couleur">
-                <input value={form.couleur} onChange={(e) => setForm({ ...form, couleur: e.target.value })} className="input" />
+                <input
+                  value={form.couleur}
+                  onChange={(e) => setForm({ ...form, couleur: e.target.value })}
+                  className="input"
+                />
               </Field>
+            </div>
 
-              <Field label="Quantité">
-                <input type="number" value={form.quantite} onChange={(e) => setForm({ ...form, quantite: Number(e.target.value) })} className="input" />
-              </Field>
+            <Field label="Image URL / chemin">
+              <input
+                value={form.imagepath}
+                onChange={(e) => setForm({ ...form, imagepath: e.target.value })}
+                className="input"
+                placeholder="https://... ou /uploads/produits/image.png"
+              />
+            </Field>
 
-              <Field label="Prix">
-                <input type="number" value={form.prix} onChange={(e) => setForm({ ...form, prix: Number(e.target.value) })} className="input" />
-              </Field>
+            <Field label="Description">
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                className="input min-h-20 resize-none"
+                placeholder="Description courte du produit..."
+              />
+            </Field>
 
-              <Field label="Devise">
-                <div className="flex gap-2">
-                  <select value={form.devise} onChange={(e) => setForm({ ...form, devise: e.target.value })} className="input">
-                    {devises.map((x) => <option key={x}>{x}</option>)}
+            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <h3 className="mb-3 font-black text-slate-800">Réglementation</h3>
+
+              <div className="grid gap-3">
+                <label className="flex items-center gap-2 text-sm font-bold">
+                  <input
+                    type="checkbox"
+                    checked={form.isreglemente}
+                    onChange={(e) => setForm({ ...form, isreglemente: e.target.checked })}
+                  />
+                  Produit réglementé
+                </label>
+
+                <label className="flex items-center gap-2 text-sm font-bold">
+                  <input
+                    type="checkbox"
+                    checked={form.signaturemanagerrequired}
+                    onChange={(e) =>
+                      setForm({ ...form, signaturemanagerrequired: e.target.checked })
+                    }
+                  />
+                  Signature Manager requise
+                </label>
+
+                <select
+                  value={form.permissioncode}
+                  onChange={(e) => setForm({ ...form, permissioncode: e.target.value })}
+                  disabled={!form.signaturemanagerrequired}
+                  className="input"
+                >
+                  <option value="">Permission</option>
+                  {permissions.map((p) => (
+                    <option key={p}>{p}</option>
+                  ))}
+                </select>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <input
+                    type="number"
+                    value={form.agemin}
+                    onChange={(e) => setForm({ ...form, agemin: Number(e.target.value) })}
+                    disabled={!form.isreglemente}
+                    className="input"
+                    placeholder="Âge minimum"
+                  />
+
+                  <select
+                    value={form.niveaurestriction}
+                    onChange={(e) =>
+                      setForm({ ...form, niveaurestriction: Number(e.target.value) })
+                    }
+                    disabled={!form.isreglemente}
+                    className="input"
+                  >
+                    <option value={0}>0 - Aucun</option>
+                    <option value={1}>1 - Faible</option>
+                    <option value={2}>2 - Moyen</option>
+                    <option value={3}>3 - Élevé</option>
                   </select>
-                  <input value={form.id_produit || ''} readOnly placeholder="ID" className="input w-24 text-center font-bold" />
                 </div>
-              </Field>
-
-              <Field label="Code barre">
-                <input value={form.codebarre} onChange={(e) => setForm({ ...form, codebarre: e.target.value })} className="input" />
-              </Field>
-
-              <Field label="Date ajout">
-                <input value={new Date().toLocaleDateString('fr-FR')} readOnly className="input" />
-              </Field>
+              </div>
             </div>
 
-            <div className="mt-4 rounded-xl bg-slate-50 p-3 text-sm font-semibold">
-              Stock actuel aperçu : {stockActuelPreview}
+            <div className="grid gap-2 md:grid-cols-2">
+              <ActionButton onClick={enregistrer} disabled={saving} icon={<Plus size={17} />}>
+                Enregistrer
+              </ActionButton>
+
+              <ActionButton onClick={modifier} disabled={saving || !form.id_produit} icon={<Edit size={17} />}>
+                Modifier
+              </ActionButton>
+
+              <ActionButton onClick={genererCodeBarre} icon={<Barcode size={17} />} variant="slate">
+                Générer code-barres
+              </ActionButton>
+
+              <ActionButton onClick={signatureManager} icon={<ShieldCheck size={17} />} variant="amber">
+                Signature
+              </ActionButton>
+
+              <ActionButton onClick={imprimerEtiquettes} icon={<Printer size={17} />} variant="blue">
+                Imprimer étiquettes
+              </ActionButton>
+
+              <ActionButton onClick={supprimerSoft} icon={<Trash2 size={17} />} variant="red">
+                Supprimer
+              </ActionButton>
             </div>
-          </section>
-
-          <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <h2 className="mb-3 text-lg font-bold text-slate-800">Image produit</h2>
-
-            <div className="mb-3 flex h-44 items-center justify-center rounded-xl border bg-slate-50">
-              {form.imagepath ? (
-                <img src={form.imagepath} alt="Produit" className="max-h-full max-w-full object-contain" />
-              ) : (
-                <span className="text-slate-400">Aucune image</span>
-              )}
-            </div>
-
-            <input
-              value={form.imagepath}
-              onChange={(e) => setForm({ ...form, imagepath: e.target.value })}
-              placeholder="Chemin image ou URL"
-              className="input mb-3"
-            />
-
-            <button className="btn w-full">Changer l’image</button>
-
-            <div className="mt-5">
-              <label className="mb-1 block font-bold text-blue-700">Scan code</label>
-              <input
-                value={scanCode}
-                onChange={(e) => setScanCode(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') scanner(scanCode);
-                }}
-                className="input"
-                placeholder="Scanner code-barres..."
-                autoComplete="off"
-              />
-            </div>
-          </section>
-
-          <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 xl:col-span-2">
-            <h2 className="mb-4 text-lg font-bold text-slate-800">Description</h2>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="input min-h-24"
-            />
-          </section>
-
-          <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 xl:col-span-2">
-            <h2 className="mb-4 text-lg font-bold text-slate-800">Réglementation</h2>
-
-            <div className="grid gap-3 md:grid-cols-5">
-              <label className="flex items-center gap-2 font-semibold">
-                <input
-                  type="checkbox"
-                  checked={form.isreglemente}
-                  onChange={(e) => setForm({ ...form, isreglemente: e.target.checked })}
-                />
-                Produit réglementé
-              </label>
-
-              <label className="flex items-center gap-2 font-semibold">
-                <input
-                  type="checkbox"
-                  checked={form.signaturemanagerrequired}
-                  onChange={(e) => setForm({ ...form, signaturemanagerrequired: e.target.checked })}
-                />
-                Signature requise
-              </label>
-
-              <select
-                value={form.permissioncode}
-                onChange={(e) => setForm({ ...form, permissioncode: e.target.value })}
-                className="input"
-                disabled={!form.signaturemanagerrequired}
-              >
-                <option value="">Permission</option>
-                {permissions.map((x) => <option key={x}>{x}</option>)}
-              </select>
-
-              <input
-                type="number"
-                value={form.agemin}
-                onChange={(e) => setForm({ ...form, agemin: Number(e.target.value) })}
-                className="input"
-                placeholder="Âge min"
-                disabled={!form.isreglemente}
-              />
-
-              <select
-                value={form.niveaurestriction}
-                onChange={(e) => setForm({ ...form, niveaurestriction: Number(e.target.value) })}
-                className="input"
-                disabled={!form.isreglemente}
-              >
-                <option value={0}>0 - Aucun</option>
-                <option value={1}>1 - Faible</option>
-                <option value={2}>2 - Moyen</option>
-                <option value={3}>3 - Élevé</option>
-              </select>
-            </div>
-          </section>
-
-          <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 xl:col-span-2">
-            <h2 className="mb-4 text-lg font-bold text-slate-800">Actions rapides</h2>
-
-            <div className="grid gap-3 md:grid-cols-4">
-              <button onClick={enregistrer} className="btn">Enregistrer</button>
-              <button onClick={modifier} className="btn">Modifier</button>
-              <button onClick={effacer} className="btn bg-slate-700">Annuler</button>
-              <button onClick={supprimerSoft} className="btn bg-red-600">Supprimer</button>
-
-              <button className="btn">Détails</button>
-              <button className="btn">Stock initial</button>
-              <button onClick={genererCodeBarre} className="btn">Code barre</button>
-              <button onClick={imprimerEtiquettes} className="btn">Imprimer étiquettes</button>
-
-              <button onClick={signatureManager} className="btn">Signature</button>
-              <button className="btn">Ajouter équiv.</button>
-              <select className="input">
-                <option>Produit équivalent</option>
-              </select>
-              <button className="btn bg-red-500">Retirer équiv.</button>
-
-              <label className="font-bold text-blue-700">Format étiquettes :</label>
-              <select className="input md:col-span-3">
-                {formatsEtiquettes.map((x) => <option key={x}>{x}</option>)}
-              </select>
-
-              <button className="btn md:col-span-4">Modifier prix</button>
-            </div>
-          </section>
+          </div>
         </div>
-      ) : (
-        <div className="grid gap-4">
-          <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <h2 className="mb-4 text-lg font-bold">Liste des produits</h2>
 
-            <div className="mb-4 flex gap-3">
+        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <div className="mb-4 grid gap-3 lg:grid-cols-[1fr_250px]">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 text-slate-400" size={18} />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') chargerProduits(search);
                 }}
-                className="input"
-                placeholder="Rechercher nom, référence ou code-barres..."
+                className="input pl-10"
+                placeholder="Rechercher nom, référence, code-barres..."
               />
-              <button onClick={() => chargerProduits(search)} className="btn w-40">Rechercher</button>
-              <button onClick={() => chargerProduits('')} className="btn w-40 bg-slate-700">Actualiser</button>
             </div>
 
-            <div className="overflow-auto rounded-xl border">
-              <table className="w-full min-w-[1350px] text-left text-sm text-slate-900">
-                <thead className="bg-slate-900 text-white">
-                  <tr>
-                    <th className="px-3 py-3">ID</th>
-                    <th className="px-3 py-3">Nom produit</th>
-                    <th className="px-3 py-3">Référence</th>
-                    <th className="px-3 py-3">Code barre</th>
-                    <th className="px-3 py-3">Prix</th>
-                    <th className="px-3 py-3">Stock initial</th>
-                    <th className="px-3 py-3">Entrées</th>
-                    <th className="px-3 py-3">Sorties</th>
-                    <th className="px-3 py-3">Stock actuel</th>
-                    <th className="px-3 py-3">Devise</th>
-                    <th className="px-3 py-3">Catégorie</th>
-                    <th className="px-3 py-3">Taille</th>
-                    <th className="px-3 py-3">Couleur</th>
-                    <th className="px-3 py-3">Réglementé</th>
-                    <th className="px-3 py-3">Signature</th>
-                  </tr>
-                </thead>
+            <div className="flex gap-2">
+              <button
+                onClick={() => chargerProduits(search)}
+                className="flex-1 rounded-2xl bg-blue-700 px-4 py-3 font-black text-white hover:bg-blue-800"
+              >
+                Rechercher
+              </button>
 
-                <tbody>
-                  {loading ? (
-                    <tr><td colSpan={15} className="p-6 text-center">Chargement...</td></tr>
-                  ) : produits.length === 0 ? (
-                    <tr><td colSpan={15} className="p-6 text-center">Aucun produit trouvé.</td></tr>
-                  ) : (
-                    produits.map((p) => (
-                      <tr
-  key={p.id_produit}
-  onClick={() => remplirDepuisProduit(p)}
-  className="cursor-pointer border-b border-slate-200 bg-white text-slate-900 hover:bg-blue-50"
->
-                        <td className="px-3 py-2 font-bold text-slate-900">{p.id_produit}</td>
-                        <td className="px-3 py-2 font-semibold text-slate-900">{p.nomproduit}</td>
-                        <td className="px-3 py-2">{p.refproduit || '-'}</td>
-                        <td className="px-3 py-2">{p.codebarre || '-'}</td>
-                        <td className="px-3 py-2 font-semibold text-slate-900">{formatPrix(p.prix, p.devise)}</td>
-                        <td className="px-3 py-2">{p.stockinitial ?? 0}</td>
-                        <td className="px-3 py-2">{p.entrees ?? 0}</td>
-                        <td className="px-3 py-2">{p.sorties ?? 0}</td>
-                        <td className="px-3 py-2 font-bold text-slate-900">{p.stockactuel ?? 0}</td>
-                        <td className="px-3 py-2">{p.devise || '-'}</td>
-                        <td className="px-3 py-2">{p.categorie || '-'}</td>
-                        <td className="px-3 py-2">{p.taille || '-'}</td>
-                        <td className="px-3 py-2">{p.couleur || '-'}</td>
-                        <td className="px-3 py-2">{p.isreglemente ? 'Oui' : 'Non'}</td>
-                        <td className="px-3 py-2">{p.signaturemanagerrequired ? 'Oui' : 'Non'}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+              <button
+                onClick={() => {
+                  setSearch('');
+                  chargerProduits('');
+                }}
+                className="rounded-2xl bg-slate-800 px-4 py-3 text-white hover:bg-slate-950"
+              >
+                <RefreshCw size={18} />
+              </button>
             </div>
-          </section>
+          </div>
 
-          <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <h2 className="mb-4 text-lg font-bold">Équivalences du produit sélectionné</h2>
-            <div className="overflow-auto rounded-xl border">
-              <table className="w-full min-w-[900px] text-left text-sm">
-                <thead className="bg-sky-500 text-white">
-                  <tr>
-                    <th className="px-3 py-3">ID</th>
-                    <th className="px-3 py-3">ID Produit</th>
-                    <th className="px-3 py-3">Nom produit</th>
-                    <th className="px-3 py-3">Référence</th>
-                    <th className="px-3 py-3">Code barre</th>
-                    <th className="px-3 py-3">Prix</th>
-                    <th className="px-3 py-3">Devise</th>
-                    <th className="px-3 py-3">Type</th>
-                    <th className="px-3 py-3">Priorité</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td colSpan={9} className="p-6 text-center text-slate-500">
-                      Équivalences à connecter côté backend.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+          <div className="mb-4 grid gap-3 lg:grid-cols-[1fr_220px]">
+            <input
+              value={scanCode}
+              onChange={(e) => setScanCode(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') scanner(scanCode);
+              }}
+              className="input"
+              placeholder="Scanner ou saisir un code-barres..."
+            />
+
+            <button
+              onClick={() => scanner(scanCode)}
+              className="rounded-2xl bg-emerald-700 px-4 py-3 font-black text-white hover:bg-emerald-800"
+            >
+              Scanner
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="rounded-3xl border border-dashed border-slate-300 p-10 text-center font-bold text-slate-500">
+              Chargement des produits...
             </div>
-          </section>
+          ) : produits.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-slate-300 p-10 text-center font-bold text-slate-500">
+              Aucun produit trouvé.
+            </div>
+          ) : (
+            <div className="grid max-h-[calc(100vh-260px)] gap-4 overflow-auto pr-1">
+              {produits.map((p) => (
+                <ProduitCard
+                  key={p.id_produit}
+                  produit={p}
+                  selected={form.id_produit === p.id_produit}
+                  onClick={() => remplirDepuisProduit(p)}
+                  formatPrix={formatPrix}
+                  stock={stockOf(p)}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </section>
 
       <style jsx global>{`
-  * {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-  }
+        .input {
+          width: 100%;
+          border: 1px solid #cbd5e1;
+          border-radius: 1rem;
+          background: #ffffff;
+          padding: 0.75rem 0.9rem;
+          outline: none;
+          color: #0f172a;
+          font-weight: 700;
+          font-size: 15px;
+        }
 
-  .input {
-    width: 100%;
-    border: 1px solid #cbd5e1;
-    border-radius: 0.75rem;
-    background: #ffffff;
-    padding: 0.65rem 0.8rem;
-    outline: none;
-    color: #0f172a;
-    font-weight: 700;
-    font-size: 16px;
-  }
+        .input::placeholder {
+          color: #64748b;
+        }
 
-  .input::placeholder {
-    color: #64748b;
-    opacity: 1;
-  }
+        .input:focus {
+          border-color: #2563eb;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
 
-  .input:read-only {
-    color: #0f172a;
-    background: #f8fafc;
-    opacity: 1;
-  }
-
-  select.input {
-    color: #0f172a;
-    font-weight: 700;
-  }
-
-  select.input option {
-    color: #0f172a;
-    background: #ffffff;
-  }
-
-  .input:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
-  }
-
-  .btn {
-    border-radius: 0.75rem;
-    background: #2563eb;
-    padding: 0.7rem 1rem;
-    color: white;
-    font-weight: 700;
-  }
-
-  .btn:hover {
-    background: #1d4ed8;
-  }
-`}</style>
+        .input:disabled {
+          background: #f1f5f9;
+          color: #64748b;
+        }
+      `}</style>
     </main>
   );
 }
 
+function ProduitCard({
+  produit,
+  selected,
+  onClick,
+  formatPrix,
+  stock,
+}: {
+  produit: Produit;
+  selected: boolean;
+  onClick: () => void;
+  formatPrix: (v: any, devise?: string) => string;
+  stock: number;
+}) {
+  const image = produit.imagepath?.trim();
 
+  return (
+    <button
+      onClick={onClick}
+      className={`grid gap-4 rounded-3xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md md:grid-cols-[130px_1fr] ${
+        selected ? 'border-blue-600 ring-2 ring-blue-100' : 'border-slate-200'
+      }`}
+    >
+      <div className="flex h-36 items-center justify-center overflow-hidden rounded-3xl bg-slate-100 ring-1 ring-slate-200">
+        {image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={image} alt={produit.nomproduit} className="h-full w-full object-cover" />
+        ) : (
+          <div className="grid place-items-center text-slate-400">
+            <ImageIcon size={42} />
+            <span className="mt-2 text-xs font-bold">Aucune image</span>
+          </div>
+        )}
+      </div>
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+      <div className="min-w-0">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-black text-white">
+                #{produit.id_produit}
+              </span>
+              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
+                {produit.categorie || 'Sans catégorie'}
+              </span>
+              {produit.isreglemente || produit.signaturemanagerrequired ? (
+                <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
+                  Réglementé
+                </span>
+              ) : (
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
+                  Libre
+                </span>
+              )}
+            </div>
+
+            <h3 className="mt-2 truncate text-xl font-black text-slate-950">
+              {produit.nomproduit || 'Produit'}
+            </h3>
+
+            <p className="mt-1 text-sm font-bold text-slate-500">
+              Réf : {produit.refproduit || '-'} · Code : {produit.codebarre || produit.codebarretrim || '-'}
+            </p>
+          </div>
+
+          <div className="text-left lg:text-right">
+            <p className="text-xl font-black text-blue-700">
+              {formatPrix(produit.prix, produit.devise)}
+            </p>
+            <p className={`text-sm font-black ${stock <= 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+              Stock : {stock.toLocaleString('fr-FR')}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-2 text-sm font-bold text-slate-700 md:grid-cols-4">
+          <Info label="Initial" value={produit.stockinitial ?? 0} />
+          <Info label="Entrées" value={produit.entrees ?? 0} />
+          <Info label="Sorties" value={produit.sorties ?? 0} />
+          <Info label="Actuel" value={stock} />
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2 text-xs font-black">
+          <Badge label={`Taille : ${produit.taille || '-'}`} />
+          <Badge label={`Couleur : ${produit.couleur || '-'}`} />
+          <Badge label={`Devise : ${produit.devise || '-'}`} />
+          <Badge label={produit.signaturemanagerrequired ? 'Signature : Oui' : 'Signature : Non'} />
+        </div>
+
+        {produit.description ? (
+          <p className="mt-3 line-clamp-2 text-sm font-medium text-slate-500">
+            {produit.description}
+          </p>
+        ) : null}
+      </div>
+    </button>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  danger,
+}: {
+  label: string;
+  value: number;
+  danger?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/15">
+      <p className="text-xs font-bold text-slate-300">{label}</p>
+      <p className={`text-xl font-black ${danger ? 'text-red-200' : 'text-white'}`}>
+        {Number(value || 0).toLocaleString('fr-FR')}
+      </p>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="grid gap-1">
-      <span className="font-bold text-blue-700">{label} :</span>
+      <span className="text-sm font-black text-blue-800">{label}</span>
       {children}
     </label>
+  );
+}
+
+function Info({ label, value }: { label: string; value: any }) {
+  return (
+    <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-base font-black text-slate-950">
+        {Number(value || 0).toLocaleString('fr-FR')}
+      </p>
+    </div>
+  );
+}
+
+function Badge({ label }: { label: string }) {
+  return <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">{label}</span>;
+}
+
+function ActionButton({
+  children,
+  onClick,
+  icon,
+  disabled,
+  variant = 'green',
+}: {
+  children: ReactNode;
+  onClick: () => void;
+  icon: ReactNode;
+  disabled?: boolean;
+  variant?: 'green' | 'blue' | 'red' | 'slate' | 'amber';
+}) {
+  const colors: Record<string, string> = {
+    green: 'bg-green-700 hover:bg-green-800',
+    blue: 'bg-blue-700 hover:bg-blue-800',
+    red: 'bg-red-700 hover:bg-red-800',
+    slate: 'bg-slate-700 hover:bg-slate-800',
+    amber: 'bg-amber-600 hover:bg-amber-700',
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-3 font-black text-white disabled:cursor-not-allowed disabled:opacity-50 ${colors[variant]}`}
+    >
+      {icon}
+      {children}
+    </button>
   );
 }
