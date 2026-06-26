@@ -532,21 +532,34 @@ const monnaieEUR = Math.max(0, montantRecuEUR - totaux.EUR);
     setLoading(true);
 
     try {
-      const articles = lignes.map((l) => ({
-        idProduit: l.idProduit,
-        id_produit: l.idProduit,
-        idproduit: l.idProduit,
-        nomproduit: l.nomproduit,
-        refproduit: l.refproduit,
-        quantite: l.quantite,
-        prixunitaire: l.prixunitaire,
-        prix: l.prixunitaire,
-        devise: normaliserDevise(l.devise),
-        remise: l.remise,
-        tva: l.tva,
-        taille: l.taille,
-        couleur: l.couleur,
-      }));
+      const idDepotVente = Number(localStorage.getItem('ZAIRE_ID_DEPOT') || 0);
+
+if (!idDepotVente) {
+  alert('Dépôt non défini. Vérifie la configuration du poste POS.');
+  refocusScan();
+  return;
+}
+
+const articles = lignes.map((l) => ({
+  idProduit: l.idProduit,
+  id_produit: l.idProduit,
+  idproduit: l.idProduit,
+  nomproduit: l.nomproduit,
+  refproduit: l.refproduit,
+  quantite: l.quantite,
+  prixunitaire: l.prixunitaire,
+  prix: l.prixunitaire,
+  devise: normaliserDevise(l.devise),
+  remise: l.remise,
+  tva: l.tva,
+  taille: l.taille,
+  couleur: l.couleur,
+
+  // important pour la sortie stock
+  idDepot: idDepotVente,
+  id_depot: idDepotVente,
+  iddepot: idDepotVente,
+}));
 
       const payload = {
   idClient,
@@ -570,7 +583,7 @@ const monnaieEUR = Math.max(0, montantRecuEUR - totaux.EUR);
 
   idEntreprise: Number(localStorage.getItem('ZAIRE_ID_ENTREPRISE') || 1),
   idMagasin: Number(localStorage.getItem('ZAIRE_ID_MAGASIN') || 1),
-  idDepot: Number(localStorage.getItem('ZAIRE_ID_DEPOT') || 0),
+  idDepot: idDepotVente,
   idPoste: Number(localStorage.getItem('ZAIRE_ID_POSTE') || 1),
 
   details: articles,
