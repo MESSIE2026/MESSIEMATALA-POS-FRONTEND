@@ -186,50 +186,6 @@ function normaliserDevise(devise?: string | null) {
 function montantParDevise(v: any, devise: 'USD' | 'CDF' | 'EUR') {
   const d = normaliserDevise(devise);
 
-  const deviseVente = normaliserDevise(
-    v.devise ??
-      v.Devise ??
-      v.DEVISE ??
-      v.devisevente ??
-      v.devise_vente ??
-      v.deviseprincipale,
-  );
-
-  const montantGlobal = nombre(
-    v.montanttotal ??
-      v.montant_total ??
-      v.total ??
-      v.totalvente ??
-      v.total_vente ??
-      v.montant,
-  );
-
-  if (deviseVente === d && montantGlobal > 0) return montantGlobal;
-
-  const champsDirects =
-    d === 'USD'
-      ? [v.totalUSD, v.total_usd, v.montantusd, v.montant_usd, v.totalusd]
-      : d === 'CDF'
-        ? [
-            v.totalCDF,
-            v.total_cdf,
-            v.montantcdf,
-            v.montant_cdf,
-            v.totalcdf,
-            v.montantfc,
-            v.montant_fc,
-            v.totalfc,
-            v.total_fc,
-            v.ventefc,
-            v.vente_fc,
-          ]
-        : [v.totalEUR, v.total_eur, v.montanteur, v.montant_eur, v.totaleur];
-
-  for (const champ of champsDirects) {
-    const n = nombre(champ);
-    if (n > 0) return n;
-  }
-
   const lignes = Array.isArray(v.details)
     ? v.details
     : Array.isArray(v.detailsvente)
@@ -259,16 +215,16 @@ function montantParDevise(v: any, devise: 'USD' | 'CDF' | 'EUR') {
   return totalPaiements;
 }
 
-  function formatMontant(v: any, devise: string) {
-    const n = nombre(v);
-    const d = normaliserDevise(devise);
-    const decimals = d === 'CDF' ? 0 : 2;
+function formatMontant(v: any, devise: string) {
+  const n = nombre(v);
+  const d = normaliserDevise(devise);
+  const decimals = d === 'CDF' ? 0 : 2;
 
-    return n.toLocaleString('fr-FR', {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    });
-  }
+  return n.toLocaleString('fr-FR', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
 
   function statutClass(statut?: string | null) {
     const s = String(statut || '').toUpperCase();
