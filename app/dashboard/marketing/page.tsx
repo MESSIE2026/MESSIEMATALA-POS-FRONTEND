@@ -143,7 +143,8 @@ export default function Page() {
           devise: form.devise,
           facebookCampaignId: form.facebookCampaignId,
           idEntreprise: 1,
-          idMagasin: 1,
+idMagasin: 1,
+idPoste: 1,
         },
       );
 
