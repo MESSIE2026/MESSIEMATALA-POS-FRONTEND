@@ -29,12 +29,25 @@ type Promotion = {
   creePar?: string;
   dateCreation?: string;
   produits?: string;
+
+  priorite?: number;
+  cumulable?: boolean | string;
+  quantiteMin?: number;
+  montantPanierMin?: number;
+  categorieClient?: string;
+  canalMarketing?: string;
+
+  nombreUtilisations?: number;
+  chiffreAffairesGenere?: number;
+  remiseTotale?: number;
 };
 
 export default function Page() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [produits, setProduits] = useState<any[]>([]);
   const [campagnes, setCampagnes] = useState<any[]>([]);
+  const [categoriesClient, setCategoriesClient] = useState<string[]>([]);
+const [canauxMarketing, setCanauxMarketing] = useState<string[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -53,6 +66,17 @@ export default function Page() {
   const [creePar, setCreePar] = useState('SYSTEM');
   const [produitChoisi, setProduitChoisi] = useState('');
   const [produitsChoisis, setProduitsChoisis] = useState<string[]>([]);
+  const [priorite, setPriorite] = useState('1');
+const [cumulable, setCumulable] = useState(false);
+const [quantiteMin, setQuantiteMin] = useState('');
+const [montantPanierMin, setMontantPanierMin] = useState('');
+const [statut, setStatut] = useState('Active');
+const [categorieClient, setCategorieClient] = useState('Tous');
+const [canalMarketing, setCanalMarketing] = useState('Boutique');
+const [heureDebut, setHeureDebut] = useState('');
+const [heureFin, setHeureFin] = useState('');
+const [validationManager, setValidationManager] = useState(false);
+const [managerValidation, setManagerValidation] = useState('');
 
   const montantFixe = typeRemise.toUpperCase().includes('MONTANT');
 
@@ -85,15 +109,31 @@ export default function Page() {
   }
 
   async function chargerLookups() {
-    try {
-      const res = await fetch(`${API_URL}/remises-promotions/lookups`, {
-        cache: 'no-store',
-      });
-      const data = await lire(res);
-      setProduits(data.produits || []);
-      setCampagnes(data.campagnes || []);
-    } catch {}
-  }
+  try {
+    const res = await fetch(`${API_URL}/remises-promotions/lookups`, {
+      cache: 'no-store',
+    });
+
+    const data = await lire(res);
+
+    setProduits(data.produits || []);
+    setCampagnes(data.campagnes || []);
+    setCategoriesClient(data.categoriesClient || [
+      'Tous',
+      'VIP',
+      'Nouveau client',
+      'Client dormant',
+      'Client fidèle',
+    ]);
+    setCanauxMarketing(data.canauxMarketing || [
+      'Boutique',
+      'WhatsApp',
+      'Facebook',
+      'SMS',
+      'Affichage boutique',
+    ]);
+  } catch {}
+}
 
   useEffect(() => {
     chargerLookups();
@@ -109,16 +149,29 @@ export default function Page() {
   }
 
   function viderFormulaire() {
-    setNomPromotion('');
-    setTypeRemise('Remise en Pourcentage');
-    setValeurRemise('0');
-    setDeviseRemise('USD');
-    setDateDebut(new Date().toISOString().slice(0, 10));
-    setDateFin(new Date().toISOString().slice(0, 10));
-    setIdCampagneMarketing('');
-    setProduitsChoisis([]);
-    setProduitChoisi('');
-  }
+  setNomPromotion('');
+  setTypeRemise('Remise en Pourcentage');
+  setValeurRemise('0');
+  setDeviseRemise('USD');
+  setDateDebut(new Date().toISOString().slice(0, 10));
+  setDateFin(new Date().toISOString().slice(0, 10));
+  setIdCampagneMarketing('');
+  setCreePar('SYSTEM');
+  setProduitsChoisis([]);
+  setProduitChoisi('');
+
+  setPriorite('1');
+  setCumulable(false);
+  setQuantiteMin('');
+  setMontantPanierMin('');
+  setStatut('Active');
+  setCategorieClient('Tous');
+  setCanalMarketing('Boutique');
+  setHeureDebut('');
+  setHeureFin('');
+  setValidationManager(false);
+  setManagerValidation('');
+}
 
   async function enregistrer() {
     setMessage('');
@@ -128,22 +181,34 @@ export default function Page() {
     if (dateFin < dateDebut) return setMessage('Date fin invalide.');
     if (!produitsChoisis.length) return setMessage('Ajoute au moins un produit.');
 
-    const body = {
-      nomPromotion,
-      typeRemise,
-      valeurRemise: Number(valeurRemise),
-      deviseRemise: montantFixe ? deviseRemise : null,
-      dateDebut,
-      dateFin,
-      creePar,
-      idCampagneMarketing: idCampagneMarketing
-        ? Number(idCampagneMarketing)
-        : null,
-      produits: produitsChoisis,
-      idEntreprise: 1,
-      idMagasin: 1,
-    };
+   const body = {
+  nomPromotion,
+  typeRemise,
+  valeurRemise: Number(valeurRemise),
+  deviseRemise: montantFixe ? deviseRemise : null,
+  dateDebut,
+  dateFin,
+  creePar,
+  idCampagneMarketing: idCampagneMarketing
+    ? Number(idCampagneMarketing)
+    : null,
+  produits: produitsChoisis,
 
+  priorite: Number(priorite || 1),
+  cumulable,
+  quantiteMin: quantiteMin ? Number(quantiteMin) : null,
+  montantPanierMin: montantPanierMin ? Number(montantPanierMin) : null,
+  statut,
+  categorieClient,
+  canalMarketing,
+  heureDebut: heureDebut || null,
+  heureFin: heureFin || null,
+  validationManager,
+  managerValidation: validationManager ? managerValidation : null,
+
+  idEntreprise: 1,
+  idMagasin: 1,
+};
     const res = await fetch(`${API_URL}/remises-promotions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -189,16 +254,37 @@ export default function Page() {
   }
 
   const stats = useMemo(() => {
-    return {
-      total: promotions.length,
-      actives: promotions.filter((p) =>
-        String(p.statut || '').toUpperCase().includes('ACTIVE'),
-      ).length,
-      annulees: promotions.filter((p) =>
-        String(p.statut || '').toUpperCase().includes('ANNU'),
-      ).length,
-    };
-  }, [promotions]);
+  return {
+    total: promotions.length,
+    actives: promotions.filter((p) =>
+      String(p.statut || '').toUpperCase().includes('ACTIVE'),
+    ).length,
+    planifiees: promotions.filter((p) =>
+      String(p.statut || '').toUpperCase().includes('PLAN'),
+    ).length,
+    terminees: promotions.filter((p) =>
+      String(p.statut || '').toUpperCase().includes('TERM'),
+    ).length,
+    annulees: promotions.filter((p) =>
+      String(p.statut || '').toUpperCase().includes('ANNU'),
+    ).length,
+    cumulables: promotions.filter(
+      (p) => p.cumulable === true || String(p.cumulable) === '1',
+    ).length,
+    utilisations: promotions.reduce(
+      (s, p) => s + Number(p.nombreUtilisations || 0),
+      0,
+    ),
+    chiffreAffaires: promotions.reduce(
+      (s, p) => s + Number(p.chiffreAffairesGenere || 0),
+      0,
+    ),
+    remiseTotale: promotions.reduce(
+      (s, p) => s + Number(p.remiseTotale || 0),
+      0,
+    ),
+  };
+}, [promotions]);
 
   return (
     <main className="min-h-screen bg-slate-100 p-3 md:p-8">
@@ -243,20 +329,47 @@ export default function Page() {
           </div>
         )}
 
-        <section className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-            <p className="text-xs text-slate-500">Promotions</p>
-            <b>{stats.total}</b>
-          </div>
-          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-            <p className="text-xs text-slate-500">Actives</p>
-            <b>{stats.actives}</b>
-          </div>
-          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-            <p className="text-xs text-slate-500">Annulées</p>
-            <b>{stats.annulees}</b>
-          </div>
-        </section>
+        <section className="grid gap-3 md:grid-cols-4">
+  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+    <p className="text-xs text-slate-500">Promotions</p>
+    <b>{stats.total}</b>
+  </div>
+
+  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+    <p className="text-xs text-slate-500">Actives</p>
+    <b>{stats.actives}</b>
+  </div>
+
+  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+    <p className="text-xs text-slate-500">Planifiées</p>
+    <b>{stats.planifiees}</b>
+  </div>
+
+  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+    <p className="text-xs text-slate-500">Terminées</p>
+    <b>{stats.terminees}</b>
+  </div>
+
+  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+    <p className="text-xs text-slate-500">Annulées</p>
+    <b>{stats.annulees}</b>
+  </div>
+
+  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+    <p className="text-xs text-slate-500">Cumulables</p>
+    <b>{stats.cumulables}</b>
+  </div>
+
+  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+    <p className="text-xs text-slate-500">Utilisations</p>
+    <b>{stats.utilisations}</b>
+  </div>
+
+  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+    <p className="text-xs text-slate-500">Remises données</p>
+    <b>{stats.remiseTotale.toLocaleString('fr-FR')}</b>
+  </div>
+</section>
 
         <section className="grid gap-5 lg:grid-cols-2">
           <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
@@ -337,7 +450,103 @@ export default function Page() {
                 placeholder="Créé par"
                 className="rounded-xl border p-3 md:col-span-2"
               />
-            </div>
+        
+            <select
+  value={statut}
+  onChange={(e) => setStatut(e.target.value)}
+  className="rounded-xl border p-3"
+>
+  <option>Active</option>
+  <option>Planifiée</option>
+  <option>Terminée</option>
+  <option>Annulée</option>
+</select>
+
+<input
+  type="number"
+  value={priorite}
+  onChange={(e) => setPriorite(e.target.value)}
+  placeholder="Priorité"
+  className="rounded-xl border p-3"
+/>
+
+<label className="flex items-center gap-2 rounded-xl border p-3 text-sm font-bold">
+  <input
+    type="checkbox"
+    checked={cumulable}
+    onChange={(e) => setCumulable(e.target.checked)}
+  />
+  Cumulable
+</label>
+
+<input
+  type="number"
+  value={quantiteMin}
+  onChange={(e) => setQuantiteMin(e.target.value)}
+  placeholder="Quantité minimale"
+  className="rounded-xl border p-3"
+/>
+
+<input
+  type="number"
+  value={montantPanierMin}
+  onChange={(e) => setMontantPanierMin(e.target.value)}
+  placeholder="Montant panier minimum"
+  className="rounded-xl border p-3"
+/>
+
+<select
+  value={categorieClient}
+  onChange={(e) => setCategorieClient(e.target.value)}
+  className="rounded-xl border p-3"
+>
+  {categoriesClient.map((c) => (
+    <option key={c}>{c}</option>
+  ))}
+</select>
+
+<select
+  value={canalMarketing}
+  onChange={(e) => setCanalMarketing(e.target.value)}
+  className="rounded-xl border p-3"
+>
+  {canauxMarketing.map((c) => (
+    <option key={c}>{c}</option>
+  ))}
+</select>
+
+<input
+  type="time"
+  value={heureDebut}
+  onChange={(e) => setHeureDebut(e.target.value)}
+  className="rounded-xl border p-3"
+/>
+
+<input
+  type="time"
+  value={heureFin}
+  onChange={(e) => setHeureFin(e.target.value)}
+  className="rounded-xl border p-3"
+/>
+
+<label className="flex items-center gap-2 rounded-xl border p-3 text-sm font-bold md:col-span-2">
+  <input
+    type="checkbox"
+    checked={validationManager}
+    onChange={(e) => setValidationManager(e.target.checked)}
+  />
+  Validation manager requise
+</label>
+
+{validationManager && (
+  <input
+    value={managerValidation}
+    onChange={(e) => setManagerValidation(e.target.value)}
+    placeholder="Nom du manager validateur"
+    className="rounded-xl border p-3 md:col-span-2"
+  />
+)}
+ </div>
 
             <div className="mt-4 rounded-2xl bg-slate-50 p-4">
               <p className="mb-2 text-sm font-bold text-slate-700">
@@ -417,65 +626,96 @@ export default function Page() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] text-sm">
-                <thead>
-                  <tr className="bg-slate-900 text-left text-white">
-                    <th className="p-3">Promotion</th>
-                    <th>Type</th>
-                    <th>Valeur</th>
-                    <th>Début</th>
-                    <th>Fin</th>
-                    <th>Statut</th>
-                    <th>Campagne</th>
-                    <th>Produits</th>
-                    <th></th>
-                  </tr>
-                </thead>
+            <table className="w-full min-w-[1250px] text-sm">
+  <thead>
+    <tr className="bg-slate-900 text-left text-white">
+      <th className="p-3">Promotion</th>
+      <th>Type</th>
+      <th>Valeur</th>
+      <th>Période</th>
+      <th>Statut</th>
+      <th>Priorité</th>
+      <th>Cumul</th>
+      <th>Client</th>
+      <th>Canal</th>
+      <th>Conditions</th>
+      <th>Campagne</th>
+      <th>Produits</th>
+      <th>Performance</th>
+      <th></th>
+    </tr>
+  </thead>
 
-                <tbody>
-                  {promotions.map((p) => (
-                    <tr key={p.idPromotion} className="border-b hover:bg-green-50">
-                      <td className="p-3 font-bold">{p.nomPromotion}</td>
-                      <td>{p.typeRemise}</td>
-                      <td>
-                        {Number(p.valeurRemise || 0).toLocaleString('fr-FR')}{' '}
-                        {p.deviseRemise || '%'}
-                      </td>
-                      <td>
-                        {p.dateDebut
-                          ? new Date(p.dateDebut).toLocaleDateString('fr-FR')
-                          : '-'}
-                      </td>
-                      <td>
-                        {p.dateFin
-                          ? new Date(p.dateFin).toLocaleDateString('fr-FR')
-                          : '-'}
-                      </td>
-                      <td>{p.statut}</td>
-                      <td>{p.campagneMarketing || '-'}</td>
-                      <td className="max-w-[250px] truncate">
-                        {p.produits || '-'}
-                      </td>
-                      <td>
-                        <button
-                          onClick={() => supprimer(p.idPromotion)}
-                          className="rounded-lg bg-red-800 px-3 py-2 text-white"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+  <tbody>
+    {promotions.map((p) => (
+      <tr key={p.idPromotion} className="border-b hover:bg-green-50">
+        <td className="p-3 font-bold">{p.nomPromotion}</td>
 
-                  {!loading && promotions.length === 0 && (
-                    <tr>
-                      <td colSpan={9} className="p-5 text-center text-slate-500">
-                        Aucune promotion trouvée.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+        <td>{p.typeRemise}</td>
+
+        <td>
+          {Number(p.valeurRemise || 0).toLocaleString('fr-FR')}{' '}
+          {p.deviseRemise || '%'}
+        </td>
+
+        <td>
+          {p.dateDebut ? new Date(p.dateDebut).toLocaleDateString('fr-FR') : '-'}
+          {' → '}
+          {p.dateFin ? new Date(p.dateFin).toLocaleDateString('fr-FR') : '-'}
+        </td>
+
+        <td>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+            {p.statut || '-'}
+          </span>
+        </td>
+
+        <td>{p.priorite || 1}</td>
+
+        <td>
+          {p.cumulable === true || String(p.cumulable) === '1' ? 'Oui' : 'Non'}
+        </td>
+
+        <td>{p.categorieClient || 'Tous'}</td>
+
+        <td>{p.canalMarketing || 'Boutique'}</td>
+
+        <td>
+          Qté min : {p.quantiteMin || 0}
+          <br />
+          Panier min : {Number(p.montantPanierMin || 0).toLocaleString('fr-FR')}
+        </td>
+
+        <td>{p.campagneMarketing || '-'}</td>
+
+        <td className="max-w-[220px] truncate">{p.produits || '-'}</td>
+
+        <td>
+          Util. : {p.nombreUtilisations || 0}
+          <br />
+          Remise : {Number(p.remiseTotale || 0).toLocaleString('fr-FR')}
+        </td>
+
+        <td>
+          <button
+            onClick={() => supprimer(p.idPromotion)}
+            className="rounded-lg bg-red-800 px-3 py-2 text-white"
+          >
+            <Trash2 size={15} />
+          </button>
+        </td>
+      </tr>
+    ))}
+
+    {!loading && promotions.length === 0 && (
+      <tr>
+        <td colSpan={14} className="p-5 text-center text-slate-500">
+          Aucune promotion trouvée.
+        </td>
+      </tr>
+    )}
+  </tbody>
+</table>
             </div>
           </div>
         </section>
