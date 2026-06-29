@@ -379,175 +379,234 @@ const [managerValidation, setManagerValidation] = useState('');
             </h2>
 
             <div className="grid gap-3 md:grid-cols-2">
-              <input
-                value={nomPromotion}
-                onChange={(e) => setNomPromotion(e.target.value)}
-                placeholder="Nom promotion"
-                className="rounded-xl border p-3 md:col-span-2"
-              />
+  <label className="space-y-1 md:col-span-2">
+    <span className="text-xs font-bold text-slate-600">Nom de la promotion</span>
+    <input
+      value={nomPromotion}
+      onChange={(e) => setNomPromotion(e.target.value)}
+      placeholder="Ex : Promo mariage, Black Friday, Réduction VIP..."
+      className="w-full rounded-xl border p-3"
+    />
+  </label>
 
-              <select
-                value={typeRemise}
-                onChange={(e) => setTypeRemise(e.target.value)}
-                className="rounded-xl border p-3"
-              >
-                <option>Remise en Pourcentage</option>
-                <option>Montant Fixe</option>
-              </select>
+  <label className="space-y-1">
+    <span className="text-xs font-bold text-slate-600">Type de remise</span>
+    <select
+      value={typeRemise}
+      onChange={(e) => setTypeRemise(e.target.value)}
+      className="w-full rounded-xl border p-3"
+    >
+      <option>Remise en Pourcentage</option>
+      <option>Montant Fixe</option>
+    </select>
+  </label>
 
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={valeurRemise}
-                  onChange={(e) => setValeurRemise(e.target.value)}
-                  className="w-full rounded-xl border p-3"
-                  placeholder="Valeur"
-                />
+  <label className="space-y-1">
+    <span className="text-xs font-bold text-slate-600">
+      Valeur de la remise
+    </span>
+    <div className="flex gap-2">
+      <input
+        type="number"
+        value={valeurRemise}
+        onChange={(e) => setValeurRemise(e.target.value)}
+        placeholder="Ex : 10 pour 10% ou 5 pour 5 USD"
+        className="w-full rounded-xl border p-3"
+      />
 
-                {montantFixe && (
-                  <select
-                    value={deviseRemise}
-                    onChange={(e) => setDeviseRemise(e.target.value)}
-                    className="rounded-xl border p-3"
-                  >
-                    <option>USD</option>
-                    <option>CDF</option>
-                    <option>EUR</option>
-                  </select>
-                )}
-              </div>
+      {montantFixe && (
+        <select
+          value={deviseRemise}
+          onChange={(e) => setDeviseRemise(e.target.value)}
+          className="rounded-xl border p-3"
+        >
+          <option>USD</option>
+          <option>CDF</option>
+          <option>EUR</option>
+        </select>
+      )}
+    </div>
+  </label>
 
-              <input
-                type="date"
-                value={dateDebut}
-                onChange={(e) => setDateDebut(e.target.value)}
-                className="rounded-xl border p-3"
-              />
+  <label className="space-y-1">
+    <span className="text-xs font-bold text-slate-600">Date début</span>
+    <input
+      type="date"
+      value={dateDebut}
+      onChange={(e) => setDateDebut(e.target.value)}
+      className="w-full rounded-xl border p-3"
+    />
+  </label>
 
-              <input
-                type="date"
-                value={dateFin}
-                onChange={(e) => setDateFin(e.target.value)}
-                className="rounded-xl border p-3"
-              />
+  <label className="space-y-1">
+    <span className="text-xs font-bold text-slate-600">Date fin</span>
+    <input
+      type="date"
+      value={dateFin}
+      onChange={(e) => setDateFin(e.target.value)}
+      className="w-full rounded-xl border p-3"
+    />
+  </label>
 
-              <select
-                value={idCampagneMarketing}
-                onChange={(e) => setIdCampagneMarketing(e.target.value)}
-                className="rounded-xl border p-3 md:col-span-2"
-              >
-                <option value="">Aucune campagne</option>
-                {campagnes.map((c: any) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nomcampagne}
-                  </option>
-                ))}
-              </select>
+  <label className="space-y-1 md:col-span-2">
+    <span className="text-xs font-bold text-slate-600">
+      Campagne marketing liée
+    </span>
+    <select
+      value={idCampagneMarketing}
+      onChange={(e) => setIdCampagneMarketing(e.target.value)}
+      className="w-full rounded-xl border p-3"
+    >
+      <option value="">Aucune campagne</option>
+      {campagnes.map((c: any) => (
+        <option key={c.id} value={c.id}>
+          {c.nomcampagne}
+        </option>
+      ))}
+    </select>
+  </label>
 
-              <input
-                value={creePar}
-                onChange={(e) => setCreePar(e.target.value)}
-                placeholder="Créé par"
-                className="rounded-xl border p-3 md:col-span-2"
-              />
-        
-            <select
-  value={statut}
-  onChange={(e) => setStatut(e.target.value)}
-  className="rounded-xl border p-3"
->
-  <option>Active</option>
-  <option>Planifiée</option>
-  <option>Terminée</option>
-  <option>Annulée</option>
-</select>
+  <label className="space-y-1 md:col-span-2">
+    <span className="text-xs font-bold text-slate-600">Créé par</span>
+    <input
+      value={creePar}
+      onChange={(e) => setCreePar(e.target.value)}
+      placeholder="Ex : Messie, Gérant, SYSTEM..."
+      className="w-full rounded-xl border p-3"
+    />
+  </label>
 
-<input
-  type="number"
-  value={priorite}
-  onChange={(e) => setPriorite(e.target.value)}
-  placeholder="Priorité"
-  className="rounded-xl border p-3"
-/>
+  <label className="space-y-1">
+    <span className="text-xs font-bold text-slate-600">Statut</span>
+    <select
+      value={statut}
+      onChange={(e) => setStatut(e.target.value)}
+      className="w-full rounded-xl border p-3"
+    >
+      <option>Active</option>
+      <option>Planifiée</option>
+      <option>Terminée</option>
+      <option>Annulée</option>
+    </select>
+  </label>
 
-<label className="flex items-center gap-2 rounded-xl border p-3 text-sm font-bold">
-  <input
-    type="checkbox"
-    checked={cumulable}
-    onChange={(e) => setCumulable(e.target.checked)}
-  />
-  Cumulable
-</label>
+  <label className="space-y-1">
+    <span className="text-xs font-bold text-slate-600">Priorité</span>
+    <input
+      type="number"
+      value={priorite}
+      onChange={(e) => setPriorite(e.target.value)}
+      placeholder="Ex : 1 normal, 10 très prioritaire"
+      className="w-full rounded-xl border p-3"
+    />
+  </label>
 
-<input
-  type="number"
-  value={quantiteMin}
-  onChange={(e) => setQuantiteMin(e.target.value)}
-  placeholder="Quantité minimale"
-  className="rounded-xl border p-3"
-/>
+  <label className="flex items-center gap-2 rounded-xl border p-3 text-sm font-bold md:col-span-2">
+    <input
+      type="checkbox"
+      checked={cumulable}
+      onChange={(e) => setCumulable(e.target.checked)}
+    />
+    Cumulable avec une autre promotion
+  </label>
 
-<input
-  type="number"
-  value={montantPanierMin}
-  onChange={(e) => setMontantPanierMin(e.target.value)}
-  placeholder="Montant panier minimum"
-  className="rounded-xl border p-3"
-/>
+  <label className="space-y-1">
+    <span className="text-xs font-bold text-slate-600">Quantité minimale</span>
+    <input
+      type="number"
+      value={quantiteMin}
+      onChange={(e) => setQuantiteMin(e.target.value)}
+      placeholder="Ex : 2 articles minimum"
+      className="w-full rounded-xl border p-3"
+    />
+  </label>
 
-<select
-  value={categorieClient}
-  onChange={(e) => setCategorieClient(e.target.value)}
-  className="rounded-xl border p-3"
->
-  {categoriesClient.map((c) => (
-    <option key={c}>{c}</option>
-  ))}
-</select>
+  <label className="space-y-1">
+    <span className="text-xs font-bold text-slate-600">
+      Montant panier minimum
+    </span>
+    <input
+      type="number"
+      value={montantPanierMin}
+      onChange={(e) => setMontantPanierMin(e.target.value)}
+      placeholder="Ex : 50 USD minimum"
+      className="w-full rounded-xl border p-3"
+    />
+  </label>
 
-<select
-  value={canalMarketing}
-  onChange={(e) => setCanalMarketing(e.target.value)}
-  className="rounded-xl border p-3"
->
-  {canauxMarketing.map((c) => (
-    <option key={c}>{c}</option>
-  ))}
-</select>
+  <label className="space-y-1">
+    <span className="text-xs font-bold text-slate-600">Catégorie client</span>
+    <select
+      value={categorieClient}
+      onChange={(e) => setCategorieClient(e.target.value)}
+      className="w-full rounded-xl border p-3"
+    >
+      <option>Tous</option>
+      <option>VIP</option>
+      <option>Nouveau client</option>
+      <option>Client dormant</option>
+      <option>Client fidèle</option>
+    </select>
+  </label>
 
-<input
-  type="time"
-  value={heureDebut}
-  onChange={(e) => setHeureDebut(e.target.value)}
-  className="rounded-xl border p-3"
-/>
+  <label className="space-y-1">
+    <span className="text-xs font-bold text-slate-600">Canal marketing</span>
+    <select
+      value={canalMarketing}
+      onChange={(e) => setCanalMarketing(e.target.value)}
+      className="w-full rounded-xl border p-3"
+    >
+      <option>Boutique</option>
+      <option>WhatsApp</option>
+      <option>Facebook</option>
+      <option>SMS</option>
+      <option>Affichage boutique</option>
+    </select>
+  </label>
 
-<input
-  type="time"
-  value={heureFin}
-  onChange={(e) => setHeureFin(e.target.value)}
-  className="rounded-xl border p-3"
-/>
+  <label className="space-y-1">
+    <span className="text-xs font-bold text-slate-600">Heure début</span>
+    <input
+      type="time"
+      value={heureDebut}
+      onChange={(e) => setHeureDebut(e.target.value)}
+      className="w-full rounded-xl border p-3"
+    />
+  </label>
 
-<label className="flex items-center gap-2 rounded-xl border p-3 text-sm font-bold md:col-span-2">
-  <input
-    type="checkbox"
-    checked={validationManager}
-    onChange={(e) => setValidationManager(e.target.checked)}
-  />
-  Validation manager requise
-</label>
+  <label className="space-y-1">
+    <span className="text-xs font-bold text-slate-600">Heure fin</span>
+    <input
+      type="time"
+      value={heureFin}
+      onChange={(e) => setHeureFin(e.target.value)}
+      className="w-full rounded-xl border p-3"
+    />
+  </label>
 
-{validationManager && (
-  <input
-    value={managerValidation}
-    onChange={(e) => setManagerValidation(e.target.value)}
-    placeholder="Nom du manager validateur"
-    className="rounded-xl border p-3 md:col-span-2"
-  />
-)}
- </div>
+  <label className="flex items-center gap-2 rounded-xl border p-3 text-sm font-bold md:col-span-2">
+    <input
+      type="checkbox"
+      checked={validationManager}
+      onChange={(e) => setValidationManager(e.target.checked)}
+    />
+    Validation manager requise pour cette promotion
+  </label>
 
+  {validationManager && (
+    <label className="space-y-1 md:col-span-2">
+      <span className="text-xs font-bold text-slate-600">
+        Manager validateur
+      </span>
+      <input
+        value={managerValidation}
+        onChange={(e) => setManagerValidation(e.target.value)}
+        placeholder="Ex : Gérant, Superviseur, Manager..."
+        className="w-full rounded-xl border p-3"
+      />
+    </label>
+  )}
+</div>
             <div className="mt-4 rounded-2xl bg-slate-50 p-4">
               <p className="mb-2 text-sm font-bold text-slate-700">
                 Produits concernés
