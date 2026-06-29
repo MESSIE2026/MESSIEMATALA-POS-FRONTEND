@@ -40,6 +40,15 @@ type Campagne = {
   facebookCampaignId?: string;
 };
 
+type MetaStatus = {
+  connected: boolean;
+  account?: {
+    facebook_user_name?: string;
+    facebook_user_id?: string;
+    createdat?: string;
+  } | null;
+};
+
 const emptyForm = {
   id: 0,
   nomCampagne: '',
@@ -66,6 +75,7 @@ export default function Page() {
   const [statut, setStatut] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [metaStatus, setMetaStatus] = useState<MetaStatus | null>(null);
 
   const stats = useMemo(() => {
     const totalBudget = campagnes.reduce((s, c) => s + Number(c.budget || 0), 0);
@@ -109,9 +119,50 @@ export default function Page() {
     }
   }
 
-  useEffect(() => {
-    chargerCampagnes();
-  }, []);
+  async function chargerMetaStatus() {
+  try {
+    const data = await getJson(`${API_URL}/meta-auth/status`);
+    setMetaStatus(data);
+  } catch {
+    setMetaStatus({ connected: false });
+  }
+}
+
+function connecterFacebook() {
+  window.location.href = `${API_URL}/meta-auth/login`;
+}
+
+async function deconnecterFacebook() {
+  if (!confirm('Voulez-vous déconnecter Facebook ?')) return;
+
+  try {
+    setLoading(true);
+
+    const res = await fetch(`${API_URL}/meta-auth/logout`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+
+    setMessage('Facebook déconnecté.');
+    await chargerMetaStatus();
+  } catch (e: any) {
+    setMessage(`Erreur déconnexion Facebook : ${e.message}`);
+  } finally {
+    setLoading(false);
+  }
+}
+
+ useEffect(() => {
+  chargerCampagnes();
+  chargerMetaStatus();
+
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get('facebook') === 'connected') {
+    setMessage('Compte Facebook connecté avec succès.');
+  }
+}, []);
 
   async function enregistrer() {
     try {
@@ -352,6 +403,18 @@ idPoste: 1,
             </Field>
           </div>
 
+          <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm ring-1 ring-slate-200">
+  {metaStatus?.connected ? (
+    <p className="font-semibold text-emerald-700">
+      Facebook connecté : {metaStatus.account?.facebook_user_name || 'Compte Meta'}
+    </p>
+  ) : (
+    <p className="font-semibold text-slate-600">
+      Facebook n’est pas encore connecté.
+    </p>
+  )}
+</div>
+
           <div className="mt-5 flex flex-wrap gap-3">
             <button
               onClick={enregistrer}
@@ -363,13 +426,13 @@ idPoste: 1,
             </button>
 
             <button
-              onClick={() => form.id && synchroniserMeta(form.id)}
-              disabled={loading || !form.id}
-              className="flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white hover:bg-blue-800 disabled:opacity-50"
-            >
-             <Settings size={18} />
-              Sync Meta
-            </button>
+  onClick={() => form.id && synchroniserMeta(form.id)}
+  disabled={loading || !form.id || !metaStatus?.connected}
+  className="flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white hover:bg-blue-800 disabled:opacity-50"
+>
+  <Settings size={18} />
+  Sync Meta
+</button>
 
             <button
               className="flex items-center gap-2 rounded-xl bg-slate-700 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800"
@@ -377,6 +440,19 @@ idPoste: 1,
               <Settings size={18} />
               Paramètres privés
             </button>
+
+           <button
+  onClick={metaStatus?.connected ? deconnecterFacebook : connecterFacebook}
+  disabled={loading}
+  className={`flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white disabled:opacity-50 ${
+    metaStatus?.connected
+      ? 'bg-red-800 hover:bg-red-900'
+      : 'bg-blue-900 hover:bg-blue-950'
+  }`}
+>
+  <Settings size={18} />
+  {metaStatus?.connected ? 'Déconnecter Facebook' : 'Connecter Facebook'}
+</button>
           </div>
         </div>
       </section>
