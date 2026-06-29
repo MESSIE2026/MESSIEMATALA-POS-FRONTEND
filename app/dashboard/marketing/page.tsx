@@ -320,142 +320,219 @@ idPoste: 1,
         <Card title="Vues Meta" value={String(stats.totalVues)} icon={<Users />} />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <h2 className="mb-5 text-xl font-black text-slate-900">Campagne</h2>
+     <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+  <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <div className="mb-6 flex items-center justify-between">
+      <div>
+        <h2 className="text-xl font-black text-slate-900">
+          Informations de la campagne
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Créez, modifiez et suivez vos campagnes marketing.
+        </p>
+      </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Nom campagne">
-              <input className={input} value={form.nomCampagne} onChange={e => setForm({ ...form, nomCampagne: e.target.value })} />
-            </Field>
+      <span className="rounded-full bg-emerald-50 px-4 py-2 text-xs font-black uppercase text-emerald-700 ring-1 ring-emerald-100">
+        {form.id ? `Campagne #${form.id}` : 'Nouvelle'}
+      </span>
+    </div>
 
-            <Field label="Type campagne">
-              <select className={input} value={form.typeCampagne} onChange={e => setForm({ ...form, typeCampagne: e.target.value })}>
-                <option>Facebook Ads</option>
-                <option>Instagram Ads</option>
-                <option>WhatsApp Business</option>
-                <option>TikTok</option>
-                <option>Affichage</option>
-                <option>Radio / TV</option>
-                <option>Influenceur</option>
-              </select>
-            </Field>
+    <div className="grid gap-4 md:grid-cols-2">
+      <Field label="Nom campagne">
+        <input
+          className={input}
+          placeholder="Ex : Promotion robes mariage"
+          value={form.nomCampagne}
+          onChange={e => setForm({ ...form, nomCampagne: e.target.value })}
+        />
+      </Field>
 
-            <Field label="Date début">
-              <input type="date" className={input} value={form.dateDebut} onChange={e => setForm({ ...form, dateDebut: e.target.value })} />
-            </Field>
+      <Field label="Canal / type">
+        <select
+          className={input}
+          value={form.typeCampagne}
+          onChange={e => setForm({ ...form, typeCampagne: e.target.value })}
+        >
+          <option>Facebook Ads</option>
+          <option>Instagram Ads</option>
+          <option>WhatsApp Business</option>
+          <option>TikTok</option>
+          <option>Affichage</option>
+          <option>Radio / TV</option>
+          <option>Influenceur</option>
+        </select>
+      </Field>
 
-            <Field label="Date fin">
-              <input type="date" className={input} value={form.dateFin} onChange={e => setForm({ ...form, dateFin: e.target.value })} />
-            </Field>
+      <Field label="Date début">
+        <input
+          type="date"
+          className={input}
+          value={form.dateDebut}
+          onChange={e => setForm({ ...form, dateDebut: e.target.value })}
+        />
+      </Field>
 
-            <Field label="Budget">
-              <input className={input} value={form.budget} onChange={e => setForm({ ...form, budget: e.target.value })} />
-            </Field>
+      <Field label="Date fin">
+        <input
+          type="date"
+          className={input}
+          value={form.dateFin}
+          onChange={e => setForm({ ...form, dateFin: e.target.value })}
+        />
+      </Field>
 
-            <Field label="Statut">
-              <select className={input} value={form.statut} onChange={e => setForm({ ...form, statut: e.target.value })}>
-                <option>Brouillon</option>
-                <option>Active</option>
-                <option>Terminée</option>
-                <option>Annulée</option>
-              </select>
-            </Field>
+      <Field label="Budget total">
+        <input
+          className={input}
+          placeholder="0"
+          value={form.budget}
+          onChange={e => setForm({ ...form, budget: e.target.value })}
+        />
+      </Field>
 
-            <div className="md:col-span-2">
-              <p className={label}>Commentaires</p>
-              <textarea
-                className={`${input} min-h-24`}
-                value={form.commentaires}
-                onChange={e => setForm({ ...form, commentaires: e.target.value })}
-              />
-            </div>
-          </div>
+      <Field label="Statut">
+        <select
+          className={input}
+          value={form.statut}
+          onChange={e => setForm({ ...form, statut: e.target.value })}
+        >
+          <option>Brouillon</option>
+          <option>Active</option>
+          <option>Terminée</option>
+          <option>Annulée</option>
+        </select>
+      </Field>
+
+      <div className="md:col-span-2">
+        <Field label="Objectif / commentaires">
+          <textarea
+            className={`${input} min-h-28 resize-none`}
+            placeholder="Ex : Augmenter les messages WhatsApp, attirer les clientes pour robes de mariage..."
+            value={form.commentaires}
+            onChange={e => setForm({ ...form, commentaires: e.target.value })}
+          />
+        </Field>
+      </div>
+    </div>
+  </div>
+
+  <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <div className="mb-6">
+      <h2 className="text-xl font-black text-slate-900">
+        Résultats & synchronisation Meta
+      </h2>
+      <p className="mt-1 text-sm text-slate-500">
+        Suivi des vues, messages, ventes et performances publicitaires.
+      </p>
+    </div>
+
+    <div className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      {metaStatus?.connected ? (
+        <div>
+          <p className="text-sm font-black text-emerald-700">
+            Facebook connecté
+          </p>
+          <p className="mt-1 text-sm text-slate-600">
+            Compte : {metaStatus.account?.facebook_user_name || 'Compte Meta'}
+          </p>
         </div>
-
-        <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <h2 className="mb-5 text-xl font-black text-slate-900">Résultats & Meta</h2>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {[
-              ['Messages', 'messages'],
-              ['Vues', 'vues'],
-              ['Spectateurs', 'spectateurs'],
-              ['Budget quotidien', 'budgetQuotidien'],
-              ['Nombre ventes', 'nombreVentes'],
-              ['Montant vendu', 'montantVendus'],
-            ].map(([t, k]) => (
-              <Field key={k} label={t}>
-                <input className={input} value={(form as any)[k]} onChange={e => setForm({ ...form, [k]: e.target.value })} />
-              </Field>
-            ))}
-
-            <Field label="Devise">
-              <select className={input} value={form.devise} onChange={e => setForm({ ...form, devise: e.target.value })}>
-                <option>USD</option>
-                <option>CDF</option>
-                <option>FC</option>
-              </select>
-            </Field>
-
-            <Field label="Facebook Campaign ID">
-              <input className={input} value={form.facebookCampaignId} onChange={e => setForm({ ...form, facebookCampaignId: e.target.value })} />
-            </Field>
-          </div>
-
-          <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm ring-1 ring-slate-200">
-  {metaStatus?.connected ? (
-    <p className="font-semibold text-emerald-700">
-      Facebook connecté : {metaStatus.account?.facebook_user_name || 'Compte Meta'}
-    </p>
-  ) : (
-    <p className="font-semibold text-slate-600">
-      Facebook n’est pas encore connecté.
-    </p>
-  )}
-</div>
-
-          <div className="mt-5 flex flex-wrap gap-3">
-            <button
-              onClick={enregistrer}
-              disabled={loading}
-              className="flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
-            >
-              <Save size={18} />
-              Enregistrer
-            </button>
-
-            <button
-  onClick={() => form.id && synchroniserMeta(form.id)}
-  disabled={loading || !form.id || !metaStatus?.connected}
-  className="flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white hover:bg-blue-800 disabled:opacity-50"
->
-  <Settings size={18} />
-  Sync Meta
-</button>
-
-            <button
-              className="flex items-center gap-2 rounded-xl bg-slate-700 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800"
-            >
-              <Settings size={18} />
-              Paramètres privés
-            </button>
-
-           <button
-  onClick={metaStatus?.connected ? deconnecterFacebook : connecterFacebook}
-  disabled={loading}
-  className={`flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white disabled:opacity-50 ${
-    metaStatus?.connected
-      ? 'bg-red-800 hover:bg-red-900'
-      : 'bg-blue-900 hover:bg-blue-950'
-  }`}
->
-  <Settings size={18} />
-  {metaStatus?.connected ? 'Déconnecter Facebook' : 'Connecter Facebook'}
-</button>
-          </div>
+      ) : (
+        <div>
+          <p className="text-sm font-black text-slate-700">
+            Facebook non connecté
+          </p>
+          <p className="mt-1 text-sm text-slate-500">
+            Connectez Meta pour synchroniser les statistiques.
+          </p>
         </div>
-      </section>
+      )}
+    </div>
+
+    <div className="grid gap-4 md:grid-cols-2">
+      <Field label="Messages">
+        <input className={input} value={form.messages} onChange={e => setForm({ ...form, messages: e.target.value })} />
+      </Field>
+
+      <Field label="Vues">
+        <input className={input} value={form.vues} onChange={e => setForm({ ...form, vues: e.target.value })} />
+      </Field>
+
+      <Field label="Spectateurs">
+        <input className={input} value={form.spectateurs} onChange={e => setForm({ ...form, spectateurs: e.target.value })} />
+      </Field>
+
+      <Field label="Budget quotidien">
+        <input className={input} value={form.budgetQuotidien} onChange={e => setForm({ ...form, budgetQuotidien: e.target.value })} />
+      </Field>
+
+      <Field label="Nombre ventes">
+        <input className={input} value={form.nombreVentes} onChange={e => setForm({ ...form, nombreVentes: e.target.value })} />
+      </Field>
+
+      <Field label="Montant vendu">
+        <input className={input} value={form.montantVendus} onChange={e => setForm({ ...form, montantVendus: e.target.value })} />
+      </Field>
+
+      <Field label="Devise">
+        <select className={input} value={form.devise} onChange={e => setForm({ ...form, devise: e.target.value })}>
+          <option>USD</option>
+          <option>CDF</option>
+          <option>FC</option>
+        </select>
+      </Field>
+
+      <Field label="Campaign ID Meta">
+        <input
+          className={input}
+          placeholder="Ex : 1202xxxxxxxx"
+          value={form.facebookCampaignId}
+          onChange={e => setForm({ ...form, facebookCampaignId: e.target.value })}
+        />
+      </Field>
+    </div>
+
+    <div className="mt-6 grid gap-3 sm:grid-cols-2">
+      <button
+        onClick={enregistrer}
+        disabled={loading}
+        className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-5 py-3 text-sm font-black text-white shadow-sm hover:bg-emerald-800 disabled:opacity-50"
+      >
+        <Save size={18} />
+        Enregistrer
+      </button>
+
+      <button
+        onClick={() => form.id && synchroniserMeta(form.id)}
+        disabled={loading || !form.id || !metaStatus?.connected}
+        className="flex items-center justify-center gap-2 rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-sm hover:bg-blue-800 disabled:opacity-50"
+      >
+        <RefreshCw size={18} />
+        Sync Meta
+      </button>
+
+      <button
+        type="button"
+        className="flex items-center justify-center gap-2 rounded-2xl bg-slate-700 px-5 py-3 text-sm font-black text-white shadow-sm hover:bg-slate-800"
+      >
+        <Settings size={18} />
+        Paramètres privés
+      </button>
+
+      <button
+        onClick={metaStatus?.connected ? deconnecterFacebook : connecterFacebook}
+        disabled={loading}
+        className={`flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-black text-white shadow-sm disabled:opacity-50 ${
+          metaStatus?.connected
+            ? 'bg-red-800 hover:bg-red-900'
+            : 'bg-blue-900 hover:bg-blue-950'
+        }`}
+      >
+        <Settings size={18} />
+        {metaStatus?.connected ? 'Déconnecter Facebook' : 'Connecter Facebook'}
+      </button>
+    </div>
+  </div>
+</section>
 
       <section className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
