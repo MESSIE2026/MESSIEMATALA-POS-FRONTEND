@@ -261,47 +261,58 @@ export default function Page() {
   }, []);
 
   async function enregistrer() {
-    try {
-      if (!form.nomCampagne.trim()) {
-        setMessage('Le nom de la campagne est obligatoire.');
-        return;
-      }
-
-      setLoading(true);
-
-      await postJson(
-        form.id ? `${API_URL}/marketing/${form.id}` : `${API_URL}/marketing`,
-        {
-          nomCampagne: form.nomCampagne,
-          typeCampagne: form.typeCampagne,
-          dateDebut: form.dateDebut,
-          dateFin: form.dateFin,
-          budget: Number(form.budget || 0),
-          statut: form.statut,
-          commentaires: form.commentaires,
-          vues: Number(form.vues || 0),
-          messages: Number(form.messages || 0),
-          spectateurs: Number(form.spectateurs || 0),
-          budgetQuotidien: Number(form.budgetQuotidien || 0),
-          nombreVentes: Number(form.nombreVentes || 0),
-          montantVendus: Number(form.montantVendus || 0),
-          devise: form.devise,
-          facebookCampaignId: form.facebookCampaignId,
-          idEntreprise: 1,
-          idMagasin: 1,
-          idPoste: 1,
-        },
-      );
-
-      setMessage('Campagne enregistrée avec succès.');
-      nouveauFormulaire();
-      await chargerCampagnes();
-    } catch (e: any) {
-      setMessage(`Erreur enregistrement : ${e.message}`);
-    } finally {
-      setLoading(false);
+  try {
+    if (!form.nomCampagne.trim()) {
+      setMessage('Le nom de la campagne est obligatoire.');
+      return;
     }
+
+    setLoading(true);
+
+    const saved = await postJson(
+      form.id ? `${API_URL}/marketing/${form.id}` : `${API_URL}/marketing`,
+      {
+        nomCampagne: form.nomCampagne,
+        typeCampagne: form.typeCampagne,
+        dateDebut: form.dateDebut,
+        dateFin: form.dateFin,
+        budget: Number(form.budget || 0),
+        statut: form.statut,
+        commentaires: form.commentaires,
+        vues: Number(form.vues || 0),
+        messages: Number(form.messages || 0),
+        spectateurs: Number(form.spectateurs || 0),
+        budgetQuotidien: Number(form.budgetQuotidien || 0),
+        nombreVentes: Number(form.nombreVentes || 0),
+        montantVendus: Number(form.montantVendus || 0),
+        devise: form.devise,
+        facebookCampaignId: form.facebookCampaignId,
+        idEntreprise: 1,
+        idMagasin: 1,
+        idPoste: 1,
+      },
+    );
+
+    const idSauvegarde = Number(saved?.id || form.id || 0);
+
+    setForm(f => ({
+      ...f,
+      id: idSauvegarde,
+    }));
+
+    setMessage(
+      form.id
+        ? 'Campagne modifiée avec succès.'
+        : 'Campagne créée avec succès. Vous pouvez maintenant la lier à Meta.',
+    );
+
+    await chargerCampagnes();
+  } catch (e: any) {
+    setMessage(`Erreur enregistrement : ${e.message}`);
+  } finally {
+    setLoading(false);
   }
+}
 
   async function supprimer(id: number) {
     if (!confirm('Voulez-vous vraiment supprimer cette campagne ?')) return;
