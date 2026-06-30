@@ -33,6 +33,10 @@ type Objectif = {
   realiseMontant: number;
   atteinteNbPct?: number | null;
   atteinteMontantPct?: number | null;
+  atteinteGlobalePct?: number;
+statut?: string;
+prime?: number;
+classement?: number;
 };
 
 export default function Page() {
@@ -442,6 +446,9 @@ export default function Page() {
                     <th>Obj. montant</th>
                     <th>Réalisé montant</th>
                     <th>% montant</th>
+                    <th>Statut</th>
+<th>Prime</th>
+<th>Rang</th>
                     <th>Commentaire</th>
                     <th></th>
                   </tr>
@@ -466,6 +473,17 @@ export default function Page() {
                         {Number(o.realiseMontant || 0).toLocaleString('fr-FR')} {o.devise}
                       </td>
                       <td>{badgePct(o.atteinteMontantPct)}</td>
+                      <td>
+  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
+    {o.statut || 'En cours'}
+  </span>
+</td>
+
+<td>
+  {Number(o.prime || 0).toLocaleString('fr-FR')} {o.devise}
+</td>
+
+<td className="font-black">#{o.classement}</td>
                       <td className="max-w-[220px] truncate">{o.commentaire || '-'}</td>
                       <td>
                         <div className="flex gap-2">
@@ -488,7 +506,7 @@ export default function Page() {
 
                   {!loading && objectifs.length === 0 && (
                     <tr>
-                      <td colSpan={11} className="p-5 text-center text-slate-500">
+                      <td colSpan={14} className="p-5 text-center text-slate-500">
                         Aucun objectif trouvé.
                       </td>
                     </tr>
