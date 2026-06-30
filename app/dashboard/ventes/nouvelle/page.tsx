@@ -37,8 +37,10 @@ type Produit = {
 
 type Client = {
   id_clients: number;
+  idClient?: number;
   nom?: string;
   telephone?: string | null;
+  categorieclient?: string | null;
 };
 
 type LigneVente = {
@@ -74,6 +76,8 @@ export default function NouvelleVentePage() {
 
   const [nomclient, setNomclient] = useState('CLIENT CASH');
   const [telephone, setTelephone] = useState('');
+  const [categorieClient, setCategorieClient] = useState('STANDARD');
+const [canalMarketing, setCanalMarketing] = useState('Boutique');
   const [caissier, setCaissier] = useState('NON CONNECTÉ');
   const [modePaiement, setModePaiement] = useState('CASH');
   const [recuUSD, setRecuUSD] = useState('');
@@ -373,23 +377,26 @@ const [recuEUR, setRecuEUR] = useState('');
   }
 
   function choisirClient(valeur: string) {
-    setNomclient(valeur);
+  setNomclient(valeur);
 
-    const texte = valeur.trim().toUpperCase();
+  const texte = valeur.trim().toUpperCase();
 
-    const client = clients.find((c) => {
-      const nom = String(c.nom ?? '').trim().toUpperCase();
-      return nom === texte;
-    });
+  const client = clients.find((c) => {
+    const nom = String(c.nom ?? '').trim().toUpperCase();
+    return nom === texte;
+  });
 
-    if (client) {
-      setIdClient(Number(client.id_clients));
-      setNomclient(client.nom ?? '');
-      setTelephone(client.telephone ?? '');
-    } else {
-      setIdClient(null);
-    }
+  if (client) {
+    setIdClient(Number(client.id_clients ?? client.idClient));
+    setNomclient(client.nom ?? '');
+    setTelephone(client.telephone ?? '');
+    setCategorieClient(client.categorieclient || 'STANDARD');
+  } else {
+    setIdClient(null);
+    setTelephone('');
+    setCategorieClient('STANDARD');
   }
+}
 
   function modifierQte(index: number, valeur: string) {
     setLignes((old) =>
@@ -566,6 +573,10 @@ const articles = lignes.map((l) => ({
   id_client: idClient,
   nomclient: nomclient.trim() || 'CLIENT CASH',
   telephone: telephone.trim() || null,
+  categorieClient,
+typeClient: categorieClient,
+canalMarketing,
+canalVente: canalMarketing,
   caissier,
   devise: devisePrincipale,
   total: totalPrincipal,
@@ -739,33 +750,62 @@ const res = await fetch(`${API}/ventes`, {
             Informations client et paiement
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-3">
-            <input
-              list="liste-clients"
-              value={nomclient}
-              onFocus={pauseScan}
-              onBlur={reprendreScan}
-              onChange={(e) => choisirClient(e.target.value)}
-              className="rounded-xl border px-3 py-2 text-sm font-bold"
-              placeholder="Client cash ou nom du client"
-            />
+         <div className="grid gap-2 sm:grid-cols-5">
+           <input
+  list="liste-clients"
+  value={nomclient}
+  onFocus={pauseScan}
+  onBlur={reprendreScan}
+  onChange={(e) => choisirClient(e.target.value)}
+  className="rounded-xl border px-3 py-2 text-sm font-bold"
+  placeholder="Client cash ou nom du client"
+/>
 
-            <datalist id="liste-clients">
-              {clients.map((c) => (
-                <option key={c.id_clients} value={c.nom ?? ''}>
-                  {c.telephone ?? ''}
-                </option>
-              ))}
-            </datalist>
+<datalist id="liste-clients">
+  {clients.map((c) => (
+    <option key={c.id_clients} value={c.nom ?? ''}>
+      {c.telephone ?? ''}
+    </option>
+  ))}
+</datalist>
 
-            <input
-              value={telephone}
-              onFocus={pauseScan}
-              onBlur={reprendreScan}
-              onChange={(e) => setTelephone(e.target.value)}
-              className="rounded-xl border px-3 py-2 text-sm font-bold"
-              placeholder="Téléphone client"
-            />
+<select
+  value={categorieClient}
+  onFocus={pauseScan}
+  onBlur={reprendreScan}
+  onChange={(e) => setCategorieClient(e.target.value)}
+  className="rounded-xl border px-3 py-2 text-sm font-black"
+>
+  <option value="STANDARD">Client standard</option>
+  <option value="VIP">Client VIP</option>
+  <option value="FIDELITE">Client fidélité</option>
+  <option value="NOUVEAU">Nouveau client</option>
+  <option value="DORMANT">Client dormant</option>
+</select>
+
+<input
+  value={telephone}
+  onFocus={pauseScan}
+  onBlur={reprendreScan}
+  onChange={(e) => setTelephone(e.target.value)}
+  className="rounded-xl border px-3 py-2 text-sm font-bold"
+  placeholder="Téléphone client"
+/>
+
+<select
+  value={canalMarketing}
+  onFocus={pauseScan}
+  onBlur={reprendreScan}
+  onChange={(e) => setCanalMarketing(e.target.value)}
+  className="rounded-xl border px-3 py-2 text-sm font-black"
+>
+  <option value="Boutique">Boutique</option>
+  <option value="WhatsApp">WhatsApp</option>
+  <option value="Facebook">Facebook</option>
+  <option value="Instagram">Instagram</option>
+  <option value="Site Web">Site Web</option>
+  <option value="Téléphone">Téléphone</option>
+</select>
 
             <select
               value={modePaiement}
