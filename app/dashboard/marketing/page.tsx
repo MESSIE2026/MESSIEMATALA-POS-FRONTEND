@@ -367,27 +367,29 @@ export default function Page() {
   }
 
   function selectionner(c: Campagne) {
-    setForm({
-      id: c.id,
-      nomCampagne: c.nomCampagne || '',
-      typeCampagne: c.typeCampagne || 'Facebook Ads',
-      dateDebut: String(c.dateDebut || '').slice(0, 10),
-      dateFin: String(c.dateFin || '').slice(0, 10),
-      budget: String(c.budget || 0),
-      statut: c.statut || 'Brouillon',
-      commentaires: c.commentaires || '',
-      vues: String(c.vues || 0),
-      messages: String(c.messages || 0),
-      spectateurs: String(c.spectateurs || 0),
-      budgetQuotidien: String(c.budgetQuotidien || 0),
-      nombreVentes: String(c.nombreVentes || 0),
-      montantVendus: String(c.montantVendus || 0),
-      devise: c.devise || 'USD',
-      facebookCampaignId: c.facebookCampaignId || '',
-    });
-    setSelectedMetaCampaign(c.facebookCampaignId || '');
-    setMessage(`Campagne #${c.id} sélectionnée.`);
-  }
+  setForm(prev => ({
+    ...prev,
+    id: Number(c.id || 0),
+    nomCampagne: String(c.nomCampagne || ''),
+    typeCampagne: String(c.typeCampagne || 'Facebook Ads'),
+    dateDebut: String(c.dateDebut || new Date().toISOString()).slice(0, 10),
+    dateFin: String(c.dateFin || new Date().toISOString()).slice(0, 10),
+    budget: String(c.budget ?? 0),
+    statut: String(c.statut || 'Brouillon'),
+    commentaires: String(c.commentaires || ''),
+    vues: String(c.vues ?? 0),
+    messages: String(c.messages ?? 0),
+    spectateurs: String(c.spectateurs ?? 0),
+    budgetQuotidien: String(c.budgetQuotidien ?? 0),
+    nombreVentes: String(c.nombreVentes ?? 0),
+    montantVendus: String(c.montantVendus ?? 0),
+    devise: String(c.devise || 'USD'),
+    facebookCampaignId: String(c.facebookCampaignId || ''),
+  }));
+
+  setSelectedMetaCampaign(String(c.facebookCampaignId || ''));
+  setMessage(`Campagne #${c.id} sélectionnée.`);
+}
 
   const input =
     'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400';
