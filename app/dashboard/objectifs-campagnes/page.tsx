@@ -27,6 +27,9 @@ type Objectif = {
   objectifNbVentes: number;
   objectifMontant: number;
   devise: string;
+  realiseUsd?: number;
+realiseCdf?: number;
+realiseEur?: number;
   campagneId?: number | null;
   commentaire?: string;
   realiseNbVentes: number;
@@ -444,7 +447,10 @@ export default function Page() {
                     <th>Réalisé</th>
                     <th>% ventes</th>
                     <th>Obj. montant</th>
-                    <th>Réalisé montant</th>
+                   <th>Réalisé USD</th>
+<th>Réalisé CDF</th>
+<th>Réalisé EUR</th>
+<th>Réalisé objectif</th>
                     <th>% montant</th>
                     <th>Statut</th>
 <th>Prime</th>
@@ -469,9 +475,12 @@ export default function Page() {
                       <td>
                         {Number(o.objectifMontant || 0).toLocaleString('fr-FR')} {o.devise}
                       </td>
-                      <td>
-                        {Number(o.realiseMontant || 0).toLocaleString('fr-FR')} {o.devise}
-                      </td>
+                      <td>{Number(o.realiseUsd || 0).toLocaleString('fr-FR')} USD</td>
+<td>{Number(o.realiseCdf || 0).toLocaleString('fr-FR')} CDF</td>
+<td>{Number(o.realiseEur || 0).toLocaleString('fr-FR')} EUR</td>
+<td>
+  {Number(o.realiseMontant || 0).toLocaleString('fr-FR')} {o.devise}
+</td>
                       <td>{badgePct(o.atteinteMontantPct)}</td>
                       <td>
   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
