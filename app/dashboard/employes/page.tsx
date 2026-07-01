@@ -7,7 +7,7 @@ const API =
   'https://messiematala-pos-backend-production.up.railway.app';
 
 type Filtre = 'actifs' | 'inactifs' | 'tous';
-type Onglet = 'identite' | 'contact' | 'acces';
+type Onglet = 'identite' | 'contact' | 'rh' | 'urgence' | 'acces';
 
 type Employe = {
   id_employe: number;
@@ -33,6 +33,20 @@ type Employe = {
   adresse?: string | null;
 datenaissance?: string | null;
 dateembauche?: string | null;
+nationalite?: string | null;
+etatcivil?: string | null;
+lieunaissance?: string | null;
+typepiece?: string | null;
+numeropiece?: string | null;
+numero_cnss?: string | null;
+numero_inpp?: string | null;
+numero_impot?: string | null;
+groupe_sanguin?: string | null;
+contact_urgence_nom?: string | null;
+contact_urgence_tel?: string | null;
+contact_urgence_lien?: string | null;
+signature_url?: string | null;
+qrcode?: string | null;
 };
 
 type FormEmploye = {
@@ -53,6 +67,19 @@ type FormEmploye = {
   idEntreprise: number;
   idMagasin: number;
   isManager: boolean;
+  nationalite: string;
+etatCivil: string;
+lieuNaissance: string;
+typePiece: string;
+numeroPiece: string;
+numeroCnss: string;
+numeroInpp: string;
+numeroImpot: string;
+groupeSanguin: string;
+contactUrgenceNom: string;
+contactUrgenceTel: string;
+contactUrgenceLien: string;
+signatureUrl: string;
 };
 
 const emptyForm: FormEmploye = {
@@ -73,6 +100,19 @@ const emptyForm: FormEmploye = {
   idEntreprise: 1,
   idMagasin: 1,
   isManager: false,
+  nationalite: '',
+etatCivil: '',
+lieuNaissance: '',
+typePiece: '',
+numeroPiece: '',
+numeroCnss: '',
+numeroInpp: '',
+numeroImpot: '',
+groupeSanguin: '',
+contactUrgenceNom: '',
+contactUrgenceTel: '',
+contactUrgenceLien: '',
+signatureUrl: '',
 };
 
 function bitIsTrue(value: any) {
@@ -167,6 +207,19 @@ export default function Page() {
     idEntreprise: Number(emp.identreprise || 1),
     idMagasin: Number(emp.idmagasin || 1),
     isManager: bitIsTrue(emp.ismanager),
+    nationalite: emp.nationalite || '',
+etatCivil: emp.etatcivil || '',
+lieuNaissance: emp.lieunaissance || '',
+typePiece: emp.typepiece || '',
+numeroPiece: emp.numeropiece || '',
+numeroCnss: emp.numero_cnss || '',
+numeroInpp: emp.numero_inpp || '',
+numeroImpot: emp.numero_impot || '',
+groupeSanguin: emp.groupe_sanguin || '',
+contactUrgenceNom: emp.contact_urgence_nom || '',
+contactUrgenceTel: emp.contact_urgence_tel || '',
+contactUrgenceLien: emp.contact_urgence_lien || '',
+signatureUrl: emp.signature_url || '',
   });
 }
     } catch (error) {
@@ -213,28 +266,38 @@ export default function Page() {
     console.log('PHOTO EMPLOYE =', emp.photopath);
 
     setForm({
-      nom: emp.nom || '',
-      prenom: emp.prenom || '',
-      telephone: emp.telephone || '',
-      email: emp.email || '',
-      poste: emp.poste || '',
-      departement: emp.departement || '',
-      sexe: emp.sexe || 'M',
-      matricule: emp.matricule || '',
-      pin: emp.motdepasse || '',
-      adresse: emp.adresse || '',
-dateNaissance: emp.datenaissance
-  ? String(emp.datenaissance).slice(0, 10)
-  : '',
-dateEmbauche: emp.dateembauche
-  ? String(emp.dateembauche).slice(0, 10)
-  : '',
-      codeCarte: emp.codecarteemploye || '',
-      photoPreview: emp.photopath || '',
-      idEntreprise: Number(emp.identreprise || 1),
-      idMagasin: Number(emp.idmagasin || 1),
-      isManager: bitIsTrue(emp.ismanager),
-    });
+  nom: emp.nom || '',
+  prenom: emp.prenom || '',
+  telephone: emp.telephone || '',
+  email: emp.email || '',
+  poste: emp.poste || '',
+  departement: emp.departement || '',
+  sexe: emp.sexe || 'M',
+  matricule: emp.matricule || '',
+  pin: emp.motdepasse || '',
+  adresse: emp.adresse || '',
+  dateNaissance: emp.datenaissance ? String(emp.datenaissance).slice(0, 10) : '',
+  dateEmbauche: emp.dateembauche ? String(emp.dateembauche).slice(0, 10) : '',
+  codeCarte: emp.codecarteemploye || '',
+  photoPreview: emp.photopath || '',
+  idEntreprise: Number(emp.identreprise || 1),
+  idMagasin: Number(emp.idmagasin || 1),
+  isManager: bitIsTrue(emp.ismanager),
+
+  nationalite: emp.nationalite || '',
+  etatCivil: emp.etatcivil || '',
+  lieuNaissance: emp.lieunaissance || '',
+  typePiece: emp.typepiece || '',
+  numeroPiece: emp.numeropiece || '',
+  numeroCnss: emp.numero_cnss || '',
+  numeroInpp: emp.numero_inpp || '',
+  numeroImpot: emp.numero_impot || '',
+  groupeSanguin: emp.groupe_sanguin || '',
+  contactUrgenceNom: emp.contact_urgence_nom || '',
+  contactUrgenceTel: emp.contact_urgence_tel || '',
+  contactUrgenceLien: emp.contact_urgence_lien || '',
+  signatureUrl: emp.signature_url || '',
+});
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -306,6 +369,19 @@ if (photoFile) {
   dateEmbauche: form.dateEmbauche || null,
   photoPath,
   codeCarte: form.codeCarte || '',
+  nationalite: form.nationalite.trim(),
+etatCivil: form.etatCivil.trim(),
+lieuNaissance: form.lieuNaissance.trim(),
+typePiece: form.typePiece.trim(),
+numeroPiece: form.numeroPiece.trim(),
+numeroCnss: form.numeroCnss.trim(),
+numeroInpp: form.numeroInpp.trim(),
+numeroImpot: form.numeroImpot.trim(),
+groupeSanguin: form.groupeSanguin.trim(),
+contactUrgenceNom: form.contactUrgenceNom.trim(),
+contactUrgenceTel: form.contactUrgenceTel.trim(),
+contactUrgenceLien: form.contactUrgenceLien.trim(),
+signatureUrl: form.signatureUrl.trim(),
 };
     setSaving(true);
     setMessage('');
@@ -586,26 +662,27 @@ setPhotoFile(null);
                 </div>
               </div>
 
-              <div className="mb-5 grid grid-cols-3 gap-2 rounded-2xl bg-slate-100 p-2">
-                <TabButton
-                  active={onglet === 'identite'}
-                  onClick={() => setOnglet('identite')}
-                >
-                  Identité
-                </TabButton>
-                <TabButton
-                  active={onglet === 'contact'}
-                  onClick={() => setOnglet('contact')}
-                >
-                  Contact
-                </TabButton>
-                <TabButton
-                  active={onglet === 'acces'}
-                  onClick={() => setOnglet('acces')}
-                >
-                  Accès
-                </TabButton>
-              </div>
+              <div className="mb-5 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-2 lg:grid-cols-5">
+  <TabButton active={onglet === 'identite'} onClick={() => setOnglet('identite')}>
+    Identité
+  </TabButton>
+
+  <TabButton active={onglet === 'contact'} onClick={() => setOnglet('contact')}>
+    Contact
+  </TabButton>
+
+  <TabButton active={onglet === 'rh'} onClick={() => setOnglet('rh')}>
+    RH
+  </TabButton>
+
+  <TabButton active={onglet === 'urgence'} onClick={() => setOnglet('urgence')}>
+    Urgence
+  </TabButton>
+
+  <TabButton active={onglet === 'acces'} onClick={() => setOnglet('acces')}>
+    Accès
+  </TabButton>
+</div>
 
               {onglet === 'identite' && (
                 <Panel title="Identité employé">
@@ -686,6 +763,104 @@ setPhotoFile(null);
                   </div>
                 </Panel>
               )}
+
+              {onglet === 'rh' && (
+  <Panel title="Informations RH professionnelles">
+    <div className="grid gap-4 lg:grid-cols-3">
+      <Field
+        label="Nationalité"
+        value={form.nationalite}
+        onChange={(v) => setForm({ ...form, nationalite: v })}
+      />
+
+      <SelectField
+        label="État civil"
+        value={form.etatCivil}
+        onChange={(v) => setForm({ ...form, etatCivil: v })}
+        options={[
+          { value: '', label: 'Non défini' },
+          { value: 'Célibataire', label: 'Célibataire' },
+          { value: 'Marié(e)', label: 'Marié(e)' },
+          { value: 'Divorcé(e)', label: 'Divorcé(e)' },
+          { value: 'Veuf/Veuve', label: 'Veuf/Veuve' },
+        ]}
+      />
+
+      <Field
+        label="Lieu de naissance"
+        value={form.lieuNaissance}
+        onChange={(v) => setForm({ ...form, lieuNaissance: v })}
+      />
+
+      <SelectField
+        label="Type pièce"
+        value={form.typePiece}
+        onChange={(v) => setForm({ ...form, typePiece: v })}
+        options={[
+          { value: '', label: 'Non défini' },
+          { value: 'Carte électeur', label: 'Carte électeur' },
+          { value: 'Passeport', label: 'Passeport' },
+          { value: 'Permis', label: 'Permis' },
+          { value: 'Carte service', label: 'Carte service' },
+        ]}
+      />
+
+      <Field
+        label="N° pièce"
+        value={form.numeroPiece}
+        onChange={(v) => setForm({ ...form, numeroPiece: v })}
+      />
+
+      <Field
+        label="Groupe sanguin"
+        value={form.groupeSanguin}
+        onChange={(v) => setForm({ ...form, groupeSanguin: v })}
+      />
+
+      <Field
+        label="N° CNSS"
+        value={form.numeroCnss}
+        onChange={(v) => setForm({ ...form, numeroCnss: v })}
+      />
+
+      <Field
+        label="N° INPP"
+        value={form.numeroInpp}
+        onChange={(v) => setForm({ ...form, numeroInpp: v })}
+      />
+
+      <Field
+        label="N° Impôt"
+        value={form.numeroImpot}
+        onChange={(v) => setForm({ ...form, numeroImpot: v })}
+      />
+    </div>
+  </Panel>
+)}
+
+{onglet === 'urgence' && (
+  <Panel title="Contact d'urgence">
+    <div className="grid gap-4 lg:grid-cols-3">
+      <Field
+        label="Nom contact urgence"
+        value={form.contactUrgenceNom}
+        onChange={(v) => setForm({ ...form, contactUrgenceNom: v })}
+      />
+
+      <Field
+        label="Téléphone urgence"
+        value={form.contactUrgenceTel}
+        onChange={(v) => setForm({ ...form, contactUrgenceTel: v })}
+      />
+
+      <Field
+        label="Lien / Relation"
+        value={form.contactUrgenceLien}
+        onChange={(v) => setForm({ ...form, contactUrgenceLien: v })}
+      />
+    </div>
+  </Panel>
+)}
 
               {onglet === 'acces' && (
                 <Panel title="Affectation et accès">
