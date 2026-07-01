@@ -242,10 +242,11 @@ dateEmbauche: emp.dateembauche
     if (!matricule) return showMessage('Matricule obligatoire.', 'error');
 
 
-   let photoPath =
-  form.photoPreview && !form.photoPreview.startsWith('data:image')
-    ? form.photoPreview
-    : '/uploads/default.png';
+  let photoPath = form.photoPreview || selected?.photopath || '/uploads/default.png';
+
+if (photoPath.startsWith('data:image')) {
+  photoPath = selected?.photopath || '/uploads/default.png';
+}
 
 if (photoFile) {
   const fd = new FormData();
