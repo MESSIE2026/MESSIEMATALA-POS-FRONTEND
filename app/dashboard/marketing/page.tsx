@@ -21,6 +21,18 @@ import {
   XCircle,
 } from 'lucide-react';
 
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  BarChart,
+  Bar,
+} from 'recharts';
+
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   'https://messiematala-pos-backend-production.up.railway.app';
@@ -137,6 +149,17 @@ export default function Page() {
 
     return { totalBudget, totalVentes, totalMontant, totalVues, totalMessages, totalDepense, roas };
   }, [campagnes]);
+
+  const chartData = useMemo(() => {
+  return campagnes.slice(-12).map(c => ({
+    nom: c.nomCampagne,
+    depenses: Number(c.budgetQuotidien || 0),
+    messages: Number(c.messages || 0),
+    ventes: Number(c.nombreVentes || 0),
+    ctr: Number(c.metaCtr || 0),
+    roas: Number(c.metaRoas || 0),
+  }));
+}, [campagnes]);
 
   async function getJson(url: string) {
     const res = await fetch(url, { cache: 'no-store' });
@@ -506,7 +529,43 @@ export default function Page() {
   <h2 className="mb-5 text-xl font-black text-slate-900">Analyse rapide</h2>
 
   <div className="grid gap-5 lg:grid-cols-2">
-    <MiniTrend title="Évolution des dépenses" values={[0, stats.totalDepense * 0.25, stats.totalDepense * 0.55, stats.totalDepense]} />
+   <div className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
+  <p className="mb-5 text-sm font-black uppercase text-slate-500">
+    Évolution des dépenses
+  </p>
+
+  <div className="h-72">
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={chartData}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="nom" hide />
+        <YAxis />
+        <Tooltip />
+        <Line type="monotone" dataKey="depenses" strokeWidth={3} />
+      </LineChart>
+    </ResponsiveContainer>
+  </div>
+</div>
+
+<div className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
+  <p className="mb-5 text-sm font-black uppercase text-slate-500">
+    Messages, ventes et ROAS
+  </p>
+
+  <div className="h-72">
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={chartData}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="nom" hide />
+        <YAxis />
+        <Tooltip />
+        <Bar dataKey="messages" />
+        <Bar dataKey="ventes" />
+        <Bar dataKey="roas" />
+      </BarChart>
+    </ResponsiveContainer>
+  </div>
+</div>
 
     <div className="space-y-4">
       <ProgressRow label="Messages" value={stats.totalMessages} max={100} />
@@ -919,7 +978,34 @@ function ProgressRow({ label, value, max }: { label: string; value: number; max:
 }
 
 function MiniTrend({ title, values }: { title: string; values: number[] }) {
-  const max = Math.max(...values, 1);
+  const total = values.reduce((a, b) => a + b, 0);
+
+if (total === 0) {
+  return (
+    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
+      <p className="mb-4 text-sm font-black uppercase text-slate-500">
+        {title}
+      </p>
+
+      <div className="flex h-48 items-center justify-center rounded-xl border-2 border-dashed border-slate-200">
+        <div className="text-center">
+          <BarChart3
+            className="mx-auto mb-3 text-slate-300"
+            size={42}
+          />
+          <p className="font-semibold text-slate-500">
+            Aucune donnée disponible
+          </p>
+          <p className="text-sm text-slate-400">
+            Les graphiques apparaîtront après les premières synchronisations Meta.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const max = Math.max(...values);
 
   return (
     <div className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
