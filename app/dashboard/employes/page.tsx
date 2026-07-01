@@ -143,9 +143,32 @@ export default function Page() {
 
       setEmployes(list);
 
-      if (!selected && list.length > 0) {
-        setSelected(list[0]);
-      }
+      if (list.length > 0 && !selected) {
+  const emp = list[0];
+
+  setSelected(emp);
+  setEditingId(emp.id_employe);
+
+  setForm({
+    nom: emp.nom || '',
+    prenom: emp.prenom || '',
+    telephone: emp.telephone || '',
+    email: emp.email || '',
+    poste: emp.poste || '',
+    departement: emp.departement || '',
+    sexe: emp.sexe || 'M',
+    matricule: emp.matricule || '',
+    pin: emp.motdepasse || '',
+    adresse: emp.adresse || '',
+    dateNaissance: emp.datenaissance ? String(emp.datenaissance).slice(0, 10) : '',
+    dateEmbauche: emp.dateembauche ? String(emp.dateembauche).slice(0, 10) : '',
+    codeCarte: emp.codecarteemploye || '',
+    photoPreview: emp.photopath || '',
+    idEntreprise: Number(emp.identreprise || 1),
+    idMagasin: Number(emp.idmagasin || 1),
+    isManager: bitIsTrue(emp.ismanager),
+  });
+}
     } catch (error) {
       console.error(error);
       showMessage('Erreur chargement employés.', 'error');
