@@ -541,6 +541,13 @@ const monnaieEUR = Math.max(0, montantRecuEUR - totaux.EUR);
     try {
       const idDepotVente = Number(localStorage.getItem('ZAIRE_ID_DEPOT') || 0);
 
+      console.log('LOCAL STORAGE VENTE', {
+  entreprise: localStorage.getItem('ZAIRE_ID_ENTREPRISE'),
+  magasin: localStorage.getItem('ZAIRE_ID_MAGASIN'),
+  depot: localStorage.getItem('ZAIRE_ID_DEPOT'),
+  poste: localStorage.getItem('ZAIRE_ID_POSTE'),
+});
+
 if (!idDepotVente) {
   alert('Dépôt non défini. Vérifie la configuration du poste POS.');
   refocusScan();

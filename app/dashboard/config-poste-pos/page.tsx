@@ -473,6 +473,12 @@ if (!res.ok || !data?.idmagasin) {
     localStorage.setItem('ZAIRE_ID_ENTREPRISE', String(idEntreprise));
 localStorage.setItem('ZAIRE_ID_MAGASIN', String(idMagasin));
 localStorage.setItem('ZAIRE_ID_DEPOT', String(data.idDepot || idDepot));
+console.log('CONFIG POS ENREGISTRÉE', {
+  entreprise: localStorage.getItem('ZAIRE_ID_ENTREPRISE'),
+  magasin: localStorage.getItem('ZAIRE_ID_MAGASIN'),
+  depot: localStorage.getItem('ZAIRE_ID_DEPOT'),
+  poste: localStorage.getItem('ZAIRE_ID_POSTE'),
+});
 localStorage.setItem('ZAIRE_ID_POSTE', String(data.idPoste || 1));
 localStorage.setItem('ZAIRE_MACHINE_NAME', machineName);
 
