@@ -7,7 +7,7 @@ const API =
   'https://messiematala-pos-backend-production.up.railway.app';
 
 type Filtre = 'actifs' | 'inactifs' | 'tous';
-type Onglet = 'identite' | 'contact' | 'rh' | 'urgence' | 'acces';
+type Onglet = 'identite' | 'contact' | 'rh' | 'urgence' | 'documents' | 'acces';
 
 type Employe = {
   id_employe: number;
@@ -155,6 +155,11 @@ export default function Page() {
     'info',
   );
 
+  const [documentsEmploye, setDocumentsEmploye] = useState<any[]>([]);
+const [docType, setDocType] = useState('CV');
+const [docTitre, setDocTitre] = useState('');
+const [docUrl, setDocUrl] = useState('');
+
   function showMessage(
     text: string,
     type: 'success' | 'error' | 'info' = 'info',
@@ -252,6 +257,17 @@ signatureUrl: emp.signature_url || '',
     setMessage('');
   }
 
+  async function chargerDocuments(idEmploye: number) {
+  const res = await fetch(`${API}/employes/${idEmploye}/documents`, {
+    cache: 'no-store',
+  });
+
+  if (!res.ok) throw new Error(await res.text());
+
+  const data = await res.json();
+  setDocumentsEmploye(Array.isArray(data) ? data : []);
+}
+
   function genererCarte() {
     const code = `EMP-${String(Date.now()).slice(-6)}`;
     setForm((f) => ({ ...f, codeCarte: code }));
@@ -298,6 +314,8 @@ signatureUrl: emp.signature_url || '',
   contactUrgenceLien: emp.contact_urgence_lien || '',
   signatureUrl: emp.signature_url || '',
 });
+
+chargerDocuments(emp.id_employe).catch(() => setDocumentsEmploye([]));
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -679,6 +697,10 @@ setPhotoFile(null);
     Urgence
   </TabButton>
 
+  <TabButton active={onglet === 'documents'} onClick={() => setOnglet('documents')}>
+  Documents
+</TabButton>
+
   <TabButton active={onglet === 'acces'} onClick={() => setOnglet('acces')}>
     Accès
   </TabButton>
@@ -859,6 +881,126 @@ setPhotoFile(null);
         onChange={(v) => setForm({ ...form, contactUrgenceLien: v })}
       />
     </div>
+  </Panel>
+)}
+
+{onglet === 'documents' && (
+  <Panel title="Documents employés">
+    {!editingId && (
+      <p className="rounded-2xl bg-amber-50 p-4 text-sm font-bold text-amber-800 ring-1 ring-amber-200">
+        Enregistrez d’abord l’employé avant d’ajouter ses documents.
+      </p>
+    )}
+
+    {editingId && (
+      <div className="space-y-4">
+        <div className="grid gap-4 lg:grid-cols-3">
+          <SelectField
+            label="Type document"
+            value={docType}
+            onChange={setDocType}
+            options={[
+              { value: 'CV', label: 'CV' },
+              { value: 'CONTRAT', label: 'Contrat' },
+              { value: 'DIPLOME', label: 'Diplôme' },
+              { value: 'CERTIFICAT_MEDICAL', label: 'Certificat médical' },
+              { value: 'PIECE_IDENTITE', label: "Pièce d'identité" },
+              { value: 'PERMIS', label: 'Permis' },
+              { value: 'AUTRE', label: 'Autre' },
+            ]}
+          />
+
+          <Field
+            label="Titre"
+            value={docTitre}
+            onChange={setDocTitre}
+          />
+
+          <Field
+            label="URL fichier"
+            value={docUrl}
+            onChange={setDocUrl}
+          />
+        </div>
+
+        <button
+          onClick={async () => {
+            if (!editingId) return;
+            if (!docUrl.trim()) return showMessage('Fichier obligatoire.', 'error');
+
+            const res = await fetch(`${API}/employes/${editingId}/documents`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                typeDocument: docType,
+                titre: docTitre,
+                fichierUrl: docUrl,
+                extension: docUrl.split('.').pop() || '',
+                idEntreprise: form.idEntreprise,
+                idMagasin: form.idMagasin,
+                utilisateurAction: 'ADMIN',
+              }),
+            });
+
+            if (!res.ok) throw new Error(await res.text());
+
+            setDocTitre('');
+            setDocUrl('');
+            await chargerDocuments(editingId);
+            showMessage('Document ajouté.', 'success');
+          }}
+          className="rounded-2xl bg-green-700 px-5 py-3 text-sm font-black text-white"
+        >
+          Ajouter document
+        </button>
+
+        <div className="grid gap-3">
+          {documentsEmploye.map((doc) => (
+            <div
+              key={doc.id_document}
+              className="flex flex-col gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200 lg:flex-row lg:items-center lg:justify-between"
+            >
+              <div>
+                <p className="text-sm font-black text-slate-950">
+                  {doc.titre || doc.type_document}
+                </p>
+                <p className="text-xs font-bold text-slate-500">
+                  {doc.type_document} • {doc.extension || 'fichier'}
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <a
+                  href={doc.fichier_url}
+                  target="_blank"
+                  className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white"
+                >
+                  Ouvrir
+                </a>
+
+                <button
+                  onClick={async () => {
+                    if (!confirm('Supprimer ce document ?')) return;
+
+                    const res = await fetch(`${API}/employes/documents/${doc.id_document}`, {
+                      method: 'DELETE',
+                    });
+
+                    if (!res.ok) throw new Error(await res.text());
+
+                    await chargerDocuments(editingId);
+                    showMessage('Document supprimé.', 'success');
+                  }}
+                  className="rounded-xl bg-red-700 px-4 py-2 text-xs font-black text-white"
+                >
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
   </Panel>
 )}
 
