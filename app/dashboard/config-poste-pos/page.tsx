@@ -470,6 +470,12 @@ if (!res.ok || !data?.idmagasin) {
       setIdDepot(String(data.idDepot));
     }
 
+    localStorage.setItem('ZAIRE_ID_ENTREPRISE', String(idEntreprise));
+localStorage.setItem('ZAIRE_ID_MAGASIN', String(idMagasin));
+localStorage.setItem('ZAIRE_ID_DEPOT', String(data.idDepot || idDepot));
+localStorage.setItem('ZAIRE_ID_POSTE', String(data.idPoste || 1));
+localStorage.setItem('ZAIRE_MACHINE_NAME', machineName);
+
     setMessage(data?.message || 'Configuration POS enregistrée avec succès.');
   } catch (error: any) {
     setMessage(error.message || 'Erreur enregistrement POS.');
