@@ -3,9 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   CalendarDays,
-  CheckCircle,
   Edit,
-  Plus,
   RefreshCw,
   Save,
   Target,
@@ -28,8 +26,8 @@ type Objectif = {
   objectifMontant: number;
   devise: string;
   realiseUsd?: number;
-realiseCdf?: number;
-realiseEur?: number;
+  realiseCdf?: number;
+  realiseEur?: number;
   campagneId?: number | null;
   commentaire?: string;
   realiseNbVentes: number;
@@ -37,9 +35,9 @@ realiseEur?: number;
   atteinteNbPct?: number | null;
   atteinteMontantPct?: number | null;
   atteinteGlobalePct?: number;
-statut?: string;
-prime?: number;
-classement?: number;
+  statut?: string;
+  prime?: number;
+  classement?: number;
 };
 
 export default function Page() {
@@ -79,6 +77,7 @@ export default function Page() {
         `${API_URL}/objectifs-campagnes?idEntreprise=1&idMagasin=1`,
         { cache: 'no-store' },
       );
+
       const data = await lire(res);
       if (!res.ok) throw new Error(typeof data === 'string' ? data : JSON.stringify(data));
       setObjectifs(Array.isArray(data) ? data : []);
@@ -90,9 +89,11 @@ export default function Page() {
   }
 
   async function chargerLookups() {
-    const res = await fetch(`${API_URL}/objectifs-campagnes/lookups?idEntreprise=1&idMagasin=1`, {
-      cache: 'no-store',
-    });
+    const res = await fetch(
+      `${API_URL}/objectifs-campagnes/lookups?idEntreprise=1&idMagasin=1`,
+      { cache: 'no-store' },
+    );
+
     const data = await lire(res);
     setAgents(data?.agents || []);
     setCampagnes(data?.campagnes || []);
@@ -119,8 +120,10 @@ export default function Page() {
       const day = d.getDay() || 7;
       const lundi = new Date(d);
       lundi.setDate(d.getDate() - day + 1);
+
       const dimanche = new Date(lundi);
       dimanche.setDate(lundi.getDate() + 6);
+
       setDateDebut(lundi.toISOString().slice(0, 10));
       setDateFin(dimanche.toISOString().slice(0, 10));
     }
@@ -128,6 +131,7 @@ export default function Page() {
     if (p === 'Mois') {
       const first = new Date(d.getFullYear(), d.getMonth(), 1);
       const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+
       setDateDebut(first.toISOString().slice(0, 10));
       setDateFin(last.toISOString().slice(0, 10));
     }
@@ -242,20 +246,72 @@ export default function Page() {
     };
   }, [objectifs]);
 
-  function badgePct(v: any) {
+  function pctNumber(v: any) {
     const n = Number(v || 0);
-    const cls =
-      n >= 100
-        ? 'bg-green-100 text-green-800'
-        : n >= 70
-          ? 'bg-amber-100 text-amber-800'
-          : 'bg-red-100 text-red-800';
+    return Number.isFinite(n) ? Math.max(0, Math.min(n, 100)) : 0;
+  }
+
+  function couleurPct(v: any) {
+    const n = Number(v || 0);
+
+    if (n >= 100) {
+      return {
+        badge: 'bg-green-100 text-green-800 ring-green-200',
+        bar: 'bg-green-700',
+        label: '🟢 Excellent',
+      };
+    }
+
+    if (n >= 70) {
+      return {
+        badge: 'bg-amber-100 text-amber-800 ring-amber-200',
+        bar: 'bg-amber-500',
+        label: '🟡 En progression',
+      };
+    }
+
+    return {
+      badge: 'bg-red-100 text-red-800 ring-red-200',
+      bar: 'bg-red-600',
+      label: '🔴 Faible',
+    };
+  }
+
+  function Progression({
+    label,
+    value,
+  }: {
+    label: string;
+    value: any;
+  }) {
+    const n = Number(value || 0);
+    const safe = pctNumber(n);
+    const color = couleurPct(n);
 
     return (
-      <span className={`rounded-full px-3 py-1 text-xs font-black ${cls}`}>
-        {Number.isFinite(n) ? `${n.toFixed(1)}%` : '—'}
-      </span>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs font-black">
+          <span className="text-slate-500">{label}</span>
+          <span className={`rounded-full px-3 py-1 ring-1 ${color.badge}`}>
+            {Number.isFinite(n) ? `${n.toFixed(1)}%` : '—'}
+          </span>
+        </div>
+
+        <div className="h-3 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200">
+          <div
+            className={`h-full rounded-full ${color.bar}`}
+            style={{ width: `${safe}%` }}
+          />
+        </div>
+      </div>
     );
+  }
+
+  function rangLabel(rang?: number) {
+    if (rang === 1) return '🥇 #1';
+    if (rang === 2) return '🥈 #2';
+    if (rang === 3) return '🥉 #3';
+    return rang ? `#${rang}` : '#—';
   }
 
   return (
@@ -267,9 +323,11 @@ export default function Page() {
               <p className="text-sm font-black uppercase text-green-700">
                 Objectifs & Campagnes
               </p>
+
               <h1 className="text-2xl font-black text-slate-900">
                 Suivi des objectifs commerciaux par agent
               </h1>
+
               <p className="text-sm text-slate-500">
                 Objectifs ventes, montant, période, campagne et taux d’atteinte.
               </p>
@@ -277,7 +335,7 @@ export default function Page() {
 
             <button
               onClick={charger}
-              className="rounded-xl bg-slate-800 px-4 py-3 text-sm font-bold text-white"
+              className="rounded-xl bg-slate-800 px-4 py-3 text-sm font-bold text-white hover:bg-slate-900"
             >
               <RefreshCw className="mr-2 inline" size={16} />
               Actualiser
@@ -296,18 +354,22 @@ export default function Page() {
             <p className="text-xs text-slate-500">Objectifs</p>
             <b>{stats.total}</b>
           </div>
+
           <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
             <p className="text-xs text-slate-500">Obj. ventes</p>
             <b>{stats.ventesObjectif}</b>
           </div>
+
           <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
             <p className="text-xs text-slate-500">Réalisé ventes</p>
             <b>{stats.ventesRealisees}</b>
           </div>
+
           <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
             <p className="text-xs text-slate-500">Réalisé montant</p>
             <b>{stats.montantRealise.toLocaleString('fr-FR')}</b>
           </div>
+
           <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
             <p className="text-xs text-slate-500">Atteinte globale</p>
             <b>{stats.pct.toFixed(1)}%</b>
@@ -352,6 +414,7 @@ export default function Page() {
                   onChange={(e) => setDateDebut(e.target.value)}
                   className="rounded-xl border p-3"
                 />
+
                 <input
                   type="date"
                   value={dateFin}
@@ -376,6 +439,7 @@ export default function Page() {
                   placeholder="Objectif montant"
                   className="rounded-xl border p-3"
                 />
+
                 <select
                   value={devise}
                   onChange={(e) => setDevise(e.target.value)}
@@ -411,15 +475,19 @@ export default function Page() {
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 onClick={enregistrer}
-                className="rounded-xl bg-green-700 px-5 py-3 font-bold text-white"
+                className="rounded-xl bg-green-700 px-5 py-3 font-bold text-white hover:bg-green-800"
               >
-                {idActif ? <Edit className="mr-2 inline" size={16} /> : <Save className="mr-2 inline" size={16} />}
+                {idActif ? (
+                  <Edit className="mr-2 inline" size={16} />
+                ) : (
+                  <Save className="mr-2 inline" size={16} />
+                )}
                 {idActif ? 'Modifier' : 'Ajouter'}
               </button>
 
               <button
                 onClick={vider}
-                className="rounded-xl bg-slate-600 px-5 py-3 font-bold text-white"
+                className="rounded-xl bg-slate-600 px-5 py-3 font-bold text-white hover:bg-slate-700"
               >
                 <X className="mr-2 inline" size={16} />
                 Annuler
@@ -428,100 +496,179 @@ export default function Page() {
           </div>
 
           <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <h2 className="font-black text-slate-900">
                 <CalendarDays className="mr-2 inline text-green-700" />
                 Liste des objectifs
               </h2>
-              {loading && <span className="text-sm font-bold text-slate-500">Chargement...</span>}
+
+              {loading && (
+                <span className="text-sm font-bold text-slate-500">
+                  Chargement...
+                </span>
+              )}
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1100px] text-sm">
-                <thead>
-                  <tr className="bg-slate-900 text-left text-white">
-                    <th className="p-3">Agent</th>
-                    <th>Période</th>
-                    <th>Dates</th>
-                    <th>Obj. ventes</th>
-                    <th>Réalisé</th>
-                    <th>% ventes</th>
-                    <th>Obj. montant</th>
-                   <th>Réalisé USD</th>
-<th>Réalisé CDF</th>
-<th>Réalisé EUR</th>
-<th>Réalisé objectif</th>
-                    <th>% montant</th>
-                    <th>Statut</th>
-<th>Prime</th>
-<th>Rang</th>
-                    <th>Commentaire</th>
-                    <th></th>
-                  </tr>
-                </thead>
+            {!loading && objectifs.length === 0 && (
+              <div className="rounded-2xl bg-slate-50 p-6 text-center text-sm font-bold text-slate-500 ring-1 ring-slate-200">
+                Aucun objectif trouvé.
+              </div>
+            )}
 
-                <tbody>
-                  {objectifs.map((o) => (
-                    <tr key={o.id} className="border-b hover:bg-green-50">
-                      <td className="p-3 font-bold">{o.nomAgent}</td>
-                      <td>{o.periodeType}</td>
-                      <td>
-                        {new Date(o.dateDebut).toLocaleDateString('fr-FR')} →{' '}
-                        {new Date(o.dateFin).toLocaleDateString('fr-FR')}
-                      </td>
-                      <td>{o.objectifNbVentes}</td>
-                      <td>{o.realiseNbVentes}</td>
-                      <td>{badgePct(o.atteinteNbPct)}</td>
-                      <td>
-                        {Number(o.objectifMontant || 0).toLocaleString('fr-FR')} {o.devise}
-                      </td>
-                      <td>{Number(o.realiseUsd || 0).toLocaleString('fr-FR')} USD</td>
-<td>{Number(o.realiseCdf || 0).toLocaleString('fr-FR')} CDF</td>
-<td>{Number(o.realiseEur || 0).toLocaleString('fr-FR')} EUR</td>
-<td>
-  {Number(o.realiseMontant || 0).toLocaleString('fr-FR')} {o.devise}
-</td>
-                      <td>{badgePct(o.atteinteMontantPct)}</td>
-                      <td>
-  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
-    {o.statut || 'En cours'}
-  </span>
-</td>
+            <div className="grid gap-4 xl:grid-cols-2">
+              {objectifs.map((o) => {
+                const venteColor = couleurPct(o.atteinteNbPct);
+                const montantColor = couleurPct(o.atteinteMontantPct);
 
-<td>
-  {Number(o.prime || 0).toLocaleString('fr-FR')} {o.devise}
-</td>
+                return (
+                  <article
+                    key={o.id}
+                    className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200"
+                  >
+                    <div className="bg-slate-900 p-4 text-white">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-black uppercase text-green-300">
+                            Agent commercial
+                          </p>
 
-<td className="font-black">#{o.classement}</td>
-                      <td className="max-w-[220px] truncate">{o.commentaire || '-'}</td>
-                      <td>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => selectionner(o)}
-                            className="rounded-lg bg-blue-700 px-3 py-2 text-white"
-                          >
-                            <Edit size={15} />
-                          </button>
-                          <button
-                            onClick={() => supprimer(o.id)}
-                            className="rounded-lg bg-red-800 px-3 py-2 text-white"
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                          <h3 className="text-lg font-black">
+                            👤 {o.nomAgent || 'Agent inconnu'}
+                          </h3>
+
+                          <p className="mt-1 text-sm text-slate-300">
+                            {o.periodeType} •{' '}
+                            {new Date(o.dateDebut).toLocaleDateString('fr-FR')} →{' '}
+                            {new Date(o.dateFin).toLocaleDateString('fr-FR')}
+                          </p>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
 
-                  {!loading && objectifs.length === 0 && (
-                    <tr>
-                      <td colSpan={14} className="p-5 text-center text-slate-500">
-                        Aucun objectif trouvé.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                        <div className="rounded-2xl bg-white/10 px-3 py-2 text-sm font-black ring-1 ring-white/20">
+                          {rangLabel(o.classement)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-5 p-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                          <p className="text-xs font-bold text-slate-500">
+                            🎯 Obj. ventes
+                          </p>
+                          <p className="mt-1 text-xl font-black text-slate-900">
+                            {Number(o.objectifNbVentes || 0).toLocaleString('fr-FR')}
+                          </p>
+                        </div>
+
+                        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                          <p className="text-xs font-bold text-slate-500">
+                            ✅ Réalisé
+                          </p>
+                          <p className="mt-1 text-xl font-black text-slate-900">
+                            {Number(o.realiseNbVentes || 0).toLocaleString('fr-FR')}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Progression label="📈 Progression ventes" value={o.atteinteNbPct} />
+
+                      <div className="rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-100">
+                        <p className="text-xs font-black uppercase text-emerald-700">
+                          💰 Objectif montant
+                        </p>
+
+                        <p className="mt-1 text-2xl font-black text-emerald-900">
+                          {Number(o.objectifMontant || 0).toLocaleString('fr-FR')}{' '}
+                          {o.devise}
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                        <p className="mb-3 text-xs font-black uppercase text-slate-500">
+                          💵 Réalisé par devise
+                        </p>
+
+                        <div className="grid gap-2 text-sm font-bold">
+                          <div className="flex justify-between rounded-xl bg-white p-3 ring-1 ring-slate-200">
+                            <span>USD</span>
+                            <span>{Number(o.realiseUsd || 0).toLocaleString('fr-FR')} USD</span>
+                          </div>
+
+                          <div className="flex justify-between rounded-xl bg-white p-3 ring-1 ring-slate-200">
+                            <span>CDF</span>
+                            <span>{Number(o.realiseCdf || 0).toLocaleString('fr-FR')} CDF</span>
+                          </div>
+
+                          <div className="flex justify-between rounded-xl bg-white p-3 ring-1 ring-slate-200">
+                            <span>EUR</span>
+                            <span>{Number(o.realiseEur || 0).toLocaleString('fr-FR')} EUR</span>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 rounded-xl bg-white p-3 ring-1 ring-slate-200">
+                          <div className="flex justify-between text-sm font-black">
+                            <span>Total converti</span>
+                            <span className="text-emerald-800">
+                              {Number(o.realiseMontant || 0).toLocaleString('fr-FR')}{' '}
+                              {o.devise}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Progression label="📊 Atteinte montant" value={o.atteinteMontantPct} />
+
+                      <div className="grid gap-3 md:grid-cols-3">
+                        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                          <p className="text-xs font-bold text-slate-500">Statut</p>
+                          <p className={`mt-2 rounded-full px-3 py-1 text-center text-xs font-black ring-1 ${montantColor.badge}`}>
+                            {o.statut || 'En cours'}
+                          </p>
+                        </div>
+
+                        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                          <p className="text-xs font-bold text-slate-500">Prime</p>
+                          <p className="mt-2 text-sm font-black text-slate-900">
+                            {Number(o.prime || 0).toLocaleString('fr-FR')} {o.devise}
+                          </p>
+                        </div>
+
+                        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                          <p className="text-xs font-bold text-slate-500">Niveau</p>
+                          <p className={`mt-2 rounded-full px-3 py-1 text-center text-xs font-black ring-1 ${venteColor.badge}`}>
+                            {venteColor.label}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                        <p className="text-xs font-bold text-slate-500">📝 Commentaire</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-700">
+                          {o.commentaire || '-'}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 border-t pt-4">
+                        <button
+                          onClick={() => selectionner(o)}
+                          className="flex-1 rounded-xl bg-blue-700 px-4 py-3 text-sm font-bold text-white hover:bg-blue-800"
+                        >
+                          <Edit className="mr-2 inline" size={16} />
+                          Modifier
+                        </button>
+
+                        <button
+                          onClick={() => supprimer(o.id)}
+                          className="flex-1 rounded-xl bg-red-800 px-4 py-3 text-sm font-bold text-white hover:bg-red-900"
+                        >
+                          <Trash2 className="mr-2 inline" size={16} />
+                          Supprimer
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </div>
         </section>
