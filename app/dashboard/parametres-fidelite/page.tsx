@@ -25,13 +25,13 @@ const API_URL =
   'https://messiematala-pos-backend-production.up.railway.app';
 
 type ReglesFidelite = {
-  identreprise: number;
-  idmagasin: number;
-  fenetrejours: number;
-  minnbventespromo: number;
-  mintotalpromo: number;
-  minnbventesretro: number;
-  mintotalretro: number;
+  identreprise: number | '';
+  idmagasin: number | '';
+  fenetrejours: number | '';
+  minnbventespromo: number | '';
+  mintotalpromo: number | '';
+  minnbventesretro: number | '';
+  mintotalretro: number | '';
   devisebase: 'USD' | 'CDF' | 'EUR';
   modecondition: 'OR' | 'AND';
   actif: boolean;
@@ -41,6 +41,10 @@ type AuditLine = {
   date: string;
   type: 'INFO' | 'SUCCESS' | 'ERROR';
   message: string;
+};
+
+const toNumberInput = (value: string) => {
+  return value === '' ? '' : Number(value);
 };
 
 const defaultRegles: ReglesFidelite = {
@@ -286,7 +290,7 @@ export default function Page() {
                   className={inputClass}
                   type="number"
                   value={form.identreprise}
-                  onChange={(e) => update('identreprise', Number(e.target.value))}
+                  onChange={(e) => update('identreprise', toNumberInput(e.target.value))}
                 />
               </Field>
 
@@ -295,7 +299,7 @@ export default function Page() {
                   className={inputClass}
                   type="number"
                   value={form.idmagasin}
-                  onChange={(e) => update('idmagasin', Number(e.target.value))}
+                 onChange={(e) => update('idmagasin', toNumberInput(e.target.value))}
                 />
               </Field>
 
@@ -304,7 +308,7 @@ export default function Page() {
                   className={inputClass}
                   type="number"
                   value={form.fenetrejours}
-                  onChange={(e) => update('fenetrejours', Number(e.target.value))}
+                 onChange={(e) => update('fenetrejours', toNumberInput(e.target.value))}
                 />
               </Field>
 
@@ -325,7 +329,7 @@ export default function Page() {
                   className={inputClass}
                   type="number"
                   value={form.minnbventespromo}
-                  onChange={(e) => update('minnbventespromo', Number(e.target.value))}
+                  onChange={(e) => update('minnbventespromo', toNumberInput(e.target.value))}
                 />
               </Field>
 
@@ -334,7 +338,7 @@ export default function Page() {
                   className={inputClass}
                   type="number"
                   value={form.mintotalpromo}
-                  onChange={(e) => update('mintotalpromo', Number(e.target.value))}
+                  onChange={(e) => update('mintotalpromo', toNumberInput(e.target.value))}
                 />
               </Field>
 
@@ -343,7 +347,7 @@ export default function Page() {
                   className={inputClass}
                   type="number"
                   value={form.minnbventesretro}
-                  onChange={(e) => update('minnbventesretro', Number(e.target.value))}
+                  onChange={(e) => update('minnbventesretro', toNumberInput(e.target.value))}
                 />
               </Field>
 
@@ -352,7 +356,7 @@ export default function Page() {
                   className={inputClass}
                   type="number"
                   value={form.mintotalretro}
-                  onChange={(e) => update('mintotalretro', Number(e.target.value))}
+                  onChange={(e) => update('mintotalretro', toNumberInput(e.target.value))}
                 />
               </Field>
 
