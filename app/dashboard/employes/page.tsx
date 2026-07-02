@@ -158,7 +158,7 @@ export default function Page() {
   const [documentsEmploye, setDocumentsEmploye] = useState<any[]>([]);
 const [docType, setDocType] = useState('CV');
 const [docTitre, setDocTitre] = useState('');
-const [docUrl, setDocUrl] = useState('');
+const [documentFile, setDocumentFile] = useState<File | null>(null);
 
   function showMessage(
     text: string,
@@ -916,43 +916,74 @@ setPhotoFile(null);
             onChange={setDocTitre}
           />
 
-          <Field
-            label="URL fichier"
-            value={docUrl}
-            onChange={setDocUrl}
-          />
+          <label className="block">
+  <span className="mb-2 block text-sm font-bold">
+    Fichier
+  </span>
+
+  <input
+    type="file"
+    accept="
+      .pdf,
+      .doc,
+      .docx,
+      .xls,
+      .xlsx,
+      .jpg,
+      .jpeg,
+      .png,
+      .zip"
+    onChange={(e) =>
+      setDocumentFile(e.target.files?.[0] || null)
+    }
+  />
+</label>
         </div>
 
         <button
-          onClick={async () => {
-            if (!editingId) return;
-            if (!docUrl.trim()) return showMessage('Fichier obligatoire.', 'error');
+  onClick={async () => {
+    if (!editingId) return;
+    if (!documentFile) return showMessage('Fichier obligatoire.', 'error');
 
-            const res = await fetch(`${API}/employes/${editingId}/documents`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                typeDocument: docType,
-                titre: docTitre,
-                fichierUrl: docUrl,
-                extension: docUrl.split('.').pop() || '',
-                idEntreprise: form.idEntreprise,
-                idMagasin: form.idMagasin,
-                utilisateurAction: 'ADMIN',
-              }),
-            });
+    const fd = new FormData();
+    fd.append('file', documentFile);
+    fd.append('idEmploye', String(editingId));
 
-            if (!res.ok) throw new Error(await res.text());
+    const uploadRes = await fetch(`${API}/uploads/documents`, {
+      method: 'POST',
+      body: fd,
+    });
 
-            setDocTitre('');
-            setDocUrl('');
-            await chargerDocuments(editingId);
-            showMessage('Document ajouté.', 'success');
-          }}
-          className="rounded-2xl bg-green-700 px-5 py-3 text-sm font-black text-white"
-        >
-          Ajouter document
-        </button>
+    if (!uploadRes.ok) throw new Error(await uploadRes.text());
+
+    const uploadData = await uploadRes.json();
+
+    const res = await fetch(`${API}/employes/${editingId}/documents`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        typeDocument: docType,
+        titre: docTitre || uploadData.filename,
+        fichierUrl: uploadData.path,
+        extension: uploadData.extension,
+        tailleBytes: uploadData.size,
+        idEntreprise: form.idEntreprise,
+        idMagasin: form.idMagasin,
+        utilisateurAction: 'ADMIN',
+      }),
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+
+    setDocTitre('');
+    setDocumentFile(null);
+    await chargerDocuments(editingId);
+    showMessage('Document ajouté.', 'success');
+  }}
+  className="rounded-2xl bg-green-700 px-5 py-3 text-sm font-black text-white"
+>
+  Ajouter document
+</button>
 
         <div className="grid gap-3">
           {documentsEmploye.map((doc) => (
