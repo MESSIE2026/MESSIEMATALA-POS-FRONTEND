@@ -69,15 +69,25 @@ const [loadingOtp, setLoadingOtp] = useState(false);
   }
 
   async function postJson(url: string, body: any) {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+  const text = await res.text();
+
+  if (!res.ok) {
+    try {
+      const json = JSON.parse(text);
+      throw new Error(json.message || text);
+    } catch {
+      throw new Error(text || 'Erreur serveur');
+    }
   }
+
+  return text ? JSON.parse(text) : {};
+}
 
   async function scannerCarte(code?: string) {
     const finalCode = String(code || codeCarte || '').trim();
@@ -122,7 +132,11 @@ const [loadingOtp, setLoadingOtp] = useState(false);
     return;
   }
 
-  
+  if (m > Number(client.cashbacksolde || 0)) {
+    setMessage('Solde fidélité insuffisant.');
+    return;
+  }
+
   try {
     setLoadingOtp(true);
     setMessage('');
@@ -139,10 +153,11 @@ const [loadingOtp, setLoadingOtp] = useState(false);
     setOtpEnvoye(true);
     setMessage(data.message || 'Code OTP envoyé au client.');
   } catch (e: any) {
-    setMessage('Impossible d’envoyer le code OTP.');
-  } finally {
-    setLoadingOtp(false);
-  }
+  console.error('Erreur OTP:', e);
+  setMessage(e?.message || 'Impossible d’envoyer le code OTP.');
+} finally {
+  setLoadingOtp(false);
+}
 }
 
 async function validerRetraitOtp() {
