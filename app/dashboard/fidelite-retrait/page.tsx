@@ -122,11 +122,7 @@ const [loadingOtp, setLoadingOtp] = useState(false);
     return;
   }
 
-  if (m > Number(client.cashbacksolde || 0)) {
-    setMessage('Solde fidélité insuffisant.');
-    return;
-  }
-
+  
   try {
     setLoadingOtp(true);
     setMessage('');
