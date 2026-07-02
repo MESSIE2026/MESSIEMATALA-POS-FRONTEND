@@ -34,6 +34,10 @@ type ReglesFidelite = {
   mintotalretro: number | '';
   devisebase: 'USD' | 'CDF' | 'EUR';
   modecondition: 'OR' | 'AND';
+  taux_cashback: number | '';
+points_par_dollar: number | '';
+plafond_cashback: number | '';
+cashback_max_par_vente: number | '';
   actif: boolean;
 };
 
@@ -66,6 +70,10 @@ const defaultRegles: ReglesFidelite = {
   mintotalretro: 50,
   devisebase: 'USD',
   modecondition: 'OR',
+  taux_cashback: 2,
+points_par_dollar: 1,
+plafond_cashback: 0,
+cashback_max_par_vente: 0,
   actif: true,
 };
 
@@ -152,6 +160,10 @@ const [loadingClients, setLoadingClients] = useState(false);
         mintotalretro: Number(data.mintotalretro || 50),
         devisebase: data.devisebase || 'USD',
         modecondition: data.modecondition || 'OR',
+        taux_cashback: Number(data.taux_cashback || 2),
+points_par_dollar: Number(data.points_par_dollar || 1),
+plafond_cashback: Number(data.plafond_cashback || 0),
+cashback_max_par_vente: Number(data.cashback_max_par_vente || 0),
         actif: data.actif ?? true,
       });
 
@@ -179,6 +191,10 @@ const [loadingClients, setLoadingClients] = useState(false);
         minTotalRetro: Number(form.mintotalretro || 0),
         deviseBase: form.devisebase,
         modeCondition: form.modecondition,
+        tauxCashback: Number(form.taux_cashback || 0),
+pointsParDollar: Number(form.points_par_dollar || 0),
+plafondCashback: Number(form.plafond_cashback || 0),
+cashbackMaxParVente: Number(form.cashback_max_par_vente || 0),
         actif: Boolean(form.actif),
       };
 
@@ -376,6 +392,46 @@ const [loadingClients, setLoadingClients] = useState(false);
                   onChange={(e) => update('minnbventespromo', toNumberInput(e.target.value))}
                 />
               </Field>
+
+              <Field label="Taux cashback (%)">
+  <input
+    className={inputClass}
+    type="number"
+    step="0.01"
+    value={form.taux_cashback}
+    onChange={(e) => update('taux_cashback', toNumberInput(e.target.value))}
+  />
+</Field>
+
+<Field label="Points par dollar">
+  <input
+    className={inputClass}
+    type="number"
+    step="0.01"
+    value={form.points_par_dollar}
+    onChange={(e) => update('points_par_dollar', toNumberInput(e.target.value))}
+  />
+</Field>
+
+<Field label="Plafond cashback client">
+  <input
+    className={inputClass}
+    type="number"
+    step="0.01"
+    value={form.plafond_cashback}
+    onChange={(e) => update('plafond_cashback', toNumberInput(e.target.value))}
+  />
+</Field>
+
+<Field label="Cashback max par vente">
+  <input
+    className={inputClass}
+    type="number"
+    step="0.01"
+    value={form.cashback_max_par_vente}
+    onChange={(e) => update('cashback_max_par_vente', toNumberInput(e.target.value))}
+  />
+</Field>
 
               <Field label="Devenir FIDELE : min total achats">
                 <input
