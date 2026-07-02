@@ -54,6 +54,10 @@ export default function Page() {
   const [loadingRetrait, setLoadingRetrait] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const scannerRef = useRef<any>(null);
+  const [idOtp, setIdOtp] = useState<number | null>(null);
+const [codeOtp, setCodeOtp] = useState('');
+const [otpEnvoye, setOtpEnvoye] = useState(false);
+const [loadingOtp, setLoadingOtp] = useState(false);
 
   const inputClass =
     'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-green-700 focus:ring-4 focus:ring-green-100';
@@ -105,54 +109,92 @@ export default function Page() {
     }
   }
 
+  async function demanderConfirmationClient() {
+  if (!client) {
+    setMessage('Veuillez d’abord scanner une carte.');
+    return;
+  }
+
+  const m = Number(montant || 0);
+
+  if (m <= 0) {
+    setMessage('Montant invalide.');
+    return;
+  }
+
+  if (m > Number(client.cashbacksolde || 0)) {
+    setMessage('Solde fidélité insuffisant.');
+    return;
+  }
+
+  try {
+    setLoadingOtp(true);
+    setMessage('');
+
+    const data = await postJson(`${API_URL}/fidelite-retrait/demander-otp`, {
+      idClient: client.id_clients,
+      montant: m,
+      devise: 'USD',
+      codeCarte,
+      utilisateur: 'CAISSIER',
+    });
+
+    setIdOtp(data.otp.id);
+    setOtpEnvoye(true);
+    setMessage(data.message || 'Code OTP envoyé au client.');
+  } catch (e: any) {
+    setMessage('Impossible d’envoyer le code OTP.');
+  } finally {
+    setLoadingOtp(false);
+  }
+}
+
+async function validerRetraitOtp() {
+  if (!client || !idOtp) {
+    setMessage('Aucune demande OTP en attente.');
+    return;
+  }
+
+  if (!codeOtp.trim()) {
+    setMessage('Veuillez saisir le code OTP.');
+    return;
+  }
+
+  try {
+    setLoadingRetrait(true);
+    setMessage('');
+
+    const data = await postJson(`${API_URL}/fidelite-retrait/valider-otp`, {
+      idOtp,
+      codeOtp,
+      idClient: client.id_clients,
+      montant: Number(montant || 0),
+      devise: 'USD',
+      codeCarte,
+      utilisateur: 'CAISSIER',
+    });
+
+    setMessage(data.message || 'Retrait validé.');
+    setMontant('');
+    setCodeOtp('');
+    setIdOtp(null);
+    setOtpEnvoye(false);
+
+    await scannerCarte(codeCarte);
+
+    if (data?.mouvement?.id) {
+      window.open(`${API_URL}/fidelite-retrait/recu/${data.mouvement.id}/pdf`, '_blank');
+    }
+  } catch (e: any) {
+    setMessage('Code OTP incorrect, expiré ou retrait refusé.');
+  } finally {
+    setLoadingRetrait(false);
+  }
+}
+
   async function chargerHistorique(idClient: number) {
     const data = await getJson(`${API_URL}/fidelite-retrait/historique/${idClient}`);
     setHistorique(Array.isArray(data) ? data : []);
-  }
-
-  async function appliquerRetrait() {
-    if (!client) {
-      setMessage('Veuillez d’abord scanner une carte.');
-      return;
-    }
-
-    const m = Number(montant || 0);
-
-    if (m <= 0) {
-      setMessage('Montant invalide.');
-      return;
-    }
-
-    if (m > Number(client.cashbacksolde || 0)) {
-      setMessage('Solde fidélité insuffisant.');
-      return;
-    }
-
-    try {
-      setLoadingRetrait(true);
-      setMessage('');
-
-      const data = await postJson(`${API_URL}/fidelite-retrait/retrait`, {
-        idClient: client.id_clients,
-        montant: m,
-        codeCarte,
-        utilisateur: 'CAISSIER',
-        note: 'Retrait cashback depuis module fidélité',
-      });
-
-      setMessage(data.message || 'Retrait appliqué.');
-      setMontant('');
-
-      await scannerCarte(codeCarte);
-
-      if (data?.mouvement?.id) {
-        window.open(`${API_URL}/fidelite-retrait/recu/${data.mouvement.id}/pdf`, '_blank');
-      }
-    } catch (e: any) {
-      setMessage('Erreur retrait fidélité.');
-    } finally {
-      setLoadingRetrait(false);
-    }
   }
 
   async function ouvrirCamera() {
@@ -327,18 +369,42 @@ export default function Page() {
 
                   <div className="flex items-end">
                     <button
-                      onClick={appliquerRetrait}
-                      disabled={loadingRetrait}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-700 px-6 py-3 text-sm font-black text-white hover:bg-red-800 disabled:opacity-60"
-                    >
-                      {loadingRetrait ? <Loader2 className="animate-spin" size={18} /> : <BadgeDollarSign size={18} />}
-                      Appliquer le retrait
-                    </button>
+  onClick={demanderConfirmationClient}
+  disabled={loadingOtp || loadingRetrait || otpEnvoye}
+  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-600 px-6 py-3 text-sm font-black text-white hover:bg-amber-700 disabled:opacity-60"
+>
+  {loadingOtp ? <Loader2 className="animate-spin" size={18} /> : <ShieldCheck size={18} />}
+  Demander confirmation client
+</button>
                   </div>
                 </div>
               </div>
             )}
           </div>
+
+          {otpEnvoye && (
+  <div className="mt-5 rounded-3xl bg-amber-50 p-5 ring-1 ring-amber-200">
+    <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-amber-700">
+      Code OTP client
+    </label>
+
+    <input
+      className={inputClass}
+      value={codeOtp}
+      placeholder="Ex: 123456"
+      onChange={(e) => setCodeOtp(e.target.value)}
+    />
+
+    <button
+      onClick={validerRetraitOtp}
+      disabled={loadingRetrait}
+      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-green-700 px-6 py-3 text-sm font-black text-white hover:bg-green-800 disabled:opacity-60"
+    >
+      {loadingRetrait ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
+      Valider le retrait
+    </button>
+  </div>
+)}
 
           <div className="space-y-6">
             <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
