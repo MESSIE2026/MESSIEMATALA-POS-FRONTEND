@@ -893,7 +893,7 @@ setPhotoFile(null);
     )}
 
     {editingId && (
-      <div className="space-y-4">
+      <div className="space-y-5">
         <div className="grid gap-4 lg:grid-cols-3">
           <SelectField
             label="Type document"
@@ -903,9 +903,16 @@ setPhotoFile(null);
               { value: 'CV', label: 'CV' },
               { value: 'CONTRAT', label: 'Contrat' },
               { value: 'DIPLOME', label: 'Diplôme' },
+              { value: 'ATTESTATION', label: 'Attestation' },
               { value: 'CERTIFICAT_MEDICAL', label: 'Certificat médical' },
               { value: 'PIECE_IDENTITE', label: "Pièce d'identité" },
+              { value: 'CARTE_ELECTEUR', label: 'Carte électeur' },
+              { value: 'PASSEPORT', label: 'Passeport' },
+              { value: 'CNSS', label: 'CNSS' },
+              { value: 'INPP', label: 'INPP' },
+              { value: 'IMPOT', label: 'NIF / Impôt' },
               { value: 'PERMIS', label: 'Permis' },
+              { value: 'SIGNATURE', label: 'Signature' },
               { value: 'AUTRE', label: 'Autre' },
             ]}
           />
@@ -917,86 +924,109 @@ setPhotoFile(null);
           />
 
           <label className="block">
-  <span className="mb-2 block text-sm font-bold">
-    Fichier
-  </span>
+            <span className="mb-2 block text-sm font-black uppercase text-slate-600">
+              Fichier
+            </span>
 
-  <input
-    type="file"
-    accept="
-      .pdf,
-      .doc,
-      .docx,
-      .xls,
-      .xlsx,
-      .jpg,
-      .jpeg,
-      .png,
-      .zip"
-    onChange={(e) =>
-      setDocumentFile(e.target.files?.[0] || null)
-    }
-  />
-</label>
+            <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-5">
+              <label className="inline-flex cursor-pointer items-center rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white">
+                Choisir un fichier
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip"
+                  onChange={(e) => setDocumentFile(e.target.files?.[0] || null)}
+                />
+              </label>
+
+              <p className="mt-3 text-sm font-bold text-slate-600">
+                {documentFile ? documentFile.name : 'Aucun fichier sélectionné'}
+              </p>
+            </div>
+          </label>
         </div>
 
         <button
-  onClick={async () => {
-    if (!editingId) return;
-    if (!documentFile) return showMessage('Fichier obligatoire.', 'error');
+          onClick={async () => {
+            try {
+              if (!editingId) return;
+              if (!documentFile) {
+                return showMessage('Fichier obligatoire.', 'error');
+              }
 
-    const fd = new FormData();
-    fd.append('file', documentFile);
-    fd.append('idEmploye', String(editingId));
+              const fd = new FormData();
+              fd.append('file', documentFile);
+              fd.append('idEmploye', String(editingId));
 
-    const uploadRes = await fetch(`${API}/uploads/documents`, {
-      method: 'POST',
-      body: fd,
-    });
+              const uploadRes = await fetch(`${API}/uploads/documents`, {
+                method: 'POST',
+                body: fd,
+              });
 
-    if (!uploadRes.ok) throw new Error(await uploadRes.text());
+              if (!uploadRes.ok) {
+                throw new Error(await uploadRes.text());
+              }
 
-    const uploadData = await uploadRes.json();
+              const uploadData = await uploadRes.json();
 
-    const res = await fetch(`${API}/employes/${editingId}/documents`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        typeDocument: docType,
-        titre: docTitre || uploadData.filename,
-        fichierUrl: uploadData.path,
-        extension: uploadData.extension,
-        tailleBytes: uploadData.size,
-        idEntreprise: form.idEntreprise,
-        idMagasin: form.idMagasin,
-        utilisateurAction: 'ADMIN',
-      }),
-    });
+              const res = await fetch(`${API}/employes/${editingId}/documents`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  typeDocument: docType,
+                  titre: docTitre || uploadData.filename || documentFile.name,
+                  fichierUrl: uploadData.path,
+                  extension:
+                    uploadData.extension ||
+                    documentFile.name.split('.').pop() ||
+                    '',
+                  tailleBytes: Number(uploadData.size || documentFile.size || 0),
+                  idEntreprise: form.idEntreprise,
+                  idMagasin: form.idMagasin,
+                  utilisateurAction: 'ADMIN',
+                }),
+              });
 
-    if (!res.ok) throw new Error(await res.text());
+              if (!res.ok) {
+                throw new Error(await res.text());
+              }
 
-    setDocTitre('');
-    setDocumentFile(null);
-    await chargerDocuments(editingId);
-    showMessage('Document ajouté.', 'success');
-  }}
-  className="rounded-2xl bg-green-700 px-5 py-3 text-sm font-black text-white"
->
-  Ajouter document
-</button>
+              setDocTitre('');
+              setDocumentFile(null);
+              await chargerDocuments(editingId);
+              showMessage('Document ajouté.', 'success');
+            } catch (error) {
+              console.error(error);
+              showMessage("Erreur pendant l'ajout du document.", 'error');
+            }
+          }}
+          className="rounded-2xl bg-green-700 px-5 py-3 text-sm font-black text-white"
+        >
+          Ajouter document
+        </button>
 
         <div className="grid gap-3">
+          {documentsEmploye.length === 0 && (
+            <p className="rounded-2xl bg-slate-50 p-4 text-sm font-bold text-slate-500 ring-1 ring-slate-200">
+              Aucun document enregistré pour cet employé.
+            </p>
+          )}
+
           {documentsEmploye.map((doc) => (
             <div
-              key={doc.id_document}
+              key={String(doc.id_document)}
               className="flex flex-col gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200 lg:flex-row lg:items-center lg:justify-between"
             >
               <div>
                 <p className="text-sm font-black text-slate-950">
-                  {doc.titre || doc.type_document}
+                  📄 {doc.titre || doc.type_document}
                 </p>
+
                 <p className="text-xs font-bold text-slate-500">
-                  {doc.type_document} • {doc.extension || 'fichier'}
+                  {doc.type_document} • {String(doc.extension || 'fichier').toUpperCase()} •{' '}
+                  {doc.taille_bytes
+                    ? `${Math.round(Number(doc.taille_bytes) / 1024)} Ko`
+                    : 'Taille inconnue'}
                 </p>
               </div>
 
@@ -1004,6 +1034,7 @@ setPhotoFile(null);
                 <a
                   href={doc.fichier_url}
                   target="_blank"
+                  rel="noreferrer"
                   className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white"
                 >
                   Ouvrir
@@ -1011,16 +1042,25 @@ setPhotoFile(null);
 
                 <button
                   onClick={async () => {
-                    if (!confirm('Supprimer ce document ?')) return;
+                    try {
+                      if (!editingId) return;
+                      if (!confirm('Supprimer ce document ?')) return;
 
-                    const res = await fetch(`${API}/employes/documents/${doc.id_document}`, {
-                      method: 'DELETE',
-                    });
+                      const res = await fetch(
+                        `${API}/employes/documents/${doc.id_document}`,
+                        { method: 'DELETE' },
+                      );
 
-                    if (!res.ok) throw new Error(await res.text());
+                      if (!res.ok) {
+                        throw new Error(await res.text());
+                      }
 
-                    await chargerDocuments(editingId);
-                    showMessage('Document supprimé.', 'success');
+                      await chargerDocuments(editingId);
+                      showMessage('Document supprimé.', 'success');
+                    } catch (error) {
+                      console.error(error);
+                      showMessage('Erreur suppression document.', 'error');
+                    }
                   }}
                   className="rounded-xl bg-red-700 px-4 py-2 text-xs font-black text-white"
                 >
