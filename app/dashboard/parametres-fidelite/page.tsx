@@ -43,6 +43,15 @@ type AuditLine = {
   message: string;
 };
 
+type ClientSearch = {
+  id_clients: number;
+  nom: string;
+  prenom: string;
+  telephone: string;
+  telephoneclean?: string;
+  categorieclient: string;
+};
+
 const toNumberInput = (value: string) => {
   return value === '' ? '' : Number(value);
 };
@@ -62,7 +71,10 @@ const defaultRegles: ReglesFidelite = {
 
 export default function Page() {
   const [form, setForm] = useState<ReglesFidelite>(defaultRegles);
-  const [idClient, setIdClient] = useState('');
+  const [searchClient, setSearchClient] = useState('');
+const [clients, setClients] = useState<ClientSearch[]>([]);
+const [clientSelectionne, setClientSelectionne] = useState<ClientSearch | null>(null);
+const [loadingClients, setLoadingClients] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
@@ -183,36 +195,68 @@ export default function Page() {
     }
   }
 
-  async function recalculerClient() {
-    if (!Number(idClient)) {
-      setMessage('Veuillez saisir un ID client valide.');
-      return;
-    }
+  async function chercherClients(value: string) {
+  setSearchClient(value);
+  setClientSelectionne(null);
 
-    try {
-      setRecalculating(true);
-      setMessage('');
-
-      const data = await postJson(`${API_URL}/parametres-fidelite/recalculer-client`, {
-        idClient: Number(idClient),
-        idEntreprise: Number(form.identreprise || 1),
-        idMagasin: Number(form.idmagasin || 0),
-      });
-
-      setMessage(data?.message || 'Client recalculé.');
-      addAudit(
-        'SUCCESS',
-        `Client #${idClient} : ${data?.ancienneCategorie || '-'} → ${
-          data?.nouvelleCategorie || '-'
-        }`,
-      );
-    } catch (e: any) {
-      setMessage('Erreur recalcul client.');
-      addAudit('ERROR', e?.message || 'Erreur recalcul client.');
-    } finally {
-      setRecalculating(false);
-    }
+  if (value.trim().length < 1) {
+    setClients([]);
+    return;
   }
+
+  try {
+    setLoadingClients(true);
+
+    const data = await getJson(
+      `${API_URL}/parametres-fidelite/clients?search=${encodeURIComponent(
+        value,
+      )}&idEntreprise=${Number(form.identreprise || 1)}&idMagasin=${Number(
+        form.idmagasin || 0,
+      )}`,
+    );
+
+    setClients(Array.isArray(data) ? data : []);
+  } catch (e: any) {
+    setClients([]);
+    addAudit('ERROR', e?.message || 'Erreur recherche client.');
+  } finally {
+    setLoadingClients(false);
+  }
+}
+
+  async function recalculerClient() {
+  if (!clientSelectionne?.id_clients) {
+    setMessage('Veuillez sélectionner un client.');
+    return;
+  }
+
+  try {
+    setRecalculating(true);
+    setMessage('');
+
+    const data = await postJson(`${API_URL}/parametres-fidelite/recalculer-client`, {
+      idClient: Number(clientSelectionne.id_clients),
+      idEntreprise: Number(form.identreprise || 1),
+      idMagasin: Number(form.idmagasin || 0),
+    });
+
+    setMessage(data?.message || 'Client recalculé.');
+
+    addAudit(
+      'SUCCESS',
+      `${clientSelectionne.nom || ''} ${clientSelectionne.prenom || ''} #${
+        clientSelectionne.id_clients
+      } : ${data?.ancienneCategorie || '-'} → ${data?.nouvelleCategorie || '-'}`,
+    );
+
+    await chercherClients(searchClient);
+  } catch (e: any) {
+    setMessage('Erreur recalcul client.');
+    addAudit('ERROR', e?.message || 'Erreur recalcul client.');
+  } finally {
+    setRecalculating(false);
+  }
+}
 
   useEffect(() => {
     chargerRegles();
@@ -404,44 +448,94 @@ export default function Page() {
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-              <div className="mb-5 flex items-center gap-3">
-                <div className="rounded-2xl bg-blue-100 p-3 text-blue-800">
-                  <UserCheck size={22} />
-                </div>
-                <div>
-                  <h2 className="text-lg font-black text-slate-900">
-                    Recalcul client
-                  </h2>
-                  <p className="text-sm text-slate-500">
-                    Teste une catégorie client.
-                  </p>
-                </div>
-              </div>
+         <div className="space-y-6">
+  <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+  <div className="mb-5 flex items-center gap-3">
+    <div className="rounded-2xl bg-blue-100 p-3 text-blue-800">
+      <UserCheck size={22} />
+    </div>
+    <div>
+      <h2 className="text-lg font-black text-slate-900">
+        Recalcul client
+      </h2>
+      <p className="text-sm text-slate-500">
+        Recherche par nom, téléphone ou ID.
+      </p>
+    </div>
+  </div>
 
-              <label className={labelClass}>ID Client</label>
-              <input
-                className={inputClass}
-                type="number"
-                placeholder="Ex: 1001"
-                value={idClient}
-                onChange={(e) => setIdClient(e.target.value)}
-              />
+  <label className={labelClass}>Rechercher un client</label>
+  <input
+    className={inputClass}
+    type="text"
+    placeholder="Nom, prénom, téléphone ou ID"
+    value={searchClient}
+    onChange={(e) => chercherClients(e.target.value)}
+  />
 
-              <button
-                onClick={recalculerClient}
-                disabled={recalculating}
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-700 px-6 py-3 text-sm font-black text-white shadow-sm transition hover:bg-blue-800 disabled:opacity-60"
-              >
-                {recalculating ? (
-                  <Loader2 className="animate-spin" size={18} />
-                ) : (
-                  <Calculator size={18} />
-                )}
-                Recalculer ce client
-              </button>
-            </div>
+  <div className="mt-4 space-y-3">
+    {loadingClients && (
+      <p className="rounded-2xl bg-slate-50 p-3 text-sm font-semibold text-slate-500">
+        Recherche en cours...
+      </p>
+    )}
+
+    {!loadingClients &&
+      clients.map((c) => (
+        <button
+          key={c.id_clients}
+          type="button"
+          onClick={() => setClientSelectionne(c)}
+          className={`w-full rounded-2xl p-4 text-left text-sm ring-1 transition ${
+            clientSelectionne?.id_clients === c.id_clients
+              ? 'bg-green-50 ring-green-300'
+              : 'bg-slate-50 ring-slate-100 hover:bg-slate-100'
+          }`}
+        >
+          <p className="font-black text-slate-900">
+            👤 {c.id_clients} | {c.nom} {c.prenom}
+          </p>
+          <p className="mt-1 text-slate-600">
+            📞 {c.telephone || c.telephoneclean || '-'}
+          </p>
+          <p className="mt-1 font-bold text-green-700">
+            ⭐ {c.categorieclient || 'OCCASIONNEL'}
+          </p>
+        </button>
+      ))}
+  </div>
+
+  {clientSelectionne && (
+    <div className="mt-4 rounded-2xl bg-green-50 p-4 text-sm ring-1 ring-green-200">
+      <p className="font-black text-green-900">Client sélectionné</p>
+      <p className="mt-1 text-green-800">
+        ID : {clientSelectionne.id_clients}
+      </p>
+      <p className="text-green-800">
+        Nom : {clientSelectionne.nom} {clientSelectionne.prenom}
+      </p>
+      <p className="text-green-800">
+        Téléphone : {clientSelectionne.telephone || clientSelectionne.telephoneclean || '-'}
+      </p>
+      <p className="font-bold text-green-900">
+        Catégorie actuelle : {clientSelectionne.categorieclient || 'OCCASIONNEL'}
+      </p>
+    </div>
+  )}
+
+  <button
+    onClick={recalculerClient}
+    disabled={recalculating || !clientSelectionne}
+    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-700 px-6 py-3 text-sm font-black text-white shadow-sm transition hover:bg-blue-800 disabled:opacity-60"
+  >
+    {recalculating ? (
+      <Loader2 className="animate-spin" size={18} />
+    ) : (
+      <Calculator size={18} />
+    )}
+    Recalculer ce client
+  </button>
+</div>
 
             <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
               <div className="mb-5 flex items-center gap-3">
