@@ -41,6 +41,66 @@ cashback_max_par_vente: number | '';
   actif: boolean;
 };
 
+type NiveauFidelite = {
+  id?: number;
+  identreprise: number;
+  idmagasin: number;
+  nom_niveau: string;
+  ordre: number;
+  min_achats: number;
+  min_tickets: number;
+  cashback_percent: number;
+  points_par_dollar: number;
+  plafond_cashback: number;
+  cashback_max_par_vente: number;
+  bonus_anniversaire: number;
+  promotion_speciale: number;
+  priorite_service: boolean;
+  couleur: string;
+  icone: string;
+  actif: boolean;
+  anciennete_min_jours: number;
+depense_moyenne_min: number;
+visites_min: number;
+validite_niveau_jours: number;
+
+bonus_premier_achat: number;
+bonus_noel: number;
+bonus_nouvel_an: number;
+bonus_mariage: number;
+bonus_etudiant: number;
+bonus_client_mois: number;
+
+plafond_cashback_mensuel: number;
+plafond_cashback_annuel: number;
+solde_min_retrait: number;
+
+promotion_permanente: number;
+multiplicateur_points: number;
+
+acces_ventes_privees: boolean;
+acces_promotions_vip: boolean;
+
+livraison_gratuite: boolean;
+priorite_caisse: boolean;
+priorite_sav: boolean;
+emballage_cadeau: boolean;
+retouches_gratuites: boolean;
+invitations_evenements: boolean;
+
+expiration_points_active: boolean;
+expiration_points_jours: number;
+
+expiration_cashback_active: boolean;
+expiration_cashback_jours: number;
+
+notification_sms: boolean;
+notification_email: boolean;
+notification_whatsapp: boolean;
+
+updatedby?: string;
+};
+
 type AuditLine = {
   date: string;
   type: 'INFO' | 'SUCCESS' | 'ERROR';
@@ -88,6 +148,9 @@ const [loadingClients, setLoadingClients] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
   const [message, setMessage] = useState('');
   const [audit, setAudit] = useState<AuditLine[]>([]);
+  const [niveaux, setNiveaux] = useState<NiveauFidelite[]>([]);
+const [loadingNiveaux, setLoadingNiveaux] = useState(false);
+const [savingNiveau, setSavingNiveau] = useState(false);
 
   const addAudit = (type: AuditLine['type'], message: string) => {
     setAudit((old) => [
@@ -240,6 +303,128 @@ cashbackMaxParVente: Number(form.cashback_max_par_vente || 0),
   }
 }
 
+async function chargerNiveaux() {
+  try {
+    setLoadingNiveaux(true);
+
+    const data = await getJson(
+      `${API_URL}/parametres-fidelite-niveaux?idEntreprise=${Number(
+        form.identreprise || 1,
+      )}&idMagasin=${Number(form.idmagasin || 0)}`,
+    );
+
+    setNiveaux(Array.isArray(data) ? data : []);
+    addAudit('INFO', 'Niveaux fidélité chargés.');
+  } catch (e: any) {
+    addAudit('ERROR', e?.message || 'Erreur chargement niveaux fidélité.');
+  } finally {
+    setLoadingNiveaux(false);
+  }
+}
+
+async function initialiserNiveaux() {
+  try {
+    setLoadingNiveaux(true);
+
+    const data = await postJson(`${API_URL}/parametres-fidelite-niveaux/initialiser`, {
+      idEntreprise: Number(form.identreprise || 1),
+      idMagasin: Number(form.idmagasin || 0),
+    });
+
+    setNiveaux(Array.isArray(data) ? data : []);
+    addAudit('SUCCESS', 'Niveaux fidélité initialisés.');
+  } catch (e: any) {
+    addAudit('ERROR', e?.message || 'Erreur initialisation niveaux.');
+  } finally {
+    setLoadingNiveaux(false);
+  }
+}
+
+function updateNiveau(index: number, key: keyof NiveauFidelite, value: any) {
+  setNiveaux((old) =>
+    old.map((n, i) =>
+      i === index
+        ? {
+            ...n,
+            [key]: value,
+          }
+        : n,
+    ),
+  );
+}
+
+async function enregistrerNiveau(n: NiveauFidelite) {
+  try {
+    setSavingNiveau(true);
+
+    await postJson(`${API_URL}/parametres-fidelite-niveaux`, {
+      idEntreprise: Number(form.identreprise || 1),
+      idMagasin: Number(form.idmagasin || 0),
+      nomNiveau: n.nom_niveau,
+      ordre: Number(n.ordre || 0),
+      minAchats: Number(n.min_achats || 0),
+      minTickets: Number(n.min_tickets || 0),
+      cashbackPercent: Number(n.cashback_percent || 0),
+      pointsParDollar: Number(n.points_par_dollar || 0),
+      plafondCashback: Number(n.plafond_cashback || 0),
+      cashbackMaxParVente: Number(n.cashback_max_par_vente || 0),
+      bonusAnniversaire: Number(n.bonus_anniversaire || 0),
+      promotionSpeciale: Number(n.promotion_speciale || 0),
+      prioriteService: Boolean(n.priorite_service),
+      couleur: n.couleur || '',
+      icone: n.icone || '',
+      actif: Boolean(n.actif),
+      ancienneteMinJours: Number(n.anciennete_min_jours || 0),
+depenseMoyenneMin: Number(n.depense_moyenne_min || 0),
+visitesMin: Number(n.visites_min || 0),
+validiteNiveauJours: Number(n.validite_niveau_jours || 365),
+
+bonusPremierAchat: Number(n.bonus_premier_achat || 0),
+bonusNoel: Number(n.bonus_noel || 0),
+bonusNouvelAn: Number(n.bonus_nouvel_an || 0),
+bonusMariage: Number(n.bonus_mariage || 0),
+bonusEtudiant: Number(n.bonus_etudiant || 0),
+bonusClientMois: Number(n.bonus_client_mois || 0),
+
+plafondCashbackMensuel: Number(n.plafond_cashback_mensuel || 0),
+plafondCashbackAnnuel: Number(n.plafond_cashback_annuel || 0),
+soldeMinRetrait: Number(n.solde_min_retrait || 0),
+
+promotionPermanente: Number(n.promotion_permanente || 0),
+multiplicateurPoints: Number(n.multiplicateur_points || 1),
+
+accesVentesPrivees: Boolean(n.acces_ventes_privees),
+accesPromotionsVip: Boolean(n.acces_promotions_vip),
+
+livraisonGratuite: Boolean(n.livraison_gratuite),
+prioriteCaisse: Boolean(n.priorite_caisse),
+prioriteSav: Boolean(n.priorite_sav),
+emballageCadeau: Boolean(n.emballage_cadeau),
+retouchesGratuites: Boolean(n.retouches_gratuites),
+invitationsEvenements: Boolean(n.invitations_evenements),
+
+expirationPointsActive: Boolean(n.expiration_points_active),
+expirationPointsJours: Number(n.expiration_points_jours || 365),
+
+expirationCashbackActive: Boolean(n.expiration_cashback_active),
+expirationCashbackJours: Number(n.expiration_cashback_jours || 180),
+
+notificationSms: Boolean(n.notification_sms),
+notificationEmail: Boolean(n.notification_email),
+notificationWhatsapp: Boolean(n.notification_whatsapp),
+
+updatedBy: 'SYSTEM',
+    });
+
+    addAudit('SUCCESS', `Niveau ${n.nom_niveau} enregistré.`);
+    await chargerNiveaux();
+  } catch (e: any) {
+    addAudit('ERROR', e?.message || 'Erreur enregistrement niveau.');
+  } finally {
+    setSavingNiveau(false);
+  }
+}
+
   async function recalculerClient() {
   if (!clientSelectionne?.id_clients) {
     setMessage('Veuillez sélectionner un client.');
@@ -275,9 +460,10 @@ cashbackMaxParVente: Number(form.cashback_max_par_vente || 0),
 }
 
   useEffect(() => {
-    chargerRegles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  chargerRegles();
+  chargerNiveaux();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   const inputClass =
     'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-green-700 focus:ring-4 focus:ring-green-100';
@@ -482,6 +668,228 @@ cashbackMaxParVente: Number(form.cashback_max_par_vente || 0),
                 </select>
               </Field>
             </div>
+
+            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+  <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div>
+      <h2 className="text-xl font-black text-slate-900">
+        Configuration des niveaux
+      </h2>
+      <p className="text-sm text-slate-500">
+        Bronze, Argent, Or et Platine selon achats, tickets, cashback et points.
+      </p>
+    </div>
+
+    <button
+      onClick={initialiserNiveaux}
+      disabled={loadingNiveaux}
+      className="rounded-2xl bg-slate-800 px-5 py-3 text-sm font-black text-white"
+    >
+      Initialiser les niveaux
+    </button>
+  </div>
+
+ <div className="space-y-5">
+  {niveaux.map((n, index) => (
+    <details
+      key={`${n.nom_niveau}-${index}`}
+      className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200"
+      open={index === 0}
+    >
+      <summary className="cursor-pointer text-lg font-black text-slate-900">
+        {n.icone || '⭐'} {n.nom_niveau} — Cashback {n.cashback_percent}% — {n.points_par_dollar} pt/USD
+      </summary>
+
+      <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <Field label="Nom du niveau">
+          <input className={inputClass} value={n.nom_niveau}
+            onChange={(e) => updateNiveau(index, 'nom_niveau', e.target.value)} />
+        </Field>
+
+        <Field label="Ordre">
+          <input className={inputClass} type="number" value={n.ordre}
+            onChange={(e) => updateNiveau(index, 'ordre', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Icône">
+          <input className={inputClass} value={n.icone || ''}
+            onChange={(e) => updateNiveau(index, 'icone', e.target.value)} />
+        </Field>
+
+        <Field label="Couleur">
+          <input className={inputClass} value={n.couleur || ''}
+            onChange={(e) => updateNiveau(index, 'couleur', e.target.value)} />
+        </Field>
+
+        <Field label="Actif">
+          <select className={inputClass} value={n.actif ? 'true' : 'false'}
+            onChange={(e) => updateNiveau(index, 'actif', e.target.value === 'true')}>
+            <option value="true">Actif</option>
+            <option value="false">Inactif</option>
+          </select>
+        </Field>
+
+        <Field label="Achats minimum">
+          <input className={inputClass} type="number" value={n.min_achats}
+            onChange={(e) => updateNiveau(index, 'min_achats', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Tickets minimum">
+          <input className={inputClass} type="number" value={n.min_tickets}
+            onChange={(e) => updateNiveau(index, 'min_tickets', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Ancienneté minimum jours">
+          <input className={inputClass} type="number" value={n.anciennete_min_jours}
+            onChange={(e) => updateNiveau(index, 'anciennete_min_jours', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Dépense moyenne minimum">
+          <input className={inputClass} type="number" value={n.depense_moyenne_min}
+            onChange={(e) => updateNiveau(index, 'depense_moyenne_min', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Visites minimum">
+          <input className={inputClass} type="number" value={n.visites_min}
+            onChange={(e) => updateNiveau(index, 'visites_min', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Validité niveau jours">
+          <input className={inputClass} type="number" value={n.validite_niveau_jours}
+            onChange={(e) => updateNiveau(index, 'validite_niveau_jours', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Cashback %">
+          <input className={inputClass} type="number" step="0.01" value={n.cashback_percent}
+            onChange={(e) => updateNiveau(index, 'cashback_percent', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Points par dollar">
+          <input className={inputClass} type="number" step="0.01" value={n.points_par_dollar}
+            onChange={(e) => updateNiveau(index, 'points_par_dollar', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Multiplicateur points">
+          <input className={inputClass} type="number" step="0.01" value={n.multiplicateur_points}
+            onChange={(e) => updateNiveau(index, 'multiplicateur_points', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Bonus premier achat">
+          <input className={inputClass} type="number" value={n.bonus_premier_achat}
+            onChange={(e) => updateNiveau(index, 'bonus_premier_achat', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Bonus anniversaire">
+          <input className={inputClass} type="number" value={n.bonus_anniversaire}
+            onChange={(e) => updateNiveau(index, 'bonus_anniversaire', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Bonus Noël">
+          <input className={inputClass} type="number" value={n.bonus_noel}
+            onChange={(e) => updateNiveau(index, 'bonus_noel', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Bonus Nouvel An">
+          <input className={inputClass} type="number" value={n.bonus_nouvel_an}
+            onChange={(e) => updateNiveau(index, 'bonus_nouvel_an', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Bonus mariage">
+          <input className={inputClass} type="number" value={n.bonus_mariage}
+            onChange={(e) => updateNiveau(index, 'bonus_mariage', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Bonus étudiant">
+          <input className={inputClass} type="number" value={n.bonus_etudiant}
+            onChange={(e) => updateNiveau(index, 'bonus_etudiant', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Bonus client du mois">
+          <input className={inputClass} type="number" value={n.bonus_client_mois}
+            onChange={(e) => updateNiveau(index, 'bonus_client_mois', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Plafond cashback client">
+          <input className={inputClass} type="number" value={n.plafond_cashback}
+            onChange={(e) => updateNiveau(index, 'plafond_cashback', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Plafond mensuel">
+          <input className={inputClass} type="number" value={n.plafond_cashback_mensuel}
+            onChange={(e) => updateNiveau(index, 'plafond_cashback_mensuel', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Plafond annuel">
+          <input className={inputClass} type="number" value={n.plafond_cashback_annuel}
+            onChange={(e) => updateNiveau(index, 'plafond_cashback_annuel', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Max cashback / vente">
+          <input className={inputClass} type="number" value={n.cashback_max_par_vente}
+            onChange={(e) => updateNiveau(index, 'cashback_max_par_vente', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Solde minimum retrait">
+          <input className={inputClass} type="number" value={n.solde_min_retrait}
+            onChange={(e) => updateNiveau(index, 'solde_min_retrait', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Promotion permanente %">
+          <input className={inputClass} type="number" value={n.promotion_permanente}
+            onChange={(e) => updateNiveau(index, 'promotion_permanente', Number(e.target.value))} />
+        </Field>
+      </div>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {[
+          ['acces_ventes_privees', 'Accès ventes privées'],
+          ['acces_promotions_vip', 'Accès promotions VIP'],
+          ['livraison_gratuite', 'Livraison gratuite'],
+          ['priorite_caisse', 'Priorité caisse'],
+          ['priorite_sav', 'Priorité SAV'],
+          ['emballage_cadeau', 'Emballage cadeau'],
+          ['retouches_gratuites', 'Retouches gratuites'],
+          ['invitations_evenements', 'Invitations événements'],
+          ['expiration_points_active', 'Expiration points active'],
+          ['expiration_cashback_active', 'Expiration cashback active'],
+          ['notification_sms', 'Notification SMS'],
+          ['notification_email', 'Notification Email'],
+          ['notification_whatsapp', 'Notification WhatsApp'],
+        ].map(([key, label]) => (
+          <label key={key} className="flex items-center gap-3 rounded-2xl bg-white p-3 text-sm font-bold text-slate-700 ring-1 ring-slate-200">
+            <input
+              type="checkbox"
+              checked={Boolean(n[key as keyof NiveauFidelite])}
+              onChange={(e) => updateNiveau(index, key as keyof NiveauFidelite, e.target.checked)}
+            />
+            {label}
+          </label>
+        ))}
+      </div>
+
+      <div className="mt-5 grid gap-5 md:grid-cols-2">
+        <Field label="Expiration points jours">
+          <input className={inputClass} type="number" value={n.expiration_points_jours}
+            onChange={(e) => updateNiveau(index, 'expiration_points_jours', Number(e.target.value))} />
+        </Field>
+
+        <Field label="Expiration cashback jours">
+          <input className={inputClass} type="number" value={n.expiration_cashback_jours}
+            onChange={(e) => updateNiveau(index, 'expiration_cashback_jours', Number(e.target.value))} />
+        </Field>
+      </div>
+
+      <button
+        onClick={() => enregistrerNiveau(n)}
+        disabled={savingNiveau}
+        className="mt-6 w-full rounded-2xl bg-green-700 px-5 py-3 text-sm font-black text-white"
+      >
+        Enregistrer {n.nom_niveau}
+      </button>
+    </details>
+  ))}
+</div>
+</div>
 
             <div className="mt-6 flex flex-col gap-3 md:flex-row">
               <button
