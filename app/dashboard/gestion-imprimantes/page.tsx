@@ -65,6 +65,30 @@ export default function Page() {
     [imprimantes],
   );
 
+  const estVirtuelle = (nom: string, port?: string | null) => {
+  const n = nom.toLowerCase();
+
+  return (
+    n.includes('pdf') ||
+    n.includes('xps') ||
+    n.includes('onenote') ||
+    n.includes('fax') ||
+    port === 'PORTPROMPT:' ||
+    port === 'nul:' ||
+    port === 'SHRFAX:'
+  );
+};
+
+const imprimantesPhysiques = useMemo(
+  () => imprimantesWindows.filter((p) => !estVirtuelle(p.nom, p.port)),
+  [imprimantesWindows],
+);
+
+const imprimantesVirtuelles = useMemo(
+  () => imprimantesWindows.filter((p) => estVirtuelle(p.nom, p.port)),
+  [imprimantesWindows],
+);
+
   async function getJson(url: string) {
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error(await res.text());
@@ -230,14 +254,27 @@ export default function Page() {
 >
   <option value="">Sélectionnez une imprimante...</option>
 
-  {imprimantesWindows.map((p) => (
-  <option key={p.nom} value={p.nom}>
-    {p.nom}
-    {p.estParDefaut ? ' — Par défaut' : ''}
-    {p.estHorsLigne ? ' — HORS LIGNE' : ' — PRÊTE'}
-    {p.port ? ` — ${p.port}` : ''}
-  </option>
-))}
+  <optgroup label="🖨 Imprimantes physiques">
+  {imprimantesPhysiques.map((p) => (
+    <option key={p.nom} value={p.nom} disabled={p.estHorsLigne}>
+      {p.nom}
+      {p.estParDefaut ? ' — Par défaut' : ''}
+      {p.estHorsLigne ? ' — HORS LIGNE' : ' — PRÊTE'}
+      {p.port ? ` — ${p.port}` : ''}
+    </option>
+  ))}
+</optgroup>
+
+<optgroup label="💻 Imprimantes virtuelles">
+  {imprimantesVirtuelles.map((p) => (
+    <option key={p.nom} value={p.nom}>
+      {p.nom}
+      {p.estParDefaut ? ' — Par défaut' : ''}
+      {p.estHorsLigne ? ' — HORS LIGNE' : ' — PRÊTE'}
+      {p.port ? ` — ${p.port}` : ''}
+    </option>
+  ))}
+</optgroup>
 </select>
 
               <select
