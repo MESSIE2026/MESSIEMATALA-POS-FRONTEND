@@ -107,11 +107,16 @@ export default function Page() {
     setImprimantes(listeImprimantes);
     setFiles(Array.isArray(file) ? file : []);
 
-    setImprimantesWindows(
-      listeLocales.map((x: any) => ({
-        nom: x.nom_imprimante,
-      })),
-    );
+   setImprimantesWindows(
+  listeLocales.map((x: any) => ({
+    nom: x.nom_imprimante,
+    estParDefaut: x.est_par_defaut,
+    estDisponible: x.est_disponible,
+    estHorsLigne: x.est_hors_ligne,
+    port: x.port,
+    statut: x.statut,
+  })),
+);
   } catch (e: any) {
     alert('Erreur chargement imprimantes : ' + e.message);
   } finally {
@@ -226,10 +231,13 @@ export default function Page() {
   <option value="">Sélectionnez une imprimante...</option>
 
   {imprimantesWindows.map((p) => (
-    <option key={p.nom} value={p.nom}>
-      {p.nom}
-    </option>
-  ))}
+  <option key={p.nom} value={p.nom}>
+    {p.nom}
+    {p.estParDefaut ? ' — Par défaut' : ''}
+    {p.estHorsLigne ? ' — HORS LIGNE' : ' — PRÊTE'}
+    {p.port ? ` — ${p.port}` : ''}
+  </option>
+))}
 </select>
 
               <select
