@@ -40,6 +40,11 @@ type FileImpression = {
 
 type ImprimanteWindows = {
   nom: string;
+  estParDefaut: boolean;
+  estDisponible: boolean;
+  estHorsLigne: boolean;
+  port: string | null;
+  statut: string | null;
 };
 
 export default function Page() {
