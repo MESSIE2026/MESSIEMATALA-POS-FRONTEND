@@ -38,6 +38,10 @@ type FileImpression = {
   date_creation: string;
 };
 
+type ImprimanteWindows = {
+  nom: string;
+};
+
 export default function Page() {
   const [imprimantes, setImprimantes] = useState<Imprimante[]>([]);
   const [files, setFiles] = useState<FileImpression[]>([]);
@@ -47,6 +51,7 @@ export default function Page() {
   const [typeImpression, setTypeImpression] = useState('A4');
   const [formatPapier, setFormatPapier] = useState('A4');
   const [parDefaut, setParDefaut] = useState(false);
+  const [imprimantesWindows, setImprimantesWindows] = useState<ImprimanteWindows[]>([]);
 
   const idEntreprise = 1;
 
@@ -82,29 +87,39 @@ export default function Page() {
   }
 
   async function charger() {
-    try {
-      setLoading(true);
-      const [imp, file] = await Promise.all([
-        getJson(`${API_URL}/gestion-imprimantes?idEntreprise=${idEntreprise}`),
-        getJson(`${API_URL}/gestion-imprimantes/file?idEntreprise=${idEntreprise}`),
-      ]);
-      setImprimantes(imp);
-      setFiles(file);
-    } catch (e: any) {
-      alert('Erreur chargement imprimantes : ' + e.message);
-    } finally {
-      setLoading(false);
-    }
+  try {
+    setLoading(true);
+
+    const [imp, file] = await Promise.all([
+      getJson(`${API_URL}/gestion-imprimantes?idEntreprise=${idEntreprise}`),
+      getJson(`${API_URL}/gestion-imprimantes/file?idEntreprise=${idEntreprise}`),
+    ]);
+
+    const listeImprimantes: Imprimante[] = Array.isArray(imp) ? imp : [];
+
+    setImprimantes(listeImprimantes);
+    setFiles(Array.isArray(file) ? file : []);
+
+    setImprimantesWindows(
+      listeImprimantes.map((x) => ({
+        nom: x.nom_imprimante,
+      })),
+    );
+  } catch (e: any) {
+    alert('Erreur chargement imprimantes : ' + e.message);
+  } finally {
+    setLoading(false);
   }
+}
 
   async function enregistrerImprimante() {
     if (!nomImprimante.trim()) {
-      alert('Veuillez saisir le nom de l’imprimante.');
+      alert('Veuillez selectionner le nom de l’imprimante.');
       return;
     }
 
     try {
-      await postJson(`${API_URL}/gestion-imprimantes`, {
+     await postJson(`${API_URL}/gestion-imprimantes/selection`, {
         identreprise: idEntreprise,
         nomImprimante,
         typeImpression,
@@ -116,7 +131,7 @@ export default function Page() {
       setNomImprimante('');
       setParDefaut(false);
       await charger();
-      alert('Imprimante enregistrée avec succès.');
+     alert('Sélection imprimante enregistrée avec succès.');
     } catch (e: any) {
       alert('Erreur enregistrement : ' + e.message);
     }
@@ -193,15 +208,22 @@ export default function Page() {
 
         <section className="grid gap-6 lg:grid-cols-3">
           <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <h2 className="text-xl font-bold text-slate-900">Ajouter une imprimante</h2>
+            <h2 className="text-xl font-bold text-slate-900">Sélectionner une imprimante disponible</h2>
 
             <div className="mt-5 space-y-4">
-              <input
-                value={nomImprimante}
-                onChange={(e) => setNomImprimante(e.target.value)}
-                placeholder="Ex: EPSON TM-T20, Canon LBP, Microsoft Print to PDF"
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-slate-900"
-              />
+              <select
+  value={nomImprimante}
+  onChange={(e) => setNomImprimante(e.target.value)}
+  className="w-full rounded-2xl border border-slate-200 px-4 py-3"
+>
+  <option value="">Sélectionnez une imprimante...</option>
+
+  {imprimantesWindows.map((p) => (
+    <option key={p.nom} value={p.nom}>
+      {p.nom}
+    </option>
+  ))}
+</select>
 
               <select
                 value={typeImpression}
