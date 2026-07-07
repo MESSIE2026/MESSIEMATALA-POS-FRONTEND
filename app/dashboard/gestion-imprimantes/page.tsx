@@ -90,18 +90,20 @@ export default function Page() {
   try {
     setLoading(true);
 
-    const [imp, file] = await Promise.all([
+    const [locales, imp, file] = await Promise.all([
+      getJson(`${API_URL}/gestion-imprimantes/locales?idEntreprise=${idEntreprise}`),
       getJson(`${API_URL}/gestion-imprimantes?idEntreprise=${idEntreprise}`),
       getJson(`${API_URL}/gestion-imprimantes/file?idEntreprise=${idEntreprise}`),
     ]);
 
-    const listeImprimantes: Imprimante[] = Array.isArray(imp) ? imp : [];
+    const listeLocales = Array.isArray(locales) ? locales : [];
+    const listeImprimantes = Array.isArray(imp) ? imp : [];
 
     setImprimantes(listeImprimantes);
     setFiles(Array.isArray(file) ? file : []);
 
     setImprimantesWindows(
-      listeImprimantes.map((x) => ({
+      listeLocales.map((x: any) => ({
         nom: x.nom_imprimante,
       })),
     );
