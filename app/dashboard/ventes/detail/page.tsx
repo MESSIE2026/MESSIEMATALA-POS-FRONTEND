@@ -92,6 +92,17 @@ function extrairePaiements(data: any): any[] {
   return [];
 }
 
+async function envoyerPdfA4Agent() {
+  if (!vente || !infos) return;
+
+  const doc = new jsPDF('p', 'mm', 'a4');
+
+  // Pour commencer simple : on réutilise ton PDF existant
+  genererPdfA4();
+
+  alert('Pour l’instant, le PDF est généré localement. Étape suivante : envoyer ce PDF à l’agent.');
+}
+
   async function chargerVente() {
   if (!id || isNaN(Number(id))) {
     setLoading(false);
@@ -901,7 +912,7 @@ ${paramsDocs?.mention_legale || 'Les marchandises vendues ne peuvent être ni re
     win.document.close();
   }
 
-  function genererPdfA4() {
+  async function genererPdfA4() {
   if (!vente || !infos) return;
 
   const doc = new jsPDF('p', 'mm', 'a4');
@@ -1118,7 +1129,28 @@ ${paramsDocs?.mention_legale || 'Les marchandises vendues ne peuvent être ni re
     });
   }
 
-  doc.save(`facture-a4-${infos.codeFacture}.pdf`);
+  const pdfBase64 = doc.output('datauristring');
+
+await fetch(`${API}/gestion-imprimantes/file`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    identreprise: 1,
+    moduleSource: 'VENTE',
+    typeDocument: 'FACTURE_A4',
+    referenceDocument: infos.codeFacture,
+    titre: `Facture A4 ${infos.codeFacture}`,
+    typeImpression: 'A4',
+    contenuJson: {
+      format: 'PDF_BASE64',
+      fichierNom: `facture-a4-${infos.codeFacture}.pdf`,
+      pdfBase64,
+    },
+    creePar: 'Utilisateur POS',
+  }),
+});
+
+alert('Facture A4 envoyée à la file d’impression.');
 }
 
 function genererPdfTicket() {
