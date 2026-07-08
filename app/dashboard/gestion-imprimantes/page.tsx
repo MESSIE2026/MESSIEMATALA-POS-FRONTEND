@@ -13,6 +13,7 @@ import {
   CheckCircle,
   XCircle,
 } from 'lucide-react';
+import jsPDF from 'jspdf';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -197,44 +198,52 @@ export default function Page() {
     await charger();
   }
 
-  async function testFileImpression(type: string) {
-    try {
-      await postJson(`${API_URL}/gestion-imprimantes/file`, {
-        identreprise: idEntreprise,
-        moduleSource: 'TEST',
-        typeDocument: 'TEST_IMPRESSION',
-        referenceDocument: 'TEST-' + Date.now(),
-        titre: `Test impression ${type}`,
-        typeImpression: type,
-        contenuJson: {
-          message: 'Test impression depuis ZAIRE POS',
-          date: new Date().toISOString(),
-        },
-        creePar: 'Utilisateur POS',
-      });
+  async function creerPdfBase64Test(type: string) {
+  const html = `
+    <html>
+      <head>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+          }
+          h1 {
+            color: #166534;
+          }
+          .box {
+            border: 2px solid #166534;
+            padding: 20px;
+            border-radius: 12px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="box">
+          <h1>ZAIRE POS</h1>
+          <h2>Test impression ${type}</h2>
+          <p>Document généré pour tester l’agent d’impression Windows.</p>
+          <p>Date : ${new Date().toLocaleString('fr-FR')}</p>
+        </div>
+      </body>
+    </html>
+  `;
 
-      await charger();
-      alert('Test ajouté dans la file d’impression.');
-    } catch (e: any) {
-      alert('Erreur test : ' + e.message);
-    }
-  }
+  const win = window.open('', '_blank');
+  if (!win) throw new Error('Impossible d’ouvrir la fenêtre PDF.');
 
-  async function supprimerImprimanteDefaut() {
-  if (!confirm('Supprimer l’imprimante par défaut A4 ?')) return;
+  win.document.write(html);
+  win.document.close();
 
-  try {
-    await patchJson(
-      `${API_URL}/gestion-imprimantes/default/supprimer?idEntreprise=${idEntreprise}&typeImpression=${typeImpression}`,
-    );
+  setTimeout(() => {
+    win.print();
+  }, 500);
 
-    await charger();
-    alert('Imprimante par défaut supprimée.');
-  } catch (e: any) {
-    alert('Erreur suppression imprimante par défaut : ' + e.message);
-  }
+  throw new Error(
+    "Ce test ouvre seulement l'impression navigateur. Pour envoyer PDF_BASE64 automatiquement, il faut générer le PDF avec jsPDF."
+  );
 }
 
+  
   async function annulerImpression(id: number) {
     if (!confirm('Voulez-vous annuler cette impression ?')) return;
 
@@ -262,6 +271,49 @@ export default function Page() {
     await charger();
   } catch (e: any) {
     alert(e.message);
+  }
+}
+
+async function testFileImpression(type: string) {
+  try {
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: type === 'TICKET' ? [80, 180] : 'a4',
+    });
+
+    doc.setFontSize(18);
+    doc.text('ZAIRE POS', 15, 20);
+
+    doc.setFontSize(12);
+    doc.text(`Test impression ${type}`, 15, 35);
+    doc.text('Document généré depuis ZAIRE POS.', 15, 45);
+    doc.text(`Date : ${new Date().toLocaleString('fr-FR')}`, 15, 55);
+
+    doc.setDrawColor(22, 101, 52);
+    doc.rect(10, 10, type === 'TICKET' ? 60 : 190, 60);
+
+    const pdfBase64 = doc.output('datauristring');
+
+    await postJson(`${API_URL}/gestion-imprimantes/file`, {
+      identreprise: idEntreprise,
+      moduleSource: 'TEST',
+      typeDocument: 'TEST_IMPRESSION',
+      referenceDocument: 'TEST-' + Date.now(),
+      titre: `Test impression ${type}`,
+      typeImpression: type,
+      contenuJson: {
+        format: 'PDF_BASE64',
+        pdfBase64,
+        fichierNom: `test-impression-${type}.pdf`,
+      },
+      creePar: 'Utilisateur POS',
+    });
+
+    await charger();
+    alert('PDF ajouté dans la file d’impression.');
+  } catch (e: any) {
+    alert('Erreur test : ' + e.message);
   }
 }
 
