@@ -220,6 +220,21 @@ export default function Page() {
     }
   }
 
+  async function supprimerImprimanteDefaut() {
+  if (!confirm('Supprimer l’imprimante par défaut A4 ?')) return;
+
+  try {
+    await patchJson(
+      `${API_URL}/gestion-imprimantes/default/supprimer?idEntreprise=${idEntreprise}&typeImpression=${typeImpression}`,
+    );
+
+    await charger();
+    alert('Imprimante par défaut supprimée.');
+  } catch (e: any) {
+    alert('Erreur suppression imprimante par défaut : ' + e.message);
+  }
+}
+
   async function annulerImpression(id: number) {
     if (!confirm('Voulez-vous annuler cette impression ?')) return;
 
@@ -259,29 +274,42 @@ export default function Page() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-slate-100 p-4 md:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="flex items-center gap-3 text-2xl font-bold text-slate-900 md:text-3xl">
-                <Printer className="h-8 w-8" />
-                Gestion des Impressions
-              </h1>
-              <p className="mt-2 text-slate-500">
-                Centre de gestion des imprimantes, files d’attente et historiques ZAIRE POS.
-              </p>
-            </div>
+  <main className="min-h-screen bg-slate-100 p-4 md:p-8">
+    <div className="mx-auto max-w-7xl space-y-6">
 
+      <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+
+          <div>
+            <h1 className="flex items-center gap-3 text-2xl font-bold text-slate-900 md:text-3xl">
+              <Printer className="h-8 w-8" />
+              Gestion des Impressions
+            </h1>
+
+            <p className="mt-2 text-slate-500">
+              Centre de gestion des imprimantes, files d’attente et historiques ZAIRE POS.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={charger}
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 font-semibold text-white"
             >
-              <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
               Actualiser
             </button>
+
+            <button
+              onClick={supprimerImprimanteDefaut}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-700 px-5 py-3 font-semibold text-white"
+            >
+              Supprimer imprimante par défaut
+            </button>
           </div>
-        </section>
+
+        </div>
+      </section>
 
         <section className="grid gap-4 md:grid-cols-5">
           <CardStat title="Configurées" value={imprimantes.length} icon={<Printer />} />
