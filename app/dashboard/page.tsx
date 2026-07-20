@@ -3,6 +3,29 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  Building2,
+  CalendarDays,
+  ChevronRight,
+  GraduationCap,
+  Layers3,
+  LogOut,
+  LucideIcon,
+  Megaphone,
+  Menu,
+  Monitor,
+  Package,
+  Search,
+  Settings,
+  ShieldCheck,
+  ShoppingCart,
+  Smartphone,
+  Store,
+  User,
+  Users,
+  WalletCards,
+  X,
+} from 'lucide-react';
 
 type ModuleItem = {
   titre: string;
@@ -14,7 +37,7 @@ type Pole = {
   id: string;
   titre: string;
   desc: string;
-  icon: string;
+  icon: LucideIcon;
   modules: ModuleItem[];
 };
 
@@ -64,7 +87,7 @@ const poles: Pole[] = [
     id: 'vente',
     titre: 'Vente & POS',
     desc: 'Caisse, tickets, clients, paiements',
-    icon: '🛒',
+    icon: ShoppingCart,
     modules: [
       { titre: 'Ventes', desc: 'Gestion des ventes et tickets', url: '/dashboard/ventes' },
       { titre: 'Détails Vente', desc: 'Produits vendus par facture', url: '/dashboard/details-vente' },
@@ -85,7 +108,7 @@ const poles: Pole[] = [
   id: 'stock',
   titre: 'Stock',
   desc: 'Dépôts, inventaire, fournisseurs',
-  icon: '📦',
+  icon: Package,
   modules: [
     { titre: 'Stock', desc: 'Mouvements et inventaires', url: '/dashboard/stock' },
     { titre: 'Inventaire', desc: 'Inventaire manuel et scanner', url: '/dashboard/inventaire' },
@@ -132,7 +155,7 @@ const poles: Pole[] = [
     id: 'finance',
     titre: 'Finance',
     desc: 'Caisse, dépenses, comptabilité',
-    icon: '💳',
+    icon: WalletCards,
     modules: [
       { titre: 'Dépenses', desc: 'Sorties caisse et charges', url: '/dashboard/depenses' },
       { titre: 'Entrées', desc: 'Entrées caisse et recettes', url: '/dashboard/entrees' },
@@ -149,7 +172,7 @@ const poles: Pole[] = [
     id: 'admin',
     titre: 'Admin Central',
     desc: 'Licences, serveurs, audit SaaS',
-    icon: '🛡️',
+    icon: ShieldCheck,
     modules: [
       {
   titre: 'Dashboard Central',
@@ -177,7 +200,7 @@ const poles: Pole[] = [
 },
 
 {
-  titre: 'Sauvegardes',
+  titre: 'Sauvegardes Serveurs Clients',
   desc: 'Créer, télécharger, restaurer et superviser les sauvegardes des serveurs clients',
   url: '/dashboard/admin-central/sauvegardes',
 },
@@ -207,14 +230,14 @@ const poles: Pole[] = [
 },
 
 { titre: 'Appareils', desc: 'Appareils liés aux licences', url: '/dashboard/admin-central/appareils' },
-{ titre: 'Sauvegardes', desc: 'Gestion des sauvegardes', url: '/dashboard/admin-central/backups' },
+{ titre: 'Backups Administration Centrale', desc: 'Gestion des backups du système central', url: '/dashboard/admin-central/backups' },
     ],
   },
   {
     id: 'academic',
     titre: 'ZAIRE Academic',
     desc: 'École, étudiants, notes, bulletins',
-    icon: '🎓',
+    icon: GraduationCap,
     modules: [
       { titre: 'Académique', desc: 'Dashboard académique', url: '/dashboard/academique' },
       { titre: 'Dashboard Académique', desc: 'Statistiques académiques', url: '/dashboard/dashboard-academique' },
@@ -235,7 +258,7 @@ const poles: Pole[] = [
     id: 'immobilier',
     titre: 'Immobilier',
     desc: 'Biens, loyers, locataires',
-    icon: '🏢',
+    icon: Building2,
     modules: [
       { titre: 'Immobilier', desc: 'Dashboard immobilier', url: '/dashboard/immobilier' },
       { titre: 'Clients Immobilier', desc: 'Clients, locataires et propriétaires', url: '/dashboard/clients-immobilier' },
@@ -253,7 +276,7 @@ const poles: Pole[] = [
     id: 'salle',
     titre: 'Salle & Événement',
     desc: 'Réservations, contrats, planning',
-    icon: '🏛️',
+    icon: CalendarDays,
     modules: [
       { titre: 'Salle / Événement', desc: 'Gestion salle principale', url: '/dashboard/salle' },
       { titre: 'Clients Salle', desc: 'Clients événementiels', url: '/dashboard/clients-salle' },
@@ -269,7 +292,7 @@ const poles: Pole[] = [
     id: 'marketing',
     titre: 'Marketing',
     desc: 'Coupons, fidélité, campagnes',
-    icon: '📣',
+    icon: Megaphone,
     modules: [
       { titre: 'Marketing', desc: 'Promotions et fidélité', url: '/dashboard/marketing' },
       { titre: 'Partenaires', desc: 'Partenaires et comptes promo', url: '/dashboard/partenaires' },
@@ -284,7 +307,7 @@ const poles: Pole[] = [
     id: 'rh',
     titre: 'RH & Sécurité',
     desc: 'Employés, rôles, présences',
-    icon: '👥',
+    icon: Users,
     modules: [
       { titre: 'Employés', desc: 'Gestion employés et accès', url: '/dashboard/employes' },
       { titre: 'Utilisateurs', desc: 'Comptes utilisateurs', url: '/dashboard/utilisateurs' },
@@ -301,7 +324,7 @@ const poles: Pole[] = [
     id: 'systeme',
     titre: 'Système',
     desc: 'Backup, activation, outils',
-    icon: '⚙️',
+    icon: Settings,
     modules: [
       { titre: 'Audit Log', desc: 'Journal audit système', url: '/dashboard/audit-log' },
       { titre: 'Backup Restore', desc: 'Sauvegarde et restauration', url: '/dashboard/backup-restore' },
@@ -325,7 +348,8 @@ export default function DashboardPage() {
   const [employe, setEmploye] = useState<Employe>({});
   const [context, setContext] = useState<PosContext>({});
   const [showProfile, setShowProfile] = useState(false);
-const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
   const token = localStorage.getItem('accessToken');
@@ -372,7 +396,8 @@ setEmploye({
   const compte = employe.email || employe.username || employe.nomutilisateur;
   const initiales =
     `${valeur(employe.prenom?.[0], '')}${valeur(employe.nom?.[0], '')}`.trim().toUpperCase() || 'U';
-    const photoProfil = employe.photoProfil || '';
+  const photoProfil = employe.photoProfil || '';
+  const ActivePoleIcon = activePole.icon;
 
   async function deconnecter() {
   const emp = lireJson<Employe>('employe', {});
@@ -402,336 +427,394 @@ setEmploye({
 
   router.replace('/');
 }
-
   return (
-    <main className="min-h-screen bg-[#f5f3ea] text-slate-900">
-      <header className="border-b border-emerald-100 bg-white">
-        <div className="flex flex-col gap-4 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-700 text-2xl text-white">
-              M
-            </div>
+    <main className="min-h-screen bg-[#F7F6F0] text-[#172033]">
+      <header className="sticky top-0 z-40 border-b border-[#DDE8DF] bg-white/95 backdrop-blur">
+        <div className="mx-auto flex min-h-20 max-w-[1600px] items-center gap-3 px-4 sm:px-6">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[#DDE8DF] text-[#166534] lg:hidden"
+            aria-label="Ouvrir les pôles"
+          >
+            <Menu size={22} />
+          </button>
 
-            <div>
-              <h1 className="text-xl font-black text-emerald-900">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#166534] font-black text-white shadow-sm">
+              MM
+            </div>
+            <div className="min-w-0">
+              <h1 className="truncate text-sm font-black tracking-wide text-[#064E3B] sm:text-base">
                 MESSIE MATALA POS
               </h1>
-              <p className="text-sm text-slate-500">
-                Centre de Commande Général
+              <p className="hidden text-xs text-[#64748B] sm:block">
+                Centre de commande général
               </p>
             </div>
           </div>
 
-          <div className="grid gap-3 text-sm md:grid-cols-3">
-            <InfoBox
-              label="Entreprise / Société"
-              value={valeur(context.nomEntreprise, 'Entreprise non définie')}
-            />
-            <InfoBox
-              label="Magasin / Structure"
-              value={valeur(context.nomMagasin, 'Magasin non défini')}
-            />
-            <InfoBox
-  label="Dépôt / Poste POS"
-  value={`${valeur(context.nomDepot, 'Dépôt non défini')} / ${valeur(
-    context.nomPOS,
-    'Poste non défini',
-  )}`}
-/>
+          <div className="ml-auto hidden min-w-0 flex-1 items-center justify-center gap-2 xl:flex">
+            <ContextBadge icon={Building2} label="Entreprise" value={valeur(context.nomEntreprise, 'Non définie')} />
+            <ContextBadge icon={Store} label="Magasin" value={valeur(context.nomMagasin, 'Non défini')} />
+            <ContextBadge icon={Monitor} label="Poste POS" value={valeur(context.nomPOS, 'Non défini')} />
           </div>
 
-          <div className="relative">
-  <div className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-2">
-    <button
-  onClick={() => setShowProfile(!showProfile)}
-  className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-emerald-700 font-black text-white"
->
-  {photoProfil ? (
-    <img
-      src={photoProfil}
-      alt="Photo profil"
-      className="h-full w-full object-cover"
-    />
-  ) : (
-    initiales
-  )}
-</button>
+          <div className="relative ml-auto xl:ml-0">
+            <button
+              type="button"
+              onClick={() => setShowProfile((visible) => !visible)}
+              className="flex items-center gap-3 rounded-xl border border-[#DDE8DF] bg-white p-1.5 pr-2 transition hover:bg-emerald-50"
+              aria-expanded={showProfile}
+            >
+              <Avatar photo={photoProfil} initiales={initiales} />
+              <div className="hidden max-w-44 text-left md:block">
+                <p className="truncate text-sm font-bold text-[#172033]">
+                  {valeur(nomComplet, 'Utilisateur connecté')}
+                </p>
+                <p className="truncate text-xs text-[#64748B]">
+                  {valeur(employe.role, 'Rôle non défini')}
+                </p>
+              </div>
+            </button>
 
-    <div>
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => setShowProfile(!showProfile)}
-          className="text-left text-sm font-bold hover:text-emerald-800"
-        >
-          {valeur(nomComplet, 'Utilisateur connecté')}
-        </button>
+            {showProfile && (
+              <ProfileMenu
+                employe={employe}
+                context={context}
+                compte={compte}
+                onClose={() => setShowProfile(false)}
+                onLogout={() => setShowLogoutConfirm(true)}
+              />
+            )}
+          </div>
+        </div>
 
-        <Link
-          href="/dashboard/profil"
-          className="rounded-lg border border-emerald-200 bg-white px-2 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50"
-        >
-          Profil
-        </Link>
-      </div>
-
-      <p className="text-xs text-emerald-700">
-        ● Connecté · {valeur(employe.role, 'Rôle non défini')}
-      </p>
-
-      <p className="text-[11px] text-slate-500">
-        {valeur(compte, 'Compte non défini')}
-      </p>
-    </div>
-
-    <button
-      onClick={() => setShowLogoutConfirm(true)}
-      className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50"
-    >
-      Déconnexion
-    </button>
-  </div>
-
-  {showProfile && (
-    <div className="absolute right-0 z-50 mt-3 w-80 rounded-2xl border border-emerald-100 bg-white p-5 shadow-xl">
-      <h3 className="text-lg font-black text-emerald-900">
-        Informations du profil
-      </h3>
-
-      <div className="mt-4 space-y-2 text-sm">
-        <p><b>Nom :</b> {valeur(employe.nom)}</p>
-        <p><b>Prénom :</b> {valeur(employe.prenom)}</p>
-        <p><b>Email :</b> {valeur(employe.email)}</p>
-        <p><b>Compte :</b> {valeur(compte)}</p>
-        <p><b>Rôle :</b> {valeur(employe.role)}</p>
-        <p><b>Statut :</b> {valeur(employe.statut)}</p>
-        <p><b>Entreprise :</b> {valeur(context.nomEntreprise)}</p>
-        <p><b>Magasin :</b> {valeur(context.nomMagasin)}</p>
-        <p><b>Dépôt :</b> {valeur(context.nomDepot)}</p>
-        <p><b>Poste POS :</b> {valeur(context.nomPOS)}</p>
-      </div>
-
-      <div className="mt-5 flex gap-2">
-        <Link
-          href="/dashboard/profil"
-          className="flex-1 rounded-xl bg-emerald-700 px-4 py-2 text-center text-sm font-bold text-white hover:bg-emerald-800"
-        >
-          Modifier profil
-        </Link>
-
-        <button
-          onClick={() => setShowProfile(false)}
-          className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50"
-        >
-          Fermer
-        </button>
-      </div>
-    </div>
-  )}
-</div>
-      </div>
-        <nav className="flex flex-wrap gap-2 border-t border-emerald-50 px-6 py-3">
-          <MenuTop active label="Accueil" />
-          <MenuTop label="Pôles" />
-          <MenuTop label="Modules" />
-          <MenuTop label="Rapports" />
-          <MenuTop label="Paramètres" />
-
-          <Link
-            href="/dashboard/a-propos"
-            className="rounded-xl px-4 py-2 text-sm font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-800"
-          >
-            À Propos
-          </Link>
-        </nav>
+        <div className="border-t border-[#DDE8DF] px-4 py-2 xl:hidden sm:px-6">
+          <div className="mx-auto flex max-w-[1600px] gap-2 overflow-x-auto">
+            <CompactContext label="Entreprise" value={valeur(context.nomEntreprise, 'Non définie')} />
+            <CompactContext label="Magasin" value={valeur(context.nomMagasin, 'Non défini')} />
+            <CompactContext label="Poste" value={valeur(context.nomPOS, 'Non défini')} />
+          </div>
+        </div>
       </header>
 
-      <section className="px-6 py-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="rounded-[2rem] border border-emerald-100 bg-gradient-to-r from-white via-[#fffaf0] to-emerald-50 p-8 shadow-sm">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="text-sm font-bold uppercase tracking-[0.25em] text-emerald-700">
-                  Tableau de bord
-                </p>
+      <div className="mx-auto flex max-w-[1600px]">
+        {sidebarOpen && (
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Fermer les pôles"
+          />
+        )}
 
-                <h2 className="mt-3 text-3xl font-black text-slate-950">
-                  Bienvenue dans votre espace de gestion
-                </h2>
-
-                <p className="mt-3 max-w-3xl text-slate-600">
-                  Choisissez un pôle pour afficher ses modules. La page reste légère,
-                  claire et agréable avant l’ouverture d’un module détaillé.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <MiniStat label="Pôles" value={poles.length} />
-                <MiniStat label="Modules" value={totalModules} />
-                <MiniStat label="Supports" value="5" />
-              </div>
+        <aside
+          className={`fixed inset-y-0 left-0 z-50 flex w-[290px] flex-col border-r border-[#DDE8DF] bg-white transition-transform duration-200 lg:sticky lg:top-20 lg:z-20 lg:h-[calc(100vh-5rem)] lg:translate-x-0 ${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <div className="flex items-center justify-between border-b border-[#DDE8DF] p-5">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#166534]">Navigation</p>
+              <h2 className="mt-1 text-lg font-black text-[#172033]">Pôles de gestion</h2>
             </div>
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-[#64748B] hover:bg-slate-100 lg:hidden"
+              aria-label="Fermer"
+            >
+              <X size={21} />
+            </button>
           </div>
 
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+          <nav className="flex-1 space-y-1 overflow-y-auto p-3">
             {poles.map((pole) => {
+              const PoleIcon = pole.icon;
               const active = pole.id === activePoleId;
 
               return (
                 <button
+                  type="button"
                   key={pole.id}
                   onClick={() => {
                     setActivePoleId(pole.id);
                     setSearch('');
+                    setSidebarOpen(false);
                   }}
-                  className={`rounded-[1.6rem] border p-5 text-left transition hover:-translate-y-1 hover:shadow-md ${
+                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition ${
                     active
-                      ? 'border-emerald-400 bg-emerald-700 text-white shadow-md'
-                      : 'border-emerald-100 bg-white text-slate-900'
+                      ? 'bg-[#166534] text-white shadow-sm'
+                      : 'text-[#475569] hover:bg-emerald-50 hover:text-[#064E3B]'
                   }`}
                 >
-                  <div
-                    className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl text-3xl ${
-                      active ? 'bg-white/20' : 'bg-emerald-50'
-                    }`}
-                  >
-                    {pole.icon}
-                  </div>
-
-                  <h3 className="text-lg font-black">{pole.titre}</h3>
-                  <p className={active ? 'mt-2 text-sm text-white/80' : 'mt-2 text-sm text-slate-500'}>
-                    {pole.desc}
-                  </p>
-
-                  <p className={active ? 'mt-4 text-xs font-bold text-white' : 'mt-4 text-xs font-bold text-emerald-700'}>
-                    {pole.modules.length} modules
-                  </p>
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                    active ? 'bg-white/15' : 'bg-[#F0F7F2] text-[#166534]'
+                  }`}>
+                    <PoleIcon size={20} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold">{pole.titre}</span>
+                    <span className={`block text-xs ${active ? 'text-white/70' : 'text-[#64748B]'}`}>
+                      {pole.modules.length} modules
+                    </span>
+                  </span>
+                  <ChevronRight size={17} className={active ? 'text-white' : 'text-slate-300'} />
                 </button>
               );
             })}
-          </div>
+          </nav>
 
-          <div className="mt-8 rounded-[2rem] border border-emerald-100 bg-white shadow-sm">
-            <div className="flex flex-col gap-4 border-b border-emerald-50 p-5 md:flex-row md:items-center md:justify-between">
+          <div className="border-t border-[#DDE8DF] p-4">
+            <div className="rounded-xl bg-[#F7F6F0] p-3 text-xs text-[#64748B]">
+              <p className="font-bold text-[#172033]">Plateformes compatibles</p>
+              <p className="mt-1">Mobile · Web · Windows · Terminal POS</p>
+            </div>
+          </div>
+        </aside>
+
+        <section className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <div className="rounded-2xl border border-[#DDE8DF] bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
               <div>
-                <h3 className="text-xl font-black text-emerald-900">
-                  {activePole.icon} Modules — {activePole.titre}
-                </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  {modulesFiltres.length} module(s) disponible(s)
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#166534]">Tableau de bord</p>
+                <h2 className="mt-2 text-2xl font-black text-[#172033] sm:text-3xl">
+                  Bonjour{employe.prenom ? `, ${employe.prenom}` : ''}
+                </h2>
+                <p className="mt-2 text-sm text-[#64748B] sm:text-base">
+                  Voici un aperçu de votre espace de gestion.
                 </p>
               </div>
 
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher un module..."
-                className="w-full rounded-2xl border border-emerald-100 bg-[#faf9f3] px-4 py-3 text-sm outline-none focus:border-emerald-500 md:w-80"
-              />
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <StatCard icon={Layers3} label="Pôles" value={poles.length} />
+                <StatCard icon={Package} label="Modules" value={totalModules} />
+                <StatCard icon={Store} label="Magasin" value={context.nomMagasin ? 'Actif' : 'À configurer'} />
+                <StatCard icon={Monitor} label="Poste POS" value={context.nomPOS ? 'Actif' : 'À configurer'} />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-[#DDE8DF] bg-white shadow-sm">
+            <div className="flex flex-col gap-4 border-b border-[#DDE8DF] p-5 sm:p-6 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F0F7F2] text-[#166534]">
+                  <ActivePoleIcon size={22} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-[#172033] sm:text-xl">{activePole.titre}</h3>
+                  <p className="text-sm text-[#64748B]">
+                    {modulesFiltres.length} module{modulesFiltres.length > 1 ? 's' : ''} disponible{modulesFiltres.length > 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+
+              <label className="relative block w-full md:w-80">
+                <Search
+                  size={18}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B]"
+                />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Rechercher un module…"
+                  className="h-11 w-full rounded-xl border border-[#DDE8DF] bg-[#F7F6F0] pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#166534] focus:ring-2 focus:ring-emerald-100"
+                />
+              </label>
             </div>
 
-            <div className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-3">
-              {modulesFiltres.map((m, index) => (
+            <div className="grid gap-4 p-4 sm:p-6 md:grid-cols-2 2xl:grid-cols-3">
+              {modulesFiltres.map((module) => (
                 <Link
-                  key={m.url}
-                  href={m.url}
-                  className="group rounded-2xl border border-slate-100 bg-[#fffdf7] p-4 transition hover:border-emerald-300 hover:bg-emerald-50"
+                  key={module.url}
+                  href={module.url}
+                  className="group flex min-h-36 items-start gap-4 rounded-2xl border border-[#DDE8DF] bg-white p-5 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-200"
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-sm font-black text-emerald-800">
-                      {String(index + 1).padStart(2, '0')}
-                    </div>
-
-                    <div>
-                      <h4 className="font-black text-slate-900 group-hover:text-emerald-800">
-                        {m.titre}
-                      </h4>
-                      <p className="mt-1 text-sm text-slate-500">{m.desc}</p>
-                      <p className="mt-3 text-xs font-bold text-emerald-700">
-                        Ouvrir →
-                      </p>
-                    </div>
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F0F7F2] text-[#166534] transition group-hover:bg-[#166534] group-hover:text-white">
+                    <ActivePoleIcon size={21} />
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col self-stretch">
+                    <h4 className="line-clamp-2 font-bold text-[#172033] group-hover:text-[#166534]">
+                      {module.titre}
+                    </h4>
+                    <p className="mt-1 line-clamp-2 text-sm leading-5 text-[#64748B]">{module.desc}</p>
+                    <span className="mt-auto flex items-center gap-1 pt-3 text-xs font-bold text-[#166534]">
+                      Accéder au module <ChevronRight size={15} />
+                    </span>
                   </div>
                 </Link>
               ))}
 
               {modulesFiltres.length === 0 && (
-                <div className="col-span-full rounded-2xl bg-slate-50 p-8 text-center text-slate-500">
-                  Aucun module trouvé.
+                <div className="col-span-full rounded-2xl border border-dashed border-[#DDE8DF] bg-[#F7F6F0] p-10 text-center">
+                  <Search className="mx-auto text-slate-300" size={28} />
+                  <p className="mt-3 font-bold text-[#172033]">Aucun module trouvé</p>
+                  <p className="mt-1 text-sm text-[#64748B]">Essayez un autre mot-clé.</p>
                 </div>
               )}
             </div>
           </div>
-        </div>
-      </section>
 
-      <footer className="border-t border-emerald-100 bg-white px-6 py-4 text-sm text-slate-500">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <p>© 2026 MESSIE MATALA POS</p>
-          <p>Web · Mobile · Windows · Mac · Terminal POS</p>
-        </div>
-      </footer>
+          <footer className="flex flex-col gap-2 px-1 pb-2 pt-6 text-xs text-[#64748B] sm:flex-row sm:items-center sm:justify-between">
+            <p>© 2026 MESSIE MATALA POS</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="flex items-center gap-1"><Smartphone size={14} /> Mobile</span>
+              <span className="flex items-center gap-1"><Monitor size={14} /> Web & Windows</span>
+              <span className="flex items-center gap-1"><ShoppingCart size={14} /> Terminal POS</span>
+            </div>
+          </footer>
+        </section>
+      </div>
 
       {showLogoutConfirm && (
-  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">
-    <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
-      <h3 className="text-xl font-black text-slate-900">
-        Déconnexion
-      </h3>
-
-      <p className="mt-3 text-slate-600">
-        Voulez-vous vraiment vous déconnecter ?
-      </p>
-
-      <div className="mt-6 flex justify-end gap-3">
-        <button
-          onClick={() => setShowLogoutConfirm(false)}
-          className="rounded-xl border border-slate-200 px-5 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50"
-        >
-          Non
-        </button>
-
-        <button
-          onClick={deconnecter}
-          className="rounded-xl bg-red-600 px-5 py-2 text-sm font-bold text-white hover:bg-red-700"
-        >
-          Oui
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-[#DC2626]">
+              <LogOut size={22} />
+            </div>
+            <h3 className="mt-4 text-xl font-black text-[#172033]">Déconnexion</h3>
+            <p className="mt-2 text-[#64748B]">Voulez-vous vraiment vous déconnecter de votre session ?</p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className="rounded-xl border border-[#DDE8DF] px-5 py-2.5 text-sm font-bold text-[#475569] hover:bg-slate-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={deconnecter}
+                className="rounded-xl bg-[#DC2626] px-5 py-2.5 text-sm font-bold text-white hover:bg-red-700"
+              >
+                Se déconnecter
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
 
-function InfoBox({ label, value }: { label: string; value: string }) {
+function ContextBadge({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
   return (
-    <div className="rounded-2xl bg-[#f5f3ea] px-4 py-2">
-      <p className="text-[11px] font-bold uppercase text-emerald-700">{label}</p>
-      <p className="font-black text-slate-900">{value}</p>
+    <div className="flex min-w-0 max-w-52 items-center gap-2 rounded-xl bg-[#F7F6F0] px-3 py-2">
+      <Icon size={16} className="shrink-0 text-[#166534]" />
+      <div className="min-w-0">
+        <p className="text-[10px] font-bold uppercase tracking-wide text-[#64748B]">{label}</p>
+        <p className="truncate text-xs font-bold text-[#172033]">{value}</p>
+      </div>
     </div>
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: string | number }) {
+function CompactContext({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
-      <p className="text-xs font-bold text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-black text-emerald-800">{value}</p>
+    <div className="shrink-0 rounded-lg bg-[#F7F6F0] px-3 py-1.5 text-xs">
+      <span className="font-bold text-[#166534]">{label} :</span>{' '}
+      <span className="text-[#475569]">{value}</span>
     </div>
   );
 }
 
-function MenuTop({ label, active = false }: { label: string; active?: boolean }) {
+function Avatar({ photo, initiales }: { photo: string; initiales: string }) {
   return (
-    <button
-      className={`rounded-xl px-4 py-2 text-sm font-bold ${
-        active
-          ? 'bg-emerald-700 text-white'
-          : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-800'
-      }`}
-    >
-      {label}
-    </button>
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#166534] text-sm font-black text-white">
+      {photo ? <img src={photo} alt="Photo de profil" className="h-full w-full object-cover" /> : initiales}
+    </span>
+  );
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <div className="min-w-28 rounded-xl border border-[#DDE8DF] bg-[#F7F6F0] p-3">
+      <div className="flex items-center gap-2 text-[#166534]">
+        <Icon size={16} />
+        <p className="text-[11px] font-bold uppercase tracking-wide">{label}</p>
+      </div>
+      <p className="mt-2 truncate text-base font-black text-[#172033]">{value}</p>
+    </div>
+  );
+}
+
+function ProfileMenu({
+  employe,
+  context,
+  compte,
+  onClose,
+  onLogout,
+}: {
+  employe: Employe;
+  context: PosContext;
+  compte?: string;
+  onClose: () => void;
+  onLogout: () => void;
+}) {
+  return (
+    <div className="absolute right-0 z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-[#DDE8DF] bg-white p-5 shadow-xl">
+      <div className="flex items-center justify-between">
+        <h3 className="font-black text-[#172033]">Profil utilisateur</h3>
+        <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-[#64748B] hover:bg-slate-100">
+          <X size={18} />
+        </button>
+      </div>
+
+      <div className="mt-4 grid gap-3 rounded-xl bg-[#F7F6F0] p-4 text-sm">
+        <ProfileRow label="Nom complet" value={`${valeur(employe.prenom, '')} ${valeur(employe.nom, '')}`.trim() || 'Non défini'} />
+        <ProfileRow label="Compte" value={valeur(compte)} />
+        <ProfileRow label="Rôle" value={valeur(employe.role)} />
+        <ProfileRow label="Entreprise" value={valeur(context.nomEntreprise)} />
+        <ProfileRow label="Magasin" value={valeur(context.nomMagasin)} />
+        <ProfileRow label="Dépôt" value={valeur(context.nomDepot)} />
+        <ProfileRow label="Poste POS" value={valeur(context.nomPOS)} />
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <Link
+          href="/dashboard/profil"
+          onClick={onClose}
+          className="flex items-center justify-center gap-2 rounded-xl bg-[#166534] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#064E3B]"
+        >
+          <User size={17} /> Mon profil
+        </Link>
+        <button
+          type="button"
+          onClick={() => {
+            onClose();
+            onLogout();
+          }}
+          className="flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-bold text-[#DC2626] hover:bg-red-50"
+        >
+          <LogOut size={17} /> Déconnexion
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ProfileRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid grid-cols-[6.5rem_1fr] gap-2">
+      <span className="text-[#64748B]">{label}</span>
+      <span className="break-words text-right font-bold text-[#172033]">{value}</span>
+    </div>
   );
 }
