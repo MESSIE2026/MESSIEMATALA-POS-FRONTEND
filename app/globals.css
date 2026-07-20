@@ -1,12 +1,172 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Les classes dark:* de Tailwind suivent le choix de l'utilisateur. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root,
+html[data-theme="light"] {
+  --app-bg: #f4f7f5;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --surface-muted: #f2f6f3;
+  --border: #dce7e0;
+  --text-primary: #17231d;
+  --text-secondary: #64748b;
+  --accent: #166534;
+  --accent-strong: #064e3b;
+  --accent-soft: #eaf5ed;
+  --accent-hover: #e7f6ec;
+  --danger-soft: #fef2f2;
+  --warning-soft: #fffbeb;
+  --info-soft: #eff6ff;
+  --shadow-color: 15 23 42;
+  color-scheme: light;
+}
+
+html.dark,
+html[data-theme="dark"] {
+  --app-bg: #0b1210;
+  --surface: #111b17;
+  --surface-elevated: #17241e;
+  --surface-muted: #1a2821;
+  --border: #2a3c33;
+  --text-primary: #f2f7f4;
+  --text-secondary: #a8b7af;
+  --accent: #4ade80;
+  --accent-strong: #86efac;
+  --accent-soft: #163b28;
+  --accent-hover: #1d4b32;
+  --danger-soft: #3a171b;
+  --warning-soft: #3a2c12;
+  --info-soft: #132b44;
+  --shadow-color: 0 0 0;
+  color-scheme: dark;
+}
+
+html {
+  min-height: 100%;
+  background: var(--app-bg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  min-height: 100vh;
+  margin: 0;
+  background: var(--app-bg);
+  color: var(--text-primary);
   font-family: Arial, Helvetica, sans-serif;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+/*
+ * Pont de compatibilité pour les modules existants qui utilisent encore des
+ * couleurs Tailwind claires ou des anciennes couleurs écrites en dur.
+ */
+.dark [class~="bg-white"],
+.dark [class~="bg-slate-50"],
+.dark [class~="bg-slate-100"],
+.dark [class~="bg-gray-50"],
+.dark [class~="bg-gray-100"],
+.dark [class~="bg-[#F7F6F0]"],
+.dark [class~="bg-[#F8FAFC]"],
+.dark [class~="bg-[#F1F5F9]"] {
+  background-color: var(--surface) !important;
+}
+
+.dark [class~="bg-[#F0F7F2]"],
+.dark [class~="bg-emerald-50"],
+.dark [class~="bg-green-50"] {
+  background-color: var(--accent-soft) !important;
+}
+
+.dark [class~="bg-red-50"] {
+  background-color: var(--danger-soft) !important;
+}
+
+.dark [class~="bg-amber-50"],
+.dark [class~="bg-yellow-50"] {
+  background-color: var(--warning-soft) !important;
+}
+
+.dark [class~="bg-blue-50"],
+.dark [class~="bg-sky-50"] {
+  background-color: var(--info-soft) !important;
+}
+
+.dark [class~="text-slate-950"],
+.dark [class~="text-slate-900"],
+.dark [class~="text-slate-800"],
+.dark [class~="text-gray-950"],
+.dark [class~="text-gray-900"],
+.dark [class~="text-[#172033]"],
+.dark [class~="text-[#171717]"] {
+  color: var(--text-primary) !important;
+}
+
+.dark [class~="text-slate-700"],
+.dark [class~="text-slate-600"],
+.dark [class~="text-slate-500"],
+.dark [class~="text-gray-700"],
+.dark [class~="text-gray-600"],
+.dark [class~="text-gray-500"],
+.dark [class~="text-[#64748B]"],
+.dark [class~="text-[#475569]"] {
+  color: var(--text-secondary) !important;
+}
+
+.dark [class~="text-[#166534]"],
+.dark [class~="text-[#064E3B]"] {
+  color: var(--accent) !important;
+}
+
+.dark [class~="border-slate-100"],
+.dark [class~="border-slate-200"],
+.dark [class~="border-slate-300"],
+.dark [class~="border-gray-100"],
+.dark [class~="border-gray-200"],
+.dark [class~="border-gray-300"],
+.dark [class~="border-[#DDE8DF]"] {
+  border-color: var(--border) !important;
+}
+
+.dark input,
+.dark select,
+.dark textarea {
+  border-color: var(--border);
+  background-color: var(--surface-muted);
+  color: var(--text-primary);
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+.dark table {
+  color: var(--text-primary);
+}
+
+.dark hr {
+  border-color: var(--border);
+}
+
+.dark [class*="shadow-"] {
+  --tw-shadow-color: rgb(var(--shadow-color) / 0.32);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
