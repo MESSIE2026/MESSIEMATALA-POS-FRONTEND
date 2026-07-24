@@ -882,7 +882,9 @@ export default function VentesManagerPage() {
         >
           <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-black">Encaissements nets</h3>
+              <h3 className="text-xl font-black">
+                Résumé des encaissements
+              </h3>
               <button type="button" onClick={() => setEncaissements(null)}>
                 <X />
               </button>
@@ -894,7 +896,9 @@ export default function VentesManagerPage() {
                   className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800"
                 >
                   <b>{ligne.devise}</b>
-                  <p className="mt-2 text-xs text-slate-500">Encaissé</p>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Encaissé brut
+                  </p>
                   <p className="font-bold">
                     {argent(ligne.encaisse, ligne.devise)}
                   </p>
