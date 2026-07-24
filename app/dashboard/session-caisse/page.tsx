@@ -13,7 +13,7 @@ type SessionCaisse = {
   nom?: string;
   prenom?: string;
 
-  totalpecescdf?: number;
+  totalespecescdf?: number;
   totalespecesusd?: number;
   totalespeceseur?: number;
 
@@ -42,7 +42,22 @@ type SessionCaisse = {
   totalremiseeur?: number;
 };
 
-const API = 'https://messiematala-pos-backend-production.up.railway.app';
+const API_PAR_DEFAUT =
+  process.env.NEXT_PUBLIC_API_URL ||
+  'https://messiematala-pos-backend-production.up.railway.app';
+
+function apiUrl() {
+  if (typeof window === 'undefined') return API_PAR_DEFAUT;
+  return localStorage.getItem('ZAIRE_API_URL') || API_PAR_DEFAUT;
+}
+
+function lireReponse(texte: string) {
+  try {
+    return texte ? JSON.parse(texte) : null;
+  } catch {
+    return texte;
+  }
+}
 
 export default function Page() {
   const router = useRouter();
@@ -54,19 +69,25 @@ export default function Page() {
 
   const [idEmploye, setIdEmploye] = useState(0);
   const [nomCaissier, setNomCaissier] = useState('NON CONNECTÉ');
+  const [idEntreprise, setIdEntreprise] = useState(0);
+  const [idMagasin, setIdMagasin] = useState(0);
+  const [idPoste, setIdPoste] = useState(0);
 
   useEffect(() => {
-    chargerEmployeConnecte();
-    chargerSessions();
+    const contexte = chargerEmployeConnecte();
+    if (contexte) void chargerSessions(contexte.idEmploye);
   }, []);
 
   function chargerEmployeConnecte() {
     try {
-      const raw = localStorage.getItem('employe');
+      const raw =
+        localStorage.getItem('employe') ||
+        localStorage.getItem('user') ||
+        localStorage.getItem('utilisateur');
 
       if (!raw) {
         router.push('/login');
-        return;
+        return null;
       }
 
       const emp = JSON.parse(raw);
@@ -75,40 +96,61 @@ export default function Page() {
         emp.id_employe ??
         emp.idEmploye ??
         emp.ID_Employe ??
+        emp.idutilisateur ??
+        emp.idUtilisateur ??
+        emp.id ??
         0
       );
 
       if (!id || id <= 0) {
         router.push('/login');
-        return;
+        return null;
+      }
+
+      const entreprise = Number(localStorage.getItem('ZAIRE_ID_ENTREPRISE') || 0);
+      const magasin = Number(localStorage.getItem('ZAIRE_ID_MAGASIN') || 0);
+      const poste = Number(localStorage.getItem('ZAIRE_ID_POSTE') || emp.idposte || 0);
+
+      if (!entreprise) {
+        alert('Entreprise non définie. Veuillez vous reconnecter.');
+        router.push('/login');
+        return null;
       }
 
       setIdEmploye(id);
+      setIdEntreprise(entreprise);
+      setIdMagasin(magasin);
+      setIdPoste(poste);
       localStorage.setItem('idEmploye', String(id));
 
       const nomComplet = `${emp.prenom ?? ''} ${emp.nom ?? ''}`.trim();
 
       setNomCaissier(nomComplet || 'CAISSIER WEB');
       localStorage.setItem('nomcaissier', nomComplet || 'CAISSIER WEB');
+
+      return {
+        idEmploye: id,
+        idEntreprise: entreprise,
+        idMagasin: magasin,
+        idPoste: poste,
+      };
     } catch (error) {
       console.error(error);
       router.push('/login');
+      return null;
     }
   }
 
-  async function chargerSessions() {
+  async function chargerSessions(idCaissier = idEmploye) {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API}/session-caisse`, { cache: 'no-store' });
+      const res = await fetch(`${apiUrl()}/session-caisse`, {
+        cache: 'no-store',
+        headers: getAuthHeaders(),
+      });
       const texte = await res.text();
-
-      let data: any = null;
-      try {
-        data = texte ? JSON.parse(texte) : null;
-      } catch {
-        data = texte;
-      }
+      const data = lireReponse(texte);
 
       if (!res.ok) {
         alert(`Erreur API ${res.status} : ${typeof data === 'string' ? data : JSON.stringify(data)}`);
@@ -119,7 +161,11 @@ export default function Page() {
       setSessions(rows);
 
       const ouverte =
-        rows.find((s) => String(s.etat).toUpperCase() === 'OUVERTE') ?? null;
+        rows.find(
+          (s) =>
+            Number(s.idcaissier) === Number(idCaissier) &&
+            String(s.etat).toUpperCase() === 'OUVERTE',
+        ) ?? null;
 
       setSessionActive(ouverte);
       setSelection(ouverte ?? rows[0] ?? null);
@@ -145,25 +191,19 @@ export default function Page() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API}/session-caisse/ouvrir`, {
+      const res = await fetch(`${apiUrl()}/session-caisse/ouvrir`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
           idCaissier: idEmploye,
-          idPoste: 1,
-          idMagasin: 1,
-          idEntreprise: 1,
+          idPoste: idPoste || undefined,
+          idMagasin,
+          idEntreprise,
         }),
       });
 
       const texte = await res.text();
-
-      let data: any = null;
-      try {
-        data = texte ? JSON.parse(texte) : null;
-      } catch {
-        data = texte;
-      }
+      const data = lireReponse(texte);
 
       if (!res.ok) {
         alert(`Erreur API ${res.status} : ${typeof data === 'string' ? data : JSON.stringify(data)}`);
@@ -173,7 +213,7 @@ export default function Page() {
       localStorage.setItem('idSessionCaisse', String(data.idsession));
       localStorage.setItem('idEmploye', String(idEmploye));
 
-      await chargerSessions();
+      await chargerSessions(idEmploye);
       alert('Session caisse ouverte.');
     } catch (error) {
       console.error(error);
@@ -194,19 +234,16 @@ export default function Page() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API}/session-caisse/clore/${sessionActive.idsession}`, {
-  method: 'POST',
-  headers: getAuthHeaders(),
-});
+      const res = await fetch(
+        `${apiUrl()}/session-caisse/clore/${sessionActive.idsession}`,
+        {
+          method: 'POST',
+          headers: getAuthHeaders(),
+        },
+      );
 
       const texte = await res.text();
-
-      let data: any = null;
-      try {
-        data = texte ? JSON.parse(texte) : null;
-      } catch {
-        data = texte;
-      }
+      const data = lireReponse(texte);
 
       if (!res.ok) {
         alert(`Erreur API ${res.status} : ${typeof data === 'string' ? data : JSON.stringify(data)}`);
@@ -215,7 +252,7 @@ export default function Page() {
 
       localStorage.removeItem('idSessionCaisse');
 
-      await chargerSessions();
+      await chargerSessions(idEmploye);
       alert('Session caisse clôturée.');
     } catch (error) {
       console.error(error);
@@ -229,18 +266,13 @@ export default function Page() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API}/session-caisse/resume/${idSession}`, {
+      const res = await fetch(`${apiUrl()}/session-caisse/resume/${idSession}`, {
         cache: 'no-store',
+        headers: getAuthHeaders(),
       });
 
       const texte = await res.text();
-
-      let data: any = null;
-      try {
-        data = texte ? JSON.parse(texte) : null;
-      } catch {
-        data = texte;
-      }
+      const data = lireReponse(texte);
 
       if (!res.ok) {
         alert(`Erreur API ${res.status} : ${typeof data === 'string' ? data : JSON.stringify(data)}`);
@@ -248,7 +280,13 @@ export default function Page() {
       }
 
       setSelection(data);
-      await chargerSessions();
+      setSessions((actuelles) =>
+        actuelles.map((session) =>
+          session.idsession === idSession
+            ? { ...session, ...data }
+            : session,
+        ),
+      );
     } catch (error) {
       console.error(error);
       alert('Erreur pendant l’actualisation du résumé.');
@@ -259,37 +297,39 @@ export default function Page() {
 
   async function rapportZ(idSession: number) {
     try {
-      const res = await fetch(`${API}/session-caisse/rapport-z/${idSession}`, {
+      const res = await fetch(`${apiUrl()}/session-caisse/rapport-z/${idSession}`, {
         cache: 'no-store',
+        headers: getAuthHeaders(),
       });
 
       const texte = await res.text();
-
-      let data: any = null;
-      try {
-        data = texte ? JSON.parse(texte) : null;
-      } catch {
-        data = texte;
-      }
+      const data = lireReponse(texte);
 
       if (!res.ok) {
         alert(`Erreur API ${res.status} : ${typeof data === 'string' ? data : JSON.stringify(data)}`);
         return;
       }
 
-      console.log('RAPPORT Z:', data);
-      alert('Rapport Z généré. Regarde aussi la console navigateur.');
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: 'application/json;charset=utf-8',
+      });
+      const url = URL.createObjectURL(blob);
+      const lien = document.createElement('a');
+      lien.href = url;
+      lien.download = `rapport-z-session-${idSession}.json`;
+      lien.click();
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error(error);
       alert('Erreur rapport Z.');
     }
   }
 
-  function money(v: any) {
+  function money(v: any, devise = 'USD') {
     const n = Number(v ?? 0);
     return n.toLocaleString('fr-FR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: devise === 'CDF' ? 0 : 2,
     });
   }
 
@@ -306,7 +346,7 @@ export default function Page() {
 
     return {
       CDF:
-        Number(selection.totalpecescdf ?? 0) +
+        Number(selection.totalespecescdf ?? 0) +
         Number(selection.totalcartecdf ?? 0) +
         Number(selection.totalmobilemoneycdf ?? 0) +
         Number(selection.totalcomplementcdf ?? 0) -
@@ -375,9 +415,9 @@ export default function Page() {
             <div className="mt-5 rounded-2xl border bg-blue-50 p-4">
               <h3 className="font-black text-blue-700">SYNTHÈSE ENCAISSEMENTS EXACTS</h3>
               <div className="mt-3 font-bold text-blue-950">
-                <p>CDF : {money(encaissementExact.CDF)}</p>
-                <p>USD : {money(encaissementExact.USD)}</p>
-                <p>EUR : {money(encaissementExact.EUR)}</p>
+                <p>CDF : {money(encaissementExact.CDF, 'CDF')} CDF</p>
+                <p>USD : {money(encaissementExact.USD, 'USD')} USD</p>
+                <p>EUR : {money(encaissementExact.EUR, 'EUR')} EUR</p>
               </div>
             </div>
           )}
@@ -388,7 +428,7 @@ export default function Page() {
             <h2 className="text-xl font-black text-slate-800">Liste des sessions</h2>
 
             <button
-              onClick={chargerSessions}
+              onClick={() => void chargerSessions(idEmploye)}
               className="rounded-xl bg-blue-600 px-4 py-2 font-bold text-white"
             >
               Actualiser
@@ -467,7 +507,7 @@ export default function Page() {
           </div>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <BlocTitre titre="Espèces" cdf={selection.totalpecescdf} usd={selection.totalespecesusd} eur={selection.totalespeceseur} />
+            <BlocTitre titre="Espèces" cdf={selection.totalespecescdf} usd={selection.totalespecesusd} eur={selection.totalespeceseur} />
             <BlocTitre titre="Carte" cdf={selection.totalcartecdf} usd={selection.totalcarteusd} eur={selection.totalcarteeur} />
             <BlocTitre titre="Mobile Money" cdf={selection.totalmobilemoneycdf} usd={selection.totalmobilemoneyusd} eur={selection.totalmobilemoneyeur} />
             <BlocTitre titre="Remboursements" cdf={selection.totalremboursementscdf} usd={selection.totalremboursementsusd} eur={selection.totalremboursementseur} />
@@ -502,11 +542,11 @@ function BlocTitre({
   usd?: any;
   eur?: any;
 }) {
-  function money(v: any) {
+  function money(v: any, devise: 'CDF' | 'USD' | 'EUR') {
     const n = Number(v ?? 0);
     return n.toLocaleString('fr-FR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: devise === 'CDF' ? 0 : 2,
     });
   }
 
@@ -514,9 +554,9 @@ function BlocTitre({
     <div className="rounded-2xl border bg-slate-50 p-4">
       <h3 className="font-black text-blue-700">{titre}</h3>
       <div className="mt-3 space-y-1 font-bold text-slate-800">
-        <p>CDF : {money(cdf)}</p>
-        <p>USD : {money(usd)}</p>
-        <p>EUR : {money(eur)}</p>
+        <p>CDF : {money(cdf, 'CDF')} CDF</p>
+        <p>USD : {money(usd, 'USD')} USD</p>
+        <p>EUR : {money(eur, 'EUR')} EUR</p>
       </div>
     </div>
   );
